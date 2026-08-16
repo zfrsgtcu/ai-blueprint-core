@@ -1,181 +1,294 @@
-# MCP Proje Yönetim Sistemi
+<div align="center">
 
-Bu dizin, yapay zeka destekli proje olusturma ve feature development islemlerini otomatiklestiren sistem dosyalarini icerir.
+# 🤖 AI Blueprint Core
+
+**Yapay Zeka Destekli Çoklu Ajan (Multi-Agent) Mimari Şablon & Proje Orkestrasyon Sistemi**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Stacks](https://img.shields.io/badge/Stacks-12%20Ready-orange.svg)](#-hazır-stack-şablonları-matrisi)
+[![Agents](https://img.shields.io/badge/Agents-2--Tier%20Dynamic-purple.svg)](#-iki-kademeli-ajan-orkestrasyonu)
+[![Architecture](https://img.shields.io/badge/Architecture-Modular%20%26%20Extensible-success.svg)](#-sistem-mimarisi)
+
+<p align="center">
+  <b>Modern web, mobil ve kurumsal uygulamalar için standartlaştırılmış teknoloji yığınları, dinamik yapay zeka ajan eşlemeleri ve uçtan uca feature geliştirme iş akışları.</b>
+</p>
+
+[Mimarî](#-sistem-mimarisi) •
+[Dizin Yapısı](#-dizin-yapısı) •
+[Stack Matrisi](#-hazır-stack-şablonları-matrisi) •
+[Ajan Sistemi](#-iki-kademeli-ajan-orkestrasyonu) •
+[Hızlı Başlangıç](#-hızlı-başlangıç) •
+[Komutlar](#-entegre-komutlar-slash-commands) •
+[Katkıda Bulunma](#-katkıda-bulunma-rehberi-contributing)
+
+---
+
+</div>
+
+## 📖 Genel Bakış
+
+**AI Blueprint Core**, modern yazılım geliştirme süreçlerini yapay zeka ajanları (Claude, Gemini, Antigravity, Cursor, Copilot vb.) ile standartlaştıran ve otomatikleştiren açık çekirdekli bir mimari kütüphanedir.
+
+Klasik prompt tabanlı yaklaşımların aksine:
+- **Teknoloji Bağımlılıklarını Tanır:** Astro.js, Nuxt.js, .NET 8/9 Web API, MSSQL, React Native, MAUI gibi spesifik teknolojilere uygun prompt ve mimari kural enjekte eder.
+- **İki Kademeli Dinamik Orkestrasyon:** Her proje tipine göre gereken departmanları (Backend, Frontend, QA, DevOps vb.) ve alt uzmanları (`dotnet-developer`, `astro-developer`, `azure-deploy` vb.) otomatik seçer.
+- **Standart & Kurumsal Çıktı:** Kod oluştururken rastgele yapılar yerine önceden tanımlanmış UI/UX pratikleri, güvenlik standartları (KVKK/GDPR) ve klasör mimarilerini uygular.
 
 ---
 
 ## 🏗️ Sistem Mimarisi
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Proje Yönetim Sistemi                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────┐    ┌──────────────────┐    ┌───────────┐ │
-│  │   Stacks     │    │ Agent Mapping    │    │ Workflows │ │
-│  │              │    │                  │    │           │ │
-│  │ Proje tipi-  │───▶│ Hangi agent'lar │───▶│ Feature   │ │
-│  │ leri ve      │    │ calisacak?      │    │ Dev       │ │
-│  │ teknoloji    │    │ (dinamik)       │    │ Workflow  │ │
-│  │ konfigür.    │    └──────────────────┘    └───────────┘ │
-│  └──────────────┘              │                            │
-│                                ▼                              │
-│                    ┌──────────────────┐                      │
-│                    │   Agent Tanımları │                      │
-│                    │                  │                      │
-│                    │ backend.md       │                      │
-│                    │ frontend.md      │                      │
-│                    │ mobile-client.md │                      │
-│                    │ qa.md            │                      │
-│                    │ devops.md        │                      │
-│                    └──────────────────┘                      │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Input["1. Giriş & Konfigürasyon"]
+        CLI["/project-init veya /workflow"]
+        ST["Stack Template (JSON)\n(örn: ecommerce.json)"]
+        DP["Design Practices (JSON)\n(UI/UX Kuralları)"]
+    end
+
+    subgraph Core["2. Blueprint & Mapping Çekirdeği"]
+        MAP["agents-stack-mapping.json\n(Koşul & Kural Değerlendirme)"]
+        RES["Dinamik Ajan Çözümleyici (Resolver)"]
+    end
+
+    subgraph Orchestration["3. Çoklu Ajan Yürütme Motoru (feature-dev.mjs)"]
+        direction TB
+        subgraph Serial["Seri Yürütme (Serial Loop)"]
+            PM["📋 Project Manager (Gereksinimler)"]
+            BE["⚙️ Backend (DB + API)"]
+            FE["🎨 Frontend / Mobile (UI + State)"]
+            QA["🧪 QA Engineer (Test Senaryoları)"]
+            PM --> BE --> FE --> QA
+        end
+        subgraph Parallel["Paralel Yürütme (Parallel Pool)"]
+            DO["🚀 DevOps (CI/CD + Cloud Deploy)"]
+        end
+        QA --> DO
+    end
+
+    subgraph Output["4. Çıktılar & Raporlama"]
+        CODE["Production-Ready Kaynak Kod"]
+        DOCS["Mimari & API Dokümantasyonu"]
+        REP["📊 Workflow Özet Raporu"]
+    end
+
+    Input --> Core
+    ST --> MAP
+    CLI --> RES
+    DP --> RES
+    MAP --> RES
+    RES --> Orchestration
+    Orchestration --> Output
 ```
 
 ---
 
-## 📁 Directory Yapısı
+## 📁 Dizin Yapısı
 
 ```
-.claude/
-├── README.md                          # Bu dosya — sistem genel bakis
-├── agents-stack-mapping.json          # Stack → Agent eşleme tablosu (YENİ)
+ai-blueprint-core/
+├── agents/                            # Ajan rol, sorumluluk ve prompt tanımları
+│   ├── backend/                       # Backend uzmanları (dotnet, nodejs, database)
+│   ├── frontend/                      # Frontend uzmanları (astro, nuxt, mobile, ui)
+│   ├── devops/                        # Altyapı uzmanları (vercel, azure, ci-cd)
+│   ├── qa/                            # Test mühendisleri (strategy, test-cases)
+│   ├── project-manager/               # Proje ve gereksinim analistleri
+│   └── README.md                      # Ajan rolleri detay rehberi
 │
-├── agents/                            # Agent rol ve sorumluluk tanimlari
-│   ├── backend.md                     # Backend Developer (API, DB, business logic)
-│   ├── frontend.md                    # Frontend Developer (UI/UX, component)
-│   ├── mobile-client.md               # Mobile Client Developer (React Native)
-│   ├── qa.md                          # QA/Testing Engineer (test stratejisi)
-│   └── devops.md                      # DevOps/Infrastructure Engineer
-│
-├── stacks/                            # Proje tipi template'leri
-│   ├── README.md                      # Stack listesi ve mapping tablosu
-│   ├── corporate-portfolio.json       # Kurumsal & Portfolyo (Astro.js)
-│   ├── landing-page.json              # Landing Page (Astro.js)
-│   ├── news-magazine.json             # Haber & Dergi (Astro.js + Node/.NET)
-│   ├── ecommerce.json                 # E-Ticaret (Nuxt.js + .NET)
-│   ├── classifieds.json               # İlan & Sınıflandırılmış
-│   ├── booking.json                   # Randevu / Booking
-│   ├── lms.json                       # E-Öğrenme (LMS)
-│   ├── saas-crm.json                  # SaaS / CRM
+├── stacks/                            # 12+ Hazır proje mimari şablonları
+│   ├── corporate-portfolio.json       # Astro.js + SQLite / Vercel
+│   ├── landing-page.json              # Astro.js / Vercel
+│   ├── news-magazine.json             # Astro.js + Node/.NET + MSSQL
+│   ├── ecommerce.json                 # Nuxt.js + .NET Web API + MSSQL
+│   ├── classifieds.json               # İlan & Pazar yeri mimarisi
+│   ├── booking.json                   # Randevu & Rezervasyon mimarisi
+│   ├── lms.json                       # E-Öğrenme yönetim sistemi
+│   ├── saas-crm.json                  # SaaS / CRM çok kiracılı mimari
 │   ├── admin-panel.json               # Özel Yönetim Paneli
-│   ├── mobile-backend.json            # Mobil Backend (React Native)
-│   ├── native-mobile.json             # Native Mobil (MAUI)
-│   └── hybrid-blazor-maui.json        # Hibrit (Blazor + MAUI)
+│   ├── mobile-backend.json            # React Native + .NET Web API
+│   ├── native-mobile.json             # .NET MAUI + SQLite/MSSQL
+│   ├── hybrid-blazor-maui.json        # Blazor Hybrid + MAUI
+│   └── README.md                      # Stack kataloğu ve detaylı matris
 │
-├── workflows/                         # Otomatik is akislari
-│   ├── README.md                      # Workflow kullanimi ve dokümantasyon
-│   └── feature-dev.js                 # Feature Development workflow
+├── agents-stack-mapping.json          # Stack teknolojilerini ajanlara bağlayan kural tablosu
 │
-├── projects/                          # Proje konfigürasyonlari (oluşturulduktan sonra)
-│   └── <project-name>.json
+├── workflows/                         # Otomatik iş akışı ve orkestrasyon motorları
+│   ├── feature-dev.mjs                # Çoklu ajan feature geliştirme pipeline'ı
+│   └── README.md                      # Workflow çalıştırma rehberi
 │
-└── design-practices/                  # UI/UX tasarım pratikleri
-    └── *.json
+├── commands/                          # CLI / Slash command tanımları (.md)
+│   ├── project-init.md                # Yeni proje başlatma komutu
+│   ├── workflow.md                    # Workflow tetikleme komutu
+│   ├── review.md                      # Kod ve mimari inceleme komutu
+│   ├── rules.md                       # Kodlama ve stil kuralları
+│   ├── setup.md                       # Ortam kurulum yönergeleri
+│   └── init-docs.md                   # Dokümantasyon üretme komutu
+│
+├── design-practices/                  # Önceden tanımlı UI/UX tasarım pratikleri
+│   ├── login-screen-split.json        # İki kolonlu split login deseni
+│   └── login-screen-blur.json         # Modern blur efektli login deseni
+│
+└── projects/                          # Oluşturulan projelere ait konfigürasyon kayıtları
 ```
 
 ---
 
-## 🚀 Hızli Baslangic
+## 🗂️ Hazır Stack Şablonları Matrisi
 
-### 1. Yeni Proje Başlatma
+Sistem bünyesinde 12 adet endüstri standardı mimari şablon yer alır:
+
+| # | Stack ID | Proje Türü | Frontend | Backend | Database | Deployment |
+|---|----------|------------|----------|---------|----------|------------|
+| 1 | `corporate-portfolio` | Kurumsal & Portfolyo | Astro.js (Tailwind) | Node.js (Opsiyonel) | SQLite | Vercel |
+| 2 | `landing-page` | Landing Page | Astro.js | - | - | Vercel |
+| 3 | `news-magazine` | Haber & Medya Portalı | Astro.js | Node.js / .NET | MSSQL | Vercel |
+| 4 | `ecommerce` | E-Ticaret Platformu | Nuxt.js (SSR) | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 5 | `classifieds` | İlan & Seri İlanlar | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 6 | `booking` | Randevu & Rezervasyon | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 7 | `lms` | E-Öğrenme Sistemi | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 8 | `saas-crm` | SaaS & CRM Platformu | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 9 | `admin-panel` | Özel Yönetim Paneli | Nuxt.js / Blazor | .NET 8/9 Web API | MSSQL | Vercel / Azure |
+| 10 | `mobile-backend` | Mobil Backend | React Native | .NET 8/9 Web API | MSSQL | Azure |
+| 11 | `native-mobile` | Native Mobil (Cross) | .NET MAUI | .NET 8/9 Web API | MSSQL / SQLite | Azure + Stores |
+| 12 | `hybrid-blazor-maui` | Hibrit Mobil & Masaüstü | Blazor Hybrid (MAUI) | .NET 8/9 Web API | MSSQL / SQLite | Azure + Stores |
+
+Detaylı stack konfigürasyon parametreleri için [stacks/README.md](stacks/README.md) dosyasını inceleyin.
+
+---
+
+## 🔗 İki Kademeli Ajan Orkestrasyonu
+
+`agents-stack-mapping.json` kurallarına göre ajanlar hiyerarşik iki seviyede çalışır:
+
+### 1. Seviye: Departman Kategorisi (Category)
+- `backend` (Veritabanı & API geliştirme)
+- `frontend` (Kullanıcı arayüzü, state yönetimi, componentler)
+- `qa` (Test stratejisi, test senaryoları, mock testler)
+- `devops` (CI/CD pipeline, Docker, cloud deployment)
+- `project-manager` (Gereksinim analizi, sprint breakdown)
+
+### 2. Seviye: Alan Uzmanı (Subagent)
+Bir kategoride stack'in gereksinimine göre nokta atışı uzman devreye girer:
+- **Backend:** `dotnet-developer`, `nodejs-developer`, `database-developer`
+- **Frontend:** `astro-developer`, `nuxt-developer`, `mobile-developer`, `ui-designer`
+- **DevOps:** `vercel-deploy`, `azure-deploy`, `ci-cd-pipeline`
+- **QA:** `testing-strategy`, `test-cases`
+- **PM:** `requirements`, `progress-tracking`
+
+### ⚡ Yürütme Stratejileri
+- **`serial` (Sıralı):** Önceki ajanın çıktısı sonraki ajanın girdisi olur (örn. DB Şeması ➔ API Controller ➔ Frontend Sayfası ➔ QA Testi).
+- **`parallel` (Eşzamanlı):** Birbirine bağımlı olmayan görevler aynı anda yürütülür (örn. Dağıtım yapılandırmaları, dokümantasyon).
+
+---
+
+## 🚀 Hızlı Başlangıç
+
+### 1. Yeni Proje Başlatma (`project-init`)
+
+Bir proje türünü seçerek projeyi ve mimari konfigürasyonunu saniyeler içinde başlatın:
 
 ```bash
-/project-init my-project --stack ecommerce --name "Online Mağazam"
+/project-init my-store --stack ecommerce --name "Online Mağaza"
 ```
 
-Bu komut:
-- `my-project` dizinini olusturur
-- Seçilen stack template'ini kopyalar
-- `.claude/projects/my-project.json` konfigürasyon dosyasi yaratir
+**Ne gerçekleşir?**
+1. `projects/my-store.json` konfigürasyonu üretilir.
+2. Seçilen `ecommerce.json` stack kuralları projeye kopyalanır.
+3. Proje dizini ve temel mimari iskeleti hazırlanır.
 
-### 2. Feature Geliştirme
+### 2. Özellik Geliştirme Akışı (`feature-dev`)
+
+Mevcut bir projede yeni bir özellik geliştirmek için:
 
 ```bash
-/workflow feature-dev --stack ecommerce --feature "Urun ekleme sayfasi"
+/workflow feature-dev --stack ecommerce --feature "Sepet ve İndirim Kuponu Modülü"
 ```
 
-Workflow:
-1. Stack konfigürasyonunu yükler
-2. Hangi agent'larin calisacagini otomatik belirler
-3. Her departman kod dosyalari olusturur
-4. Ozet rapor sunar
-
-### 3. Yeni Stack Ekleme
-
-1. `.claude/stacks/<yeni-stack>.json` dosyasi olusturun (varolan bir stack'i referans alin)
-2. `agents-stack-mapping.json` dosyasina yeni kural ekleyin
-3. Gerekirse yeni agent tanimi ekleyin (`agents/` dizini)
-4. `stacks/README.md` ve bu README'yi guncelleyin
+Ajanlar sırayla çalışarak şunları üretir:
+- 🗄️ **Database Subagent:** SQL migration scriptleri ve tablo modelleri
+- ⚡ **Backend Subagent:** CQRS/Controller, Service ve DTO sınıfları
+- 🖥️ **Frontend Subagent:** Vue/Nuxt componentleri, Pinia store ve responsive sayfalar
+- 🧪 **QA Subagent:** Unit & Integration test dosyaları
+- 📊 **DevOps Subagent:** Deployment & CI/CD yapılandırması
 
 ---
 
-## 🔗 Stack-Agent Eşleme (İki-Seviyeli Yapı)
+## 🛠️ Entegre Komutlar (Slash Commands)
 
-Her stack, `agents-stack-mapping.json` dosyasina gore **iki-seviyeli** olarak hangi agent'larin calistirilacagini belirler:
-
-### Seviye 1: Category (Kategori)
-- `backend`, `frontend`, `devops`, `qa`, `project-manager`
-
-### Seviye 2: Subagent (Alt Uzman)
-- Her kategori icin birden fazla subagent olabilir (orn. `backend`: `dotnet-developer`, `database-developer`)
-
-### Execution Stratejileri
-- **serial**: Agent'lar sirayla calisir (birinin cikti si sonrakinin girdisi olabilir)
-- **parallel**: Agent'lar paralel calisir (bagimsiz gorevler icin)
-
-| Stack Tipi | Calistirilan Agent'lar (Category/Subagent) |
-|------------|-------------------------------------------|
-| Static Site (Astro.js) | `frontend/astro-developer`, `devops/vercel-deploy` |
-| Dynamic Full-Stack (Nuxt + .NET) | `backend/database-developer`, `backend/dotnet-developer`, `frontend/nuxt-developer`, `qa/testing-strategy`, `devops/azure-deploy` |
-| Mobile Backend (React Native) | `backend/database-developer`, `backend/dotnet-developer`, `frontend/mobile-developer`, `qa/testing-strategy`, `devops/azure-deploy` |
-| Native MAUI / Blazor Hybrid | `backend/database-developer`, `backend/dotnet-developer`, `frontend/mobile-developer`, `qa/testing-strategy`, `devops/azure-deploy` |
-
-Detayli tablo icin [stacks/README.md](./stacks/README.md) bakin.
+| Komut | Açıklama | Örnek |
+|-------|----------|-------|
+| `/project-init` | Seçilen stack ile yeni bir proje konfigürasyonu oluşturur | `/project-init blog-app --stack news-magazine` |
+| `/workflow` | Tanımlı iş akışlarını (`feature-dev`, `test`, `lint-fix`, `deploy-check`) çalıştırır | `/workflow feature-dev --stack saas-crm --feature "Fatura Modülü"` |
+| `/review` | Kod kalitesi, güvenlik ve mimari uyumluluk incelemesi yapar | `/review --scope full` |
+| `/rules` | Proje kodlama standartları ve best-practice kurallarını listeler | `/rules` |
+| `/setup` | Ortam bağımlılıkları ve geliştirici kurulum adımlarını sunar | `/setup` |
+| `/init-docs` | Proje mimarisi ve API dokümantasyonunu otomatik üretir | `/init-docs` |
 
 ---
 
-## 📚 Dokümantasyon
+## 🤝 Katkıda Bulunma Rehberi (Contributing)
 
-- **[Stack Template Library](./stacks/README.md)** — Mevcut stack'ler, teknolojiler ve mapping tablosu
-- **[Workflows](./workflows/README.md)** — Workflow kullanimi ve pipeline akisi
-- **[Agent Tanımları](./agents/)** — Her agent'in rol ve sorumluluklari
+Topluluk katkılarını memnuniyetle karşılıyoruz! Yeni bir teknoloji stack'i, yeni bir ajan uzmanlığı veya workflow eklemek için aşağıdaki adımları izleyebilirsiniz.
 
----
+### 🌟 Adım Adım Katkı Süreci (GitHub Workflow)
 
-## ⚙️ Özelleştirme
+```bash
+# 1. Depoyu kendi GitHub hesabınıza Fork edin ve lokale klonlayın
+git clone https://github.com/<kullanici-adiniz>/ai-blueprint-core.git
+cd ai-blueprint-core
 
-### Yeni Agent Ekleme
+# 2. Yeni bir feature/fix dalı (branch) açın
+git checkout -b feature/add-fastapi-stack
 
-1. `agents/<agent-name>.md` dosyasi olusturun (mevcut format: `# Rol`, `## Sorumluluklar`, `## Çıktı Formatı`, `## Kalite Kriterleri`)
-2. `agents-stack-mapping.json` dosyasina agent'i ekleyin (`agentKeys` array'ine)
-3. Gerekirse yeni kural ekleyin (`stackAgentRules` array'ine)
+# 3. Geliştirmelerinizi yapın ve doğrulayın
+# (Örn: Yeni stack veya yeni agent tanımı ekleme)
 
-### Mevcut Stack'i Degistirme
+# 4. Değişikliklerinizi commit edin (Conventional Commits standardı)
+git commit -m "feat(stacks): add fastapi-postgresql python stack template"
 
-1. Ilgili `.json` dosyasini duzenleyin
-2. `departmentPrompts` alanindaki departman prompt'larini guncelleyin
-3. UI kütüphanelerini veya extra servisleri ekleyin/çıkarın
+# 5. Kendi forkladığınız depoya pushlayın
+git push origin feature/add-fastapi-stack
 
----
-
-## 🎯 Senaryolar
-
-### Feature Development (Yeni Özellik)
-Tüm ilgili departmanlar koordineli çalisarak production-ready kod olusturur.
-
-### Maintenance / Bug Fix
-Mevcut feature'ı refactor et, bug fix yap veya performans iyilestir.
-
-### Planning Session
-Sprint planning icin mimari kararlar al, task breakdown yap.
+# 6. GitHub üzerinden ana depoya (upstream) Pull Request (PR) açın
+```
 
 ---
 
-## 📝 Notlar
+### 🧩 1. Yeni Bir Stack Eklemek
+1. `stacks/<yeni-stack-id>.json` dosyasını oluşturun (`ecommerce.json` dosyasını şablon olarak baz alabilirsiniz).
+2. Stack'in `frontend`, `backend`, `database`, `deploy`, `uiLibraries` ve `departmentPrompts` alanlarını doldurun.
+3. `agents-stack-mapping.json` dosyasına girerek stack koşulunu (`stackAgentRules`) ekleyin.
+4. `stacks/README.md` ve ana `README.md` matrisine yeni stack'i dahil edin.
 
-- Bu sistem **dinamik** çalisir — her stack için farkli agent listesi kullanilir
-- Agent tanimlari **framework-aware** — Astro.js, Nuxt.js, MAUI gibi teknolojilere özel bilgiler icerir
-- Yeni stack eklemek icin sadece JSON dosyasi + mapping kurali yeterli
-- Workflow'lar **seri pipeline** olarak çalisir (bir agent sonraki agent'in girdisini olusturur)
+### 🤖 2. Yeni Bir Ajan (Subagent) Eklemek
+1. `agents/<kategori>/<subagent-adi>.md` dosyasını oluşturun.
+2. Format olarak `# Rol`, `## Sorumluluklar`, `## Çıktı Formatı`, `## Kodlama Standartları` başlıklarını kullanın.
+3. `agents-stack-mapping.json` içerisindeki `categories[kategori].subagents` listesine yeni subagent'ı ekleyin.
+
+### 📐 3. Yeni Bir Tasarım Pratiği (Design Practice) Eklemek
+1. `design-practices/<pratik-adi>.json` dosyasını oluşturun.
+2. Bileşen yapısı, responsive kurallar, renk paleti ve erişilebilirlik (a11y) standartlarını tanımlayın.
+
+---
+
+## 🗺️ Yol Haritası (Roadmap)
+
+- [x] 12 Temel Stack Şablonu & İki Kademeli Ajan Orkestrasyonu
+- [x] Node.js Tabanlı `feature-dev.mjs` Pipeline Motoru
+- [ ] **Python / FastAPI + PostgreSQL** Stack Şablonu
+- [ ] **Go / Fiber + PostgreSQL** Stack Şablonu
+- [ ] **MCP (Model Context Protocol) Server Entegrasyonu** (Ajanların IDE ve CLI ile doğrudan haberleşmesi)
+- [ ] Otomatik Benchmark & Kod Kalite Puanlama Sistemi
+- [ ] Çoklu Dil Desteği (EN / TR Döküman Seçeneği)
+
+---
+
+## 📄 Lisans
+
+Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır. Dilediğiniz gibi kullanabilir, özelleştirebilir ve katkıda bulunabilirsiniz.
+
+<div align="center">
+  <sub>Yapay zeka odaklı yazılım mimarisi geliştirmeyi standartlaştırmak amacıyla geliştirilmiştir.</sub>
+</div>
