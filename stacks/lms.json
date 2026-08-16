@@ -1,0 +1,87 @@
+{
+  "id": "lms",
+  "name": "E-Öğrenme (LMS)",
+  "description": "Online eğitim platformu. Kurs yönetimi, canlı dersler, video içerik, ödeme ve kullanıcı progresi.",
+  "type": "dynamic-lms",
+
+  "stack": {
+    "frontend": "nuxt-js",
+    "backend": "dotnet-webapi",
+    "database": "mssql-natro",
+    "deploy": "vercel-azure"
+  },
+
+  "uiLibraries": [
+    { "name": "tailwindcss", "version": "^3.4.0", "usage": "primary-styling" },
+    { "name": "google-fonts", "usage": "typography" },
+    { "name": "iconify", "usage": "icons" },
+    { "name": "swiperjs", "version": "^11.0.0", "usage": "course-preview-carousel-gallery" },
+    { "name": "fancybox", "version": "^3.0.0", "usage": "video-photo-lightbox" }
+  ],
+
+  "extraServices": [
+    { "name": "payment-gateway", "provider": "stripe-or-iyzico", "purpose": "course-subscriptions-payments" },
+    { "name": "live-class", "provider": "zoom-meet-jitsi", "purpose": "real-time-live-classes" },
+    { "name": "video-hosting", "provider": "vimeo-or-cloudinary", "purpose": "course-video-streaming" }
+  ],
+
+  "compliance": [
+    "kvkk",
+    "gdpr",
+    "education-data-protection"
+  ],
+
+  "features": [
+    "course-catalog",
+    "video-player",
+    "live-class-integration",
+    "progress-tracking",
+    "certificate-generation",
+    "payment-processing",
+    "user-authentication",
+    "quiz-assignment-system",
+    "responsive-design"
+  ],
+
+  "designGuidelines": {
+    "style": "clean-education-focused",
+    "typography": "sans-serif-readable",
+    "colorPalette": "trust-learning-oriented",
+    "imagery": "education-student-success",
+    "animations": "subtle-progress-indicators"
+  },
+
+  "departmentPrompts": {
+    "backend": ".NET Web API ile LMS backend'i oluştur. MSSQL veritabanı ile kurs, kullanıcı ve ödeme yönetimi. Zoom/Meet canlı ders entegrasyonu, video hosting servisi.",
+    "frontend": "Nuxt.js ile SSR eğitim platformu oluştur. SwiperJS ile kurs önizleme galerisi. Video player bileşeni. Fancybox ile medya lightbox. TailwindCSS ile responsive tasarım yap.",
+    "qa": "Video streaming testi, canlı ders entegrasyonu testi, ödeme ve sertifika oluşturma akışı testi yap.",
+    "devops": "Vercel (frontend) + Azure (backend/API) deploy et."
+  },
+
+  "performanceTargets": {
+    "lighthouse": 85,
+    "firstContentfulPaint": "<1.5s",
+    "largestContentfulPaint": "<3s",
+    "cumulativeLayoutShift": "<0.1"
+  },
+
+  "docs": {
+    "nuxtjs": [
+      { "name": "Ana Dokümantasyon", "url": "https://nuxt.com/docs" },
+      { "name": "Getting Started", "url": "https://nuxt.com/docs/getting-started/introduction" }
+    ],
+    "dotnet-webapi": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/aspnet/core" },
+      { "name": "Create a Web API", "url": "https://learn.microsoft.com/aspnet/core/tutorials/first-web-api" }
+    ],
+    "mssql": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/sql" },
+      { "name": "T-SQL Tutorial", "url": "https://learn.microsoft.com/sql/t-sql/tutorial-writing-transact-sql-statements" }
+    ],
+    "stripe": [
+      { "name": "Ana Dokümantasyon", "url": "https://docs.stripe.com" },
+      { "name": "API Reference", "url": "https://docs.stripe.com/api" },
+      { "name": "Subscription Billing", "url": "https://docs.stripe.com/billing" }
+    ]
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "id": "login-screen-split",
+  "name": "Login Screen - Split Layout (5/3)",
+  "description": "Modern split layout login ekranı. Sol tarafta görsel/marketing alanı, sağ tarafta form. Responsive tasarım ve GSAP animasyonları.",
+  "type": "auth-component",
+
+  "stack": {
+    "frontend": "nuxt-js",
+    "backend": "dotnet-webapi",
+    "database": "mssql-natro",
+    "deploy": "vercel-azure"
+  },
+
+  "uiLibraries": [
+    { "name": "tailwindcss", "version": "^3.4.0", "usage": "primary-styling-responsive-layout" },
+    { "name": "google-fonts", "usage": "typography-branding" },
+    { "name": "iconify", "usage": "icons-social-buttons" },
+    { "name": "gsap", "version": "^3.12.0", "usage": "form-animations-enter-exit-transitions" }
+  ],
+
+  "extraServices": [
+    { "name": "identity-service", "provider": "persona", "purpose": "user-authentication-kyc" },
+    { "name": "captcha-service", "provider": "recaptcha-v3", "purpose": "bot-protection-rate-limiting" }
+  ],
+
+  "compliance": [
+    "kvkk",
+    "gdpr",
+    "nist-800-63b"
+  ],
+
+  "features": [
+    "split-layout-responsive",
+    "email-password-authentication",
+    "social-login-buttons",
+    "password-visibility-toggle",
+    "forgot-password-flow",
+    "remember-me-checkbox",
+    "rate-limiting",
+    "captcha-integration",
+    "form-validation",
+    "error-handling"
+  ],
+
+  "designGuidelines": {
+    "style": "modern-split-layout",
+    "typography": "sans-serif-clean-readable",
+    "colorPalette": "brand-primary-white-form",
+    "imagery": "left-panel-unsplash-background",
+    "animations": "gsap-enter-exit-smooth"
+  },
+
+  "departmentPrompts": {
+    "backend": ".NET Web API ile kimlik doğrulama endpoint'leri oluştur. MSSQL veritabanı ile kullanıcı yönetimi. Persona kimlik doğrulama servisi entegrasyonu. Rate limiting ve CAPTCHA servisleri.",
+    "frontend": "Nuxt.js ile split layout login sayfası oluştur. Sol panel (5 birim) görsel/marketing alanı, sağ panel (3 birim) form alanı. GSAP animasyonları ekle. TailwindCSS responsive tasarım yap. Social login butonları.",
+    "qa": "Form validasyonu testi, rate limiting kontrolü, CAPTCHA entegrasyonu testi, responsive davranış testleri yap."
+  },
+
+  "performanceTargets": {
+    "lighthouse": 90,
+    "firstContentfulPaint": "<1.2s",
+    "largestContentfulPaint": "<2s",
+    "cumulativeLayoutShift": "<0.05"
+  },
+
+  "docs": {
+    "nuxtjs": [
+      { "name": "Ana Dokümantasyon", "url": "https://nuxt.com/docs" },
+      { "name": "Getting Started", "url": "https://nuxt.com/docs/getting-started/introduction" },
+      { "name": "Routing", "url": "https://nuxt.com/docs/getting-started/routing" }
+    ],
+    "dotnet-webapi": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/aspnet/core" },
+      { "name": "Authentication & Authorization", "url": "https://learn.microsoft.com/aspnet/core/security/authentication/" },
+      { "name": "Controllers vs Minimal APIs", "url": "https://learn.microsoft.com/aspnet/core/fundamentals/apis" }
+    ],
+    "mssql": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/sql" },
+      { "name": "T-SQL Tutorial", "url": "https://learn.microsoft.com/sql/t-sql/tutorial-writing-transact-sql-statements" }
+    ],
+    "tailwindcss": [
+      { "name": "Ana Dokümantasyon", "url": "https://tailwindcss.com/docs" },
+      { "name": "Astro JS ile uyumlu Tailwind", "url": "https://docs.astro.build/en/guides/styling/#tailwind" },
+      { "name": "Installation", "url": "https://v3.tailwindcss.com/docs/installation" },
+      { "name": "Responsive Design", "url": "https://tailwindcss.com/docs/responsive-design" }
+    ],
+    "iconify": [
+      { "name": "Ana Dokümantasyon", "url": "https://iconify.design/docs" },
+      { "name": "Astro JS Iconify", "url": "https://iconify.design/docs/usage/svg/astro/" },
+      { "name": "Usage Guide", "url": "https://iconify.design/docs/usage/" }
+    ],
+    "gsap": [
+      { "name": "Ana Dokümantasyon", "url": "https://gsap.com/docs" },
+      { "name": "Getting Started", "url": "https://gsap.com/docs/v3/GettingStarted" },
+      { "name": "Best Practices", "url": "https://gsap.com/docs/v3/GSAP/BestPractices" }
+    ],
+    "persona": [
+      { "name": "Ana Dokümantasyon", "url": "https://help.withpersona.com" },
+      { "name": "API Introduction", "url": "https://docs.withpersona.com/reference/introduction" },
+      { "name": "Quick Start", "url": "https://help.withpersona.com/en/articles/quick-start-set-up-your-first-identity-verification-flow" }
+    ],
+    "recaptcha": [
+      { "name": "Ana Dokümantasyon", "url": "https://developers.google.com/recaptcha" },
+      { "name": "reCAPTCHA v3 Setup", "url": "https://developers.google.com/recaptcha/docs/v3" }
+    ],
+    "vercel": [
+      { "name": "Ana Dokümantasyon", "url": "https://vercel.com/docs" },
+      { "name": "Getting Started", "url": "https://vercel.com/docs/getting-started" }
+    ],
+    "azure": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/azure/app-service" },
+      { "name": "Deploy ASP.NET Core App", "url": "https://learn.microsoft.com/azure/app-service/tutorial-dotnetcore-sqldb-app" }
+    ]
+  }
+}

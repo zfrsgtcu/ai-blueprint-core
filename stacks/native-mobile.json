@@ -1,0 +1,82 @@
+{
+  "id": "native-mobile",
+  "name": "Native Mobil (MAUI)",
+  "description": ".NET MAUI ile native mobil uygulama. Platform-specific features, offline support ve store deployment.",
+  "type": "native-mobile-app",
+
+  "stack": {
+    "frontend": "dotnet-maui",
+    "backend": "dotnet-webapi",
+    "database": "mssql-natro-or-local-sqlite",
+    "deploy": "azure-and-stores"
+  },
+
+  "uiLibraries": [
+    { "name": "maui-native-controls", "usage": "primary-ui-components-xaml" },
+    { "name": "blazor-hybrid-tailwindcss", "version": "^3.4.0", "usage": "optional-blazor-hybrid-viewsWith-tailwind" }
+  ],
+
+  "extraServices": [
+    { "name": "identity-service", "provider": "persona-face-recognition", "purpose": "face-recognition-authentication" },
+    { "name": "push-notification", "provider": "firebase-fcm-or-apns", "purpose": "mobile-push-notifications" }
+  ],
+
+  "compliance": [
+    "kvkk",
+    "gdpr",
+    "mobile-data-protection",
+    "app-store-guidelines"
+  ],
+
+  "features": [
+    "native-mobile-ui-xaml",
+    "offline-capability-sqlite",
+    "biometric-authentication-face-recognition",
+    "push-notifications",
+    "camera-integration",
+    "gps-location-services",
+    "local-database-sync",
+    "store-deployment-ready"
+  ],
+
+  "designGuidelines": {
+    "style": "native-platform-specific-ios-android",
+    "typography": "platform-native-fonts",
+    "colorPalette": "adhere-to-platform-guidelines",
+    "imagery": "native-icons-and-illustrations",
+    "animations": "follow-platform-conventions"
+  },
+
+  "departmentPrompts": {
+    "backend": ".NET Web API ile mobile backend oluştur. MSSQL veya SQLite local database sync desteği. Firebase push notification servisi.",
+    "frontend": ".NET MAUI ile native mobil uygulama geliştir. XAML UI controls kullan. Blazor Hybrid ile TailwindCSS kullanılabilir. Offline SQLite sync mekanizması kur.",
+    "qa": "Platform-specific testler (iOS/Android), offline sync testi, biyometri entegrasyonu testi yap.",
+    "devops": "Azure'da API deploy et. App Store ve Google Play deployment yapılandır."
+  },
+
+  "performanceTargets": {
+    "appLaunchTime": "<2s",
+    "offlineSyncLatency": "<500ms",
+    "batteryImpact": "minimal"
+  },
+
+  "docs": {
+    "dotnet-maui": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/dotnet/maui" },
+      { "name": "Getting Started", "url": "https://dotnet.microsoft.com/apps/maui/get-started" },
+      { "name": "Installation & Setup", "url": "https://learn.microsoft.com/dotnet/maui/get-started/installation" }
+    ],
+    "dotnet-webapi": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/aspnet/core" },
+      { "name": "Create a Web API", "url": "https://learn.microsoft.com/aspnet/core/tutorials/first-web-api" }
+    ],
+    "mssql": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/sql" },
+      { "name": "T-SQL Tutorial", "url": "https://learn.microsoft.com/sql/t-sql/tutorial-writing-transact-sql-statements" }
+    ],
+    "persona": [
+      { "name": "Ana Dokümantasyon", "url": "https://help.withpersona.com" },
+      { "name": "API Introduction", "url": "https://docs.withpersona.com/reference/introduction" }
+    ]
+  }
+}

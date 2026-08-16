@@ -1,0 +1,6 @@
+{
+  "id": "login-screen-blur",
+  "name": "Login Screen - Glassmorphism Blur",
+  "description": "Blur efektli modern login ekranı. Gradient arka plan, glassmorphism kart, sosyal medya giriş butonları.",
+  "type": "auth-component"
+}

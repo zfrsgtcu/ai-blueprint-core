@@ -1,0 +1,75 @@
+{
+  "id": "mobile-backend",
+  "name": "Mobil Backend (React Native için)",
+  "description": "React Native mobil uygulamalar için API backend. Push notification, biyometri ve kimlik doğrulama desteği.",
+  "type": "mobile-api-service",
+
+  "stack": {
+    "frontend": "react-native-client-only",
+    "backend": "dotnet-webapi",
+    "database": "mssql-natro",
+    "deploy": "azure"
+  },
+
+  "uiLibraries": [],
+
+  "extraServices": [
+    { "name": "push-notification", "provider": "firebase-fcm-or-apns", "purpose": "mobile-push-notifications" },
+    { "name": "biometric-auth", "provider": "native-biometrics", "purpose": "fingerprint-face-id" },
+    { "name": "identity-service", "provider": "persona", "purpose": "user-verification-kyc" }
+  ],
+
+  "compliance": [
+    "kvkk",
+    "gdpr",
+    "mobile-data-protection"
+  ],
+
+  "features": [
+    "api-endpoints-for-mobile",
+    "push-notification-service",
+    "biometric-authentication",
+    "user-verification-kyc",
+    "offline-sync-support",
+    "media-upload-handling",
+    "rate-limiting",
+    "mobile-optimized-responses"
+  ],
+
+  "designGuidelines": {
+    "style": "api-first-mobile-optimized",
+    "typography": "N/A-backend-only",
+    "colorPalette": "N/A-backend-only",
+    "imagery": "N/A-backend-only",
+    "animations": "N/A-backend-only"
+  },
+
+  "departmentPrompts": {
+    "backend": ".NET Web API ile mobil backend oluştur. MSSQL veritabanı ile kullanıcı, bildirim ve media yönetimi. Firebase Cloud Messaging push notification servisi. Persona kimlik doğrulama entegrasyonu.",
+    "frontend": null,
+    "mobile": "React Native istemci uygulamasını geliştir. Push notification handling, biyometrik giriş (fingerprint/face ID), offline sync mekanizması kur.",
+    "qa": "API endpoint testleri, push notification akışı testi, biyometri entegrasyonu testi yap.",
+    "devops": "Azure'da API deploy et. Mobile-specific configuration yapılandır."
+  },
+
+  "performanceTargets": {
+    "apiResponseTime": "<200ms-p95",
+    "mobileAppSize": "<50MB",
+    "offlineSyncLatency": "<500ms"
+  },
+
+  "docs": {
+    "dotnet-webapi": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/aspnet/core" },
+      { "name": "Create a Web API", "url": "https://learn.microsoft.com/aspnet/core/tutorials/first-web-api" }
+    ],
+    "mssql": [
+      { "name": "Ana Dokümantasyon", "url": "https://learn.microsoft.com/sql" },
+      { "name": "T-SQL Tutorial", "url": "https://learn.microsoft.com/sql/t-sql/tutorial-writing-transact-sql-statements" }
+    ],
+    "persona": [
+      { "name": "Ana Dokümantasyon", "url": "https://help.withpersona.com" },
+      { "name": "API Introduction", "url": "https://docs.withpersona.com/reference/introduction" }
+    ]
+  }
+}
