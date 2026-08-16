@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "xUMwXJ8uzqc=",
+  "dgSpecHash": "X6LhBEW5OIw=",
   "success": true,
-  "projectFilePath": "D:\\Projeler\\create-projects\\ai-blueprint-core\\04-apps\\netmaui\\template\\{{ProjectName}}.csproj",
+  "projectFilePath": "D:\\Projeler\\github\\ai-blueprint-core\\04-apps\\netmaui\\template\\{{ProjectName}}.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ZAFER\\.nuget\\packages\\communitytoolkit.maui\\7.0.1\\communitytoolkit.maui.7.0.1.nupkg.sha512",
     "C:\\Users\\ZAFER\\.nuget\\packages\\communitytoolkit.maui.core\\7.0.1\\communitytoolkit.maui.core.7.0.1.nupkg.sha512",

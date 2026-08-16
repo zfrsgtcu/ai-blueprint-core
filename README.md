@@ -1,100 +1,83 @@
-<<<<<<< HEAD
-# 🏗️ AI Blueprint Core — AI Kod Asistanları İçin Şablon Mimarisi
-
-Bu proje, **Claude Code, Cursor, Aider** veya lokal LLM'ler (Ollama vb.) gibi yapay zeka kodlama asistanlarının token tüketimini minimize etmek ve halüsinasyon (yanlış kod üretimi) riskini azaltmak amacıyla geliştirilmiş modüler bir bağlam (context) mimarisidir.
-
-Yapay zekaya "Bana bir e-ticaret sitesi yap" demek yerine, sistem CLI parametrelerine göre ilgili katmanları seçici biçimde tarar ve modele sadece **ihtiyacı olan spesifik kuralları, mimariyi ve veritabanı şemalarını** içeren bir master-prompt sunar.
-=======
 <div align="center">
 
 # 🤖 AI Blueprint Core
 
-**Yapay Zeka Destekli Çoklu Ajan (Multi-Agent) Mimari Şablon & Proje Orkestrasyon Sistemi**
+**AI-Powered Multi-Agent Architecture Template & Project Orchestration System**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![Stacks](https://img.shields.io/badge/Stacks-12%20Ready-orange.svg)](#-hazır-stack-şablonları-matrisi)
-[![Agents](https://img.shields.io/badge/Agents-2--Tier%20Dynamic-purple.svg)](#-iki-kademeli-ajan-orkestrasyonu)
-[![Architecture](https://img.shields.io/badge/Architecture-Modular%20%26%20Extensible-success.svg)](#-sistem-mimarisi)
+[![Stacks](https://img.shields.io/badge/Stacks-12%20Ready-orange.svg)](#-ready-stack-templates-matrix)
+[![Agents](https://img.shields.io/badge/Agents-2--Tier%20Dynamic-purple.svg)](#-two-tier-agent-orchestration)
+[![Architecture](https://img.shields.io/badge/Architecture-Modular%20%26%20Extensible-success.svg)](#-system-architecture)
 
 <p align="center">
-  <b>Modern web, mobil ve kurumsal uygulamalar için standartlaştırılmış teknoloji yığınları, dinamik yapay zeka ajan eşlemeleri ve uçtan uca feature geliştirme iş akışları.</b>
+  <b>Standardized technology stacks, dynamic AI agent mappings, and end-to-end feature development workflows for modern web, mobile, and enterprise applications.</b>
 </p>
 
-[Mimarî](#-sistem-mimarisi) •
-[Dizin Yapısı](#-dizin-yapısı) •
-[Stack Matrisi](#-hazır-stack-şablonları-matrisi) •
-[Ajan Sistemi](#-iki-kademeli-ajan-orkestrasyonu) •
-[Hızlı Başlangıç](#-hızlı-başlangıç) •
-[Komutlar](#-entegre-komutlar-slash-commands) •
-[Katkıda Bulunma](#-katkıda-bulunma-rehberi-contributing)
-
----
+[Architecture](#-system-architecture) •
+[Directory Structure](#-directory-structure) •
+[Stack Matrix](#-ready-stack-templates-matrix) •
+[Agent System](#-two-tier-agent-orchestration) •
+[Quick Start](#-quick-start) •
+[Commands](#-integrated-slash-commands) •
+[Contributing](#-contributing-guide)
 
 </div>
 
-## 📖 Genel Bakış
+---
 
-**AI Blueprint Core**, modern yazılım geliştirme süreçlerini yapay zeka ajanları (Claude, Gemini, Antigravity, Cursor, Copilot vb.) ile standartlaştıran ve otomatikleştiren açık çekirdekli bir mimari kütüphanedir.
+## 📖 Overview
 
-Klasik prompt tabanlı yaklaşımların aksine:
-- **Teknoloji Bağımlılıklarını Tanır:** Astro.js, Nuxt.js, .NET 8/9 Web API, MSSQL, React Native, MAUI gibi spesifik teknolojilere uygun prompt ve mimari kural enjekte eder.
-- **İki Kademeli Dinamik Orkestrasyon:** Her proje tipine göre gereken departmanları (Backend, Frontend, QA, DevOps vb.) ve alt uzmanları (`dotnet-developer`, `astro-developer`, `azure-deploy` vb.) otomatik seçer.
-- **Standart & Kurumsal Çıktı:** Kod oluştururken rastgele yapılar yerine önceden tanımlanmış UI/UX pratikleri, güvenlik standartları (KVKK/GDPR) ve klasör mimarilerini uygular.
->>>>>>> 9dedac147c5903601773520c34b338fa82251c46
+**AI Blueprint Core** is an open-core architecture library that standardizes and automates modern software development processes with AI agents such as Claude, Gemini, Antigravity, Cursor, and Copilot.
+
+Unlike traditional prompt-based approaches:
+
+- **Recognizes Technology Dependencies:** Injects technology-specific prompts and architectural rules for technologies such as Astro.js, Nuxt.js, .NET 8/9 Web API, MSSQL, React Native, and MAUI.
+- **Two-Tier Dynamic Orchestration:** Automatically selects the required departments (Backend, Frontend, QA, DevOps, etc.) and specialized subagents (`dotnet-developer`, `astro-developer`, `azure-deploy`, etc.) for each project type.
+- **Standardized & Enterprise-Ready Output:** Applies predefined UI/UX practices, security standards (KVKK/GDPR), and folder architectures instead of generating random structures.
 
 ---
 
-## 📂 Katman Mimarisi (8 Katman)
+## 🏗️ System Architecture
 
-Sistem 8 ana katmandan oluşur. Bu katmanlar, gelen CLI parametrelerine göre (`--project-type`, `--apps`, `--scope`, `--frameworks`) filtrelenerek tek bir optimize master-prompt'ta birleştirilir.
+The system consists of **8 main layers**. These layers are filtered according to CLI parameters (`--project-type`, `--apps`, `--scope`, `--frameworks`) and combined into a single optimized master prompt.
 
-<<<<<<< HEAD
-```
-ai-blueprint-core/
-│
-├── 00-registry/          ← Versiyon ve uyumluluk otoritesi
-├── 01-globals/           ← Evrensel kodlama standartları
-├── 02-domains/           ← İş mantığı ve veri katmanı (25 domain)
-├── 03-infrastructures/   ← Production altyapı katmanı
-├── 04-apps/              ← Uygulama iskelet kütüphanesi (13 stack)
-├── 05-frameworks/        ← UI framework ve kütüphane kuralları (16 framework)
-├── 06-datalayer/         ← Veritabanı bağlantı ve entegrasyon katmanı
-└── 07-Orders/            ← Master-prompt ve sipariş çıktıları
-=======
 ```mermaid
 flowchart TD
-    subgraph Input["1. Giriş & Konfigürasyon"]
-        CLI["/project-init veya /workflow"]
-        ST["Stack Template (JSON)\n(örn: ecommerce.json)"]
-        DP["Design Practices (JSON)\n(UI/UX Kuralları)"]
+    subgraph Input["1. Input & Configuration"]
+        CLI["/project-init or /workflow"]
+        ST["Stack Template (JSON)\n(e.g. ecommerce.json)"]
+        DP["Design Practices (JSON)\n(UI/UX Rules)"]
     end
 
-    subgraph Core["2. Blueprint & Mapping Çekirdeği"]
-        MAP["agents-stack-mapping.json\n(Koşul & Kural Değerlendirme)"]
-        RES["Dinamik Ajan Çözümleyici (Resolver)"]
+    subgraph Core["2. Blueprint & Mapping Core"]
+        MAP["agents-stack-mapping.json\n(Condition & Rule Evaluation)"]
+        RES["Dynamic Agent Resolver"]
     end
 
-    subgraph Orchestration["3. Çoklu Ajan Yürütme Motoru (feature-dev.mjs)"]
+    subgraph Orchestration["3. Multi-Agent Execution Engine (feature-dev.mjs)"]
         direction TB
-        subgraph Serial["Seri Yürütme (Serial Loop)"]
-            PM["📋 Project Manager (Gereksinimler)"]
+
+        subgraph Serial["Serial Execution"]
+            PM["📋 Project Manager (Requirements)"]
             BE["⚙️ Backend (DB + API)"]
             FE["🎨 Frontend / Mobile (UI + State)"]
-            QA["🧪 QA Engineer (Test Senaryoları)"]
+            QA["🧪 QA Engineer (Test Scenarios)"]
             PM --> BE --> FE --> QA
         end
-        subgraph Parallel["Paralel Yürütme (Parallel Pool)"]
+
+        subgraph Parallel["Parallel Execution"]
             DO["🚀 DevOps (CI/CD + Cloud Deploy)"]
         end
+
         QA --> DO
     end
 
-    subgraph Output["4. Çıktılar & Raporlama"]
-        CODE["Production-Ready Kaynak Kod"]
-        DOCS["Mimari & API Dokümantasyonu"]
-        REP["📊 Workflow Özet Raporu"]
+    subgraph Output["4. Outputs & Reporting"]
+        CODE["Production-Ready Source Code"]
+        DOCS["Architecture & API Documentation"]
+        REP["📊 Workflow Summary Report"]
     end
 
     Input --> Core
@@ -108,144 +91,138 @@ flowchart TD
 
 ---
 
-## 📁 Dizin Yapısı
+## 📂 Directory Structure
 
-```
+```text
 ai-blueprint-core/
-├── agents/                            # Ajan rol, sorumluluk ve prompt tanımları
-│   ├── backend/                       # Backend uzmanları (dotnet, nodejs, database)
-│   ├── frontend/                      # Frontend uzmanları (astro, nuxt, mobile, ui)
-│   ├── devops/                        # Altyapı uzmanları (vercel, azure, ci-cd)
-│   ├── qa/                            # Test mühendisleri (strategy, test-cases)
-│   ├── project-manager/               # Proje ve gereksinim analistleri
-│   └── README.md                      # Ajan rolleri detay rehberi
+├── agents/                            # Agent roles, responsibilities, and prompt definitions
+│   ├── backend/                       # Backend specialists (dotnet, nodejs, database)
+│   ├── frontend/                      # Frontend specialists (astro, nuxt, mobile, ui)
+│   ├── devops/                        # Infrastructure specialists (vercel, azure, ci-cd)
+│   ├── qa/                            # Test engineers (strategy, test-cases)
+│   ├── project-manager/               # Project and requirements analysts
+│   └── README.md                      # Detailed agent role guide
 │
-├── stacks/                            # 12+ Hazır proje mimari şablonları
+├── stacks/                            # 12+ ready-made project architecture templates
 │   ├── corporate-portfolio.json       # Astro.js + SQLite / Vercel
 │   ├── landing-page.json              # Astro.js / Vercel
 │   ├── news-magazine.json             # Astro.js + Node/.NET + MSSQL
 │   ├── ecommerce.json                 # Nuxt.js + .NET Web API + MSSQL
-│   ├── classifieds.json               # İlan & Pazar yeri mimarisi
-│   ├── booking.json                   # Randevu & Rezervasyon mimarisi
-│   ├── lms.json                       # E-Öğrenme yönetim sistemi
-│   ├── saas-crm.json                  # SaaS / CRM çok kiracılı mimari
-│   ├── admin-panel.json               # Özel Yönetim Paneli
+│   ├── classifieds.json               # Classifieds & marketplace architecture
+│   ├── booking.json                   # Appointment & reservation architecture
+│   ├── lms.json                       # E-learning management system
+│   ├── saas-crm.json                  # SaaS / CRM multi-tenant architecture
+│   ├── admin-panel.json               # Custom administration panel
 │   ├── mobile-backend.json            # React Native + .NET Web API
 │   ├── native-mobile.json             # .NET MAUI + SQLite/MSSQL
 │   ├── hybrid-blazor-maui.json        # Blazor Hybrid + MAUI
-│   └── README.md                      # Stack kataloğu ve detaylı matris
+│   └── README.md                      # Stack catalog and detailed matrix
 │
-├── agents-stack-mapping.json          # Stack teknolojilerini ajanlara bağlayan kural tablosu
+├── agents-stack-mapping.json          # Rule table connecting stack technologies to agents
 │
-├── workflows/                         # Otomatik iş akışı ve orkestrasyon motorları
-│   ├── feature-dev.mjs                # Çoklu ajan feature geliştirme pipeline'ı
-│   └── README.md                      # Workflow çalıştırma rehberi
+├── workflows/                         # Automated workflows and orchestration engines
+│   ├── feature-dev.mjs                # Multi-agent feature development pipeline
+│   └── README.md                      # Workflow execution guide
 │
-├── commands/                          # CLI / Slash command tanımları (.md)
-│   ├── project-init.md                # Yeni proje başlatma komutu
-│   ├── workflow.md                    # Workflow tetikleme komutu
-│   ├── review.md                      # Kod ve mimari inceleme komutu
-│   ├── rules.md                       # Kodlama ve stil kuralları
-│   ├── setup.md                       # Ortam kurulum yönergeleri
-│   └── init-docs.md                   # Dokümantasyon üretme komutu
+├── commands/                          # CLI / slash command definitions (.md)
+│   ├── project-init.md                # New project initialization command
+│   ├── workflow.md                    # Workflow trigger command
+│   ├── review.md                      # Code and architecture review command
+│   ├── rules.md                       # Coding and style rules
+│   ├── setup.md                       # Environment setup instructions
+│   └── init-docs.md                   # Documentation generation command
 │
-├── design-practices/                  # Önceden tanımlı UI/UX tasarım pratikleri
-│   ├── login-screen-split.json        # İki kolonlu split login deseni
-│   └── login-screen-blur.json         # Modern blur efektli login deseni
+├── design-practices/                  # Predefined UI/UX design practices
+│   ├── login-screen-split.json        # Two-column split login pattern
+│   └── login-screen-blur.json         # Modern blur-effect login pattern
 │
-└── projects/                          # Oluşturulan projelere ait konfigürasyon kayıtları
->>>>>>> 9dedac147c5903601773520c34b338fa82251c46
+└── projects/                          # Configuration records for generated projects
 ```
 
-## Tavsiye Edilen Modeller
-deepseek-v4-flash
-
-**Her katmanın ortak çalışma prensibi:**
-- **Manifest (.json):** "Bu katman nedir, neleri içerir?" — AI'nın giriş noktası
-- **Rules / Patterns (.md):** "Ne yapılır, ne yapılmaz?" — zorunlu, yasak, önerilen ve opsiyonel kurallar
-- **Templates:** Somut kod şablonları — `{{Placeholder}}` formatı
-
 ---
 
-<<<<<<< HEAD
-### `00-registry/` — Versiyon ve Bağımlılık Otoritesi
+## 🧩 Layer Architecture
 
-| Dosya | İşlev |
-|-------|-------|
-| `versions.json` | Tüm paketlerin kilitli versiyonları |
-| `compatibility-matrix.json` | 50+ framework uyumluluk kuralı |
+### Recommended Model
 
-**Kural:** AI, paket versiyonlarını asla kendi başına atamaz. Tüm versiyonlar bu dosyadan okunur.
+`deepseek-v4-flash`
 
----
+### Common Working Principle of Every Layer
 
-### `01-globals/` — Evrensel Kodlama Standartları
+- **Manifest (`.json`):** "What is this layer and what does it contain?" — AI's entry point
+- **Rules / Patterns (`.md`):** "What should and should not be done?" — mandatory, forbidden, recommended, and optional rules
+- **Templates:** Concrete code templates using the `{{Placeholder}}` format
 
-| Dosya | Kapsam |
-|-------|--------|
-| `code-style.md` | İsimlendirme, format, import sıralaması (kebab-case, PascalCase, camelCase, BEM CSS) |
-| `strict-logic.md` | Immutability, early return, async/await, memory leak önleme |
-| `security.md` | Hardcoded secret yasak, XSS, SQL injection, CSRF, JWT, Helmet, rate limiting |
+### `00-registry/` — Version & Dependency Authority
+
+| File | Purpose |
+|---|---|
+| `versions.json` | Locked versions of all packages |
+| `compatibility-matrix.json` | 50+ framework compatibility rules |
+
+**Rule:** AI never assigns package versions on its own. All versions are read from this file.
+
+### `01-globals/` — Universal Coding Standards
+
+| File | Scope |
+|---|---|
+| `code-style.md` | Naming, formatting, import ordering (kebab-case, PascalCase, camelCase, BEM CSS) |
+| `strict-logic.md` | Immutability, early return, async/await, memory leak prevention |
+| `security.md` | No hardcoded secrets, XSS, SQL injection, CSRF, JWT, Helmet, rate limiting |
 | `performance.md` | Bundle < 200KB gzipped, code splitting, Promise.all, Web Vitals |
 
----
+### `02-domains/` — Business Logic & Data Layer
 
-### `02-domains/` — İş Mantığı ve Veri Katmanı
+Contains technology-independent business rules, database schemas, and API contracts that vary according to the project type.
 
-Proje türüne göre değişen, kullanılan teknolojiden bağımsız iş kuralları, veritabanı şemaları ve API sözleşmeleri.
+Each domain consists of three files:
 
-Her domain 3 dosyadan oluşur:
+| File | Content |
+|---|---|
+| `business-logic.md` | Business rules, workflows, state machines, validation logic |
+| `db-schema.json` | Tables, columns, types, indexes, foreign keys |
+| `api-contracts.json` | REST API endpoints and request/response schemas |
 
-| Dosya | İçerik |
-|-------|--------|
-| `business-logic.md` | İş kuralları, workflow'lar, state machine'ler, validasyon mantığı |
-| `db-schema.json` | Tablolar, sütunlar, tipler, index'ler, foreign key'ler |
-| `api-contracts.json` | REST API endpoint'leri, request/response şemaları |
+**25 Domains:**
 
-**25 Domain:**
+| Domain | Type | Domain | Type |
+|---|---|---|---|
+| `ai-playground` | AI interaction platform | `landing-page` | Landing page |
+| `analytics-tools` | Analytics dashboard | `marketplace` | Marketplace |
+| `blog-platform` | Blog/CMS | `micro-site` | Microsite |
+| `booking-system` | Reservation system | `news-portal` | News portal |
+| `cloud-storage` | Cloud storage | `portfolio` | Portfolio site |
+| `corporate-site` | Corporate website | `realestate-portal` | Real estate portal |
+| `crm-system` | Customer relationship management | `restaurant-pos` | Restaurant POS |
+| `crowdfunding` | Crowdfunding | `saas-dashboard` | SaaS dashboard |
+| `crypto-dashboard` | Cryptocurrency dashboard | `social-network` | Social network |
+| `documentation-hub` | Documentation hub | `ecommerce` | E-commerce |
+| `e-learning` | Online learning platform | `event-management` | Event management |
+| `fitness-tracker` | Fitness tracking | `forum-community` | Forum/community |
+| `job-board` | Job board | | |
 
-| Domain | Tür | Domain | Tür |
-|--------|-----|--------|-----|
-| `ai-playground` | AI etkileşim platformu | `landing-page` | Tanıtım sayfası |
-| `analytics-tools` | Analitik dashboard | `marketplace` | Pazar yeri |
-| `blog-platform` | Blog/CMS | `micro-site` | Mikro site |
-| `booking-system` | Rezervasyon sistemi | `news-portal` | Haber portalı |
-| `cloud-storage` | Bulut depolama | `portfolio` | Portfolyo sitesi |
-| `corporate-site` | Kurumsal web sitesi | `realestate-portal` | Emlak portalı |
-| `crm-system` | Müşteri ilişkileri yönetimi | `restaurant-pos` | Restoran POS |
-| `crowdfunding` | Kitle fonlaması | `saas-dashboard` | SaaS yönetim paneli |
-| `crypto-dashboard` | Kripto para dashboard | `social-network` | Sosyal ağ |
-| `documentation-hub` | Dokümantasyon merkezi | `ecommerce` | E-ticaret |
-| `e-learning` | Online eğitim platformu | `event-management` | Etkinlik yönetimi |
-| `fitness-tracker` | Fitness takip | `forum-community` | Forum/topluluk |
-| `job-board` | İş ilanı platformu | | |
+### `03-infrastructures/` — Production-Ready Infrastructure Layer
 
----
+Defines the application's operating environment and follows a **Blueprint-as-Code** approach.
 
-### `03-infrastructures/` — Production-Ready Altyapı Katmanı
+| Module | Content |
+|---|---|
+| `docker/` | Container and orchestration (Dockerfile + docker-compose templates, 11 production rules) |
+| `ci-cd/` | GitHub Actions and GitLab CI pipeline templates |
+| `monitoring/` | Prometheus + Grafana + Loki observability configuration |
+| `networking/` | Nginx, Traefik, Caddy reverse proxy configurations |
+| `secrets/` | Secret management, `.env.example`, secure configuration |
 
-Uygulamanın işletim ortamını tanımlar. "Blueprint-as-Code" yaklaşımıyla çalışır.
+**Cross-Cutting Rules (CC-001 — CC-007):** All placeholders must be replaced, `:latest` tags must not be used, healthchecks are mandatory, HTTPS is mandatory, secrets must never be stored in code, logs must be written as JSON to stdout, and containers must run as a non-root user.
 
-| Modül | İçerik |
-|-------|--------|
-| `docker/` | Container ve orchestration (Dockerfile + docker-compose şablonları, 11 production kuralı) |
-| `ci-cd/` | GitHub Actions ve GitLab CI pipeline şablonları |
-| `monitoring/` | Prometheus + Grafana + Loki gözlemlenebilirlik yapılandırması |
-| `networking/` | Nginx, Traefik, Caddy reverse proxy yapılandırmaları |
-| `secrets/` | Secret yönetimi, .env.example, güvenli yapılandırma |
+### `04-apps/` — Reference Architecture Library (Application Skeletons)
 
-**Cross-Cutting Kurallar (CC-001 — CC-007):** Tüm placeholder'lar değiştirilmeli, `:latest` tag kullanılmamalı, healthcheck zorunlu, HTTPS zorunlu, secret'lar asla kodda olmamalı, log'lar JSON stdout'a, non-root user ile container çalıştırılmalı.
+The reference architecture library used by AI agents when generating code.
 
----
+**13 Stacks:**
 
-### `04-apps/` — Referans Mimari Kütüphanesi (Application Skeletons)
-
-AI ajanlarının kod üretirken başvurduğu referans mimari kütüphanesi.
-
-**13 Stack:**
-
-| Stack | Tür | Dil |
-|-------|-----|-----|
+| Stack | Type | Language |
+|---|---|---|
 | `astrojs` | Static/SSR Frontend | JS/TS |
 | `nextjs` | SSR/SSG Frontend | JS/TS |
 | `nuxtjs` | SSR/SSG Frontend | JS/TS (Vue 3) |
@@ -256,141 +233,237 @@ AI ajanlarının kod üretirken başvurduğu referans mimari kütüphanesi.
 | `netwebapi` | RESTful Backend | C# (.NET 8) |
 | `netblazor` | WASM/Server Frontend | C# (.NET 8) |
 | `netmaui` | Native Mobile | C# (.NET 8) |
-| `node-express` | Hafif Backend | JS/TS (Node.js) |
-| `nodejs` | Genel Backend | JS/TS (Node.js) |
+| `node-express` | Lightweight Backend | JS/TS (Node.js) |
+| `nodejs` | General Backend | JS/TS (Node.js) |
 | `react-native` | Cross-platform Mobile | JS/TS |
 
-Her stack: `manifest.json` (teknik kısıtlar) + `rules.md` (best practice'ler) + `template/` (kod şablonları)
+Each stack contains `manifest.json` (technical constraints) + `rules.md` (best practices) + `template/` (code templates).
+
+### `05-frameworks/` — UI Framework & Library Rules
+
+Defines how additional packages included in a project should be configured and used.
+
+**16 Frameworks:** `tailwindcss`, `gsap`, `swiper`, `framer-motion`, `three`, `iconify`, `fancyapps`, `chartjs`, `zustand`, `pinia`, `prisma`, `mongoose`, `mssql`, `redis`, `socket-io`, `jwt`
+
+Each framework contains `config-rules.md` (configuration) + `best-practices.md` (performance, security) + `capability.json` (API exposed to AI).
+
+### `06-datalayer/` — Database Integration Layer
+
+Database connection and integration solutions required by the project.
+
+| Source | Content |
+|---|---|
+| `postgresql/` | PostgreSQL connection configuration and integration template |
+| `mongodb/` | MongoDB ODM configuration |
+| `redis/` | Redis cache and message broker integration |
+| `mssql/` | MSSQL connection and query configuration |
+| `sqlite/` | SQLite embedded database integration |
+
+Each source contains `capability.json` + `implementation_pattern.md` + `integration_template/`.
+
+### `07-Orders/` — Master Prompt Repository
+
+The output layer of the Blueprint system. Project requests received from users are stored here as compiled master prompt files through the cache-reversing process.
+
+Each master prompt contains the complete project recipe in a single file: project summary, domain business logic, global rules, app stack configuration, framework rules, version information, and build instructions.
 
 ---
 
-### `05-frameworks/` — UI Framework ve Kütüphane Kuralları
+## 🔄 Cache-Reversing Architecture
 
-Projeye dahil edilen ek paketlerin nasıl yapılandırılacağını ve kullanılacağını belirtir.
+The system works with a **cache-reversing** pattern. In the traditional approach, AI repeatedly looks back at layers whenever it needs information during the build. Cache-reversing reverses this flow: **all required information is collected before the build and embedded into the master prompt.**
 
-**16 Framework:** `tailwindcss`, `gsap`, `swiper`, `framer-motion`, `three`, `iconify`, `fancyapps`, `chartjs`, `zustand`, `pinia`, `prisma`, `mongoose`, `mssql`, `redis`, `socket-io`, `jwt`
-
-Her framework: `config-rules.md` (konfigürasyon) + `best-practices.md` (performans, güvenlik) + `capability.json` (AI'ya açık API)
-
----
-
-### `06-datalayer/` — Veritabanı Entegrasyon Katmanı
-
-Projenin ihtiyaç duyduğu veritabanı bağlantı ve entegrasyon çözümleri.
-
-| Kaynak | İçerik |
-|--------|--------|
-| `postgresql/` | PostgreSQL bağlantı yapılandırması ve integration template |
-| `mongodb/` | MongoDB ODM yapılandırması |
-| `redis/` | Redis cache ve message broker entegrasyonu |
-| `mssql/` | MSSQL bağlantı ve sorgu yapılandırması |
-| `sqlite/` | SQLite embedded veritabanı entegrasyonu |
-
-Her kaynak: `capability.json` + `implementation_pattern.md` + `integration_template/`
-
----
-
-### `07-Orders/` — Master-Prompt Deposu
-
-Blueprint sisteminin çıktı katmanı. Kullanıcıdan gelen proje talepleri, cache-reversing süreciyle derlenmiş master-prompt dosyaları halinde burada saklanır.
-
-Her master-prompt, projenin tüm reçetesini tek dosyada içerir: proje özeti, domain iş mantığı, global kurallar, app stack konfigürasyonu, framework kuralları, versiyon bilgileri ve build talimatları.
-
----
-
-## 🔄 Cache-Reversing Mimarisi
-
-Bu sistem **cache-reversing** pattern'i ile çalışır. Geleneksel yaklaşımda AI build sırasında ihtiyaç duydukça katmanlara tekrar tekrar bakar. Cache-reversing bu akışı tersine çevirir: **tüm gerekli bilgi, build'den önce toplanıp master-prompt'e gömülür.**
-
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
-│  FAZ 1: CREATE — Master-Prompt Oluşturma (Seçici Katman Taraması)   │
+│  PHASE 1: CREATE — Master Prompt Generation (Selective Scanning)    │
 │                                                                     │
-│  Kullanıcı parametreleri → AI ilgili katmanları seçici biçimde tarar│
-│  → 07-Orders/{name}-master-prompt.md (tüm reçete tek dosyada)       │
+│  User parameters → AI selectively scans relevant layers             │
+│  → 07-Orders/{name}-master-prompt.md (complete recipe in one file) │
 ├─────────────────────────────────────────────────────────────────────┤
-│  FAZ 2: BUILD — Master-Prompt'tan Proje Üretimi                     │
+│  PHASE 2: BUILD — Project Generation from Master Prompt             │
 │                                                                     │
-│  AI sadece master-prompt'i okur, katmanlara geri dönmez.            │
+│  AI reads only the master prompt and does not return to the layers. │
 ├─────────────────────────────────────────────────────────────────────┤
-│  FAZ 3: REVISION — Değişiklik ve Güncelleme                         │
+│  PHASE 3: REVISION — Changes & Updates                              │
 │                                                                     │
-│  Kullanıcı değişiklik ister → AI master-prompt'i doğrudan günceller  │
-│  (katmanlar yeniden taranmaz)                                        │
+│  User requests a change → AI directly updates the master prompt     │
+│  (layers are not scanned again)                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Scope Bazlı Filtreleme
+### Scope-Based Filtering
 
 | Scope | Domain | 03-infra | 06-datalayer |
-|-------|--------|----------|--------------|
-| `frontend` + backend yok | Sadece UI/UX/SEO | Atlanır | Atlanır |
-| `frontend` + backend var | UI/UX + API/DB | Sadece deployment | İlgili olanlar |
-| `backend` | Sadece backend | Tamamı | Tamamı |
-| `fullstack` | Tamamı | Tamamı | Tamamı |
+|---|---|---|---|
+| `frontend` + no backend | UI/UX/SEO only | Skipped | Skipped |
+| `frontend` + backend | UI/UX + API/DB | Deployment only | Relevant ones |
+| `backend` | Backend only | All | All |
+| `fullstack` | All | All | All |
 
 ---
 
-## 🚀 Kullanım
+## 🗂️ Ready Stack Templates Matrix
 
-### Parametreler
+The system includes **12 industry-standard architecture templates**:
 
-| Parametre | Açıklama | Örnek |
-|-----------|----------|-------|
-| `--project-type` | Proje türü (02-domains'teki domain adı) | `landing-page`, `ecommerce` |
-| `--apps` | Kullanılacak stack (04-apps'teki ad) | `html`, `nextjs`, `netwebapi` |
-| `--scope` | Kapsam | `frontend`, `backend`, `fullstack` |
-| `--frameworks` | Framework listesi (virgülle ayrılmış) | `tailwindcss,gsap,iconify` |
-| `--feature` | Proje detayları (renk, font, içerik) | Serbest metin |
-| `--name` | Proje adı | `Avşa Pansiyon` |
+| # | Stack ID | Project Type | Frontend | Backend | Database | Deployment |
+|---|---|---|---|---|---|---|
+| 1 | `corporate-portfolio` | Corporate & Portfolio | Astro.js (Tailwind) | Node.js (Optional) | SQLite | Vercel |
+| 2 | `landing-page` | Landing Page | Astro.js | - | - | Vercel |
+| 3 | `news-magazine` | News & Media Portal | Astro.js | Node.js / .NET | MSSQL | Vercel |
+| 4 | `ecommerce` | E-commerce Platform | Nuxt.js (SSR) | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 5 | `classifieds` | Classifieds & Listings | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 6 | `booking` | Appointment & Reservation | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 7 | `lms` | E-learning System | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 8 | `saas-crm` | SaaS & CRM Platform | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
+| 9 | `admin-panel` | Custom Administration Panel | Nuxt.js / Blazor | .NET 8/9 Web API | MSSQL | Vercel / Azure |
+| 10 | `mobile-backend` | Mobile Backend | React Native | .NET 8/9 Web API | MSSQL | Azure |
+| 11 | `native-mobile` | Native Mobile (Cross) | .NET MAUI | .NET 8/9 Web API | MSSQL / SQLite | Azure + Stores |
+| 12 | `hybrid-blazor-maui` | Hybrid Mobile & Desktop | Blazor Hybrid (MAUI) | .NET 8/9 Web API | MSSQL / SQLite | Azure + Stores |
 
-### Örnek Komut
+For detailed stack configuration parameters, see [`stacks/README.md`](stacks/README.md).
 
+---
+
+## 🔗 Two-Tier Agent Orchestration
+
+According to the rules in `agents-stack-mapping.json`, agents operate in a hierarchical two-level structure.
+
+### 1. Tier: Department Category
+
+- `backend` — Database & API development
+- `frontend` — User interface, state management, components
+- `qa` — Test strategy, test scenarios, mock tests
+- `devops` — CI/CD pipelines, Docker, cloud deployment
+- `project-manager` — Requirements analysis, sprint breakdown
+
+### 2. Tier: Domain Specialist (Subagent)
+
+A targeted specialist is activated according to the stack requirements of a category:
+
+- **Backend:** `dotnet-developer`, `nodejs-developer`, `database-developer`
+- **Frontend:** `astro-developer`, `nuxt-developer`, `mobile-developer`, `ui-designer`
+- **DevOps:** `vercel-deploy`, `azure-deploy`, `ci-cd-pipeline`
+- **QA:** `testing-strategy`, `test-cases`
+- **PM:** `requirements`, `progress-tracking`
+
+### ⚡ Execution Strategies
+
+- **`serial`:** The previous agent's output becomes the next agent's input (e.g. DB Schema ➔ API Controller ➔ Frontend Page ➔ QA Test).
+- **`parallel`:** Independent tasks are executed simultaneously (e.g. deployment configuration and documentation).
+
+---
+
+## 🚀 Quick Start
+
+### 1. Start a New Project (`project-init`)
+
+Select a project type to initialize the project and its architecture configuration within seconds:
+
+```bash
+/project-init my-store --stack ecommerce --name "Online Store"
 ```
+
+**What happens?**
+
+1. `projects/my-store.json` configuration is generated.
+2. The selected `ecommerce.json` stack rules are copied into the project.
+3. The project directory and basic architecture skeleton are prepared.
+
+### 2. Feature Development Flow (`feature-dev`)
+
+To develop a new feature in an existing project:
+
+```bash
+/workflow feature-dev --stack ecommerce --feature "Shopping Cart and Discount Coupon Module"
+```
+
+Agents work sequentially to produce:
+
+- 🗄️ **Database Subagent:** SQL migration scripts and table models
+- ⚡ **Backend Subagent:** CQRS/Controller, Service, and DTO classes
+- 🖥️ **Frontend Subagent:** Vue/Nuxt components, Pinia store, and responsive pages
+- 🧪 **QA Subagent:** Unit & Integration test files
+- 📊 **DevOps Subagent:** Deployment & CI/CD configuration
+
+---
+
+## 🛠️ Integrated Slash Commands
+
+| Command | Description | Example |
+|---|---|---|
+| `/project-init` | Creates a new project configuration using the selected stack | `/project-init blog-app --stack news-magazine` |
+| `/workflow` | Runs defined workflows (`feature-dev`, `test`, `lint-fix`, `deploy-check`) | `/workflow feature-dev --stack saas-crm --feature "Billing Module"` |
+| `/review` | Reviews code quality, security, and architectural compliance | `/review --scope full` |
+| `/rules` | Lists project coding standards and best-practice rules | `/rules` |
+| `/setup` | Provides environment dependencies and developer setup steps | `/setup` |
+| `/init-docs` | Automatically generates project architecture and API documentation | `/init-docs` |
+
+---
+
+## 🧰 Usage
+
+### Parameters
+
+| Parameter | Description | Example |
+|---|---|---|
+| `--project-type` | Project type (domain name from `02-domains`) | `landing-page`, `ecommerce` |
+| `--apps` | Stack to use (name from `04-apps`) | `html`, `nextjs`, `netwebapi` |
+| `--scope` | Scope | `frontend`, `backend`, `fullstack` |
+| `--frameworks` | Framework list (comma-separated) | `tailwindcss,gsap,iconify` |
+| `--feature` | Project details (colors, fonts, content) | Free text |
+| `--name` | Project name | `Avşa Pension` |
+
+### Example Parameters
+
+```text
 --project-type "landing-page"
 --apps "html"
 --scope "frontend"
 --frameworks "tailwindcss,swiper,iconify,gsap"
---feature "Koyu temalı, tek sayfa spor salonu tanıtım sitesi"
---name "Zafer Spor Salonu"
+--feature "Dark-themed, single-page gym promotional website"
+--name "Zafer Gym"
 ```
 
-### Süreç
+### Process
 
-**Aşama 1 — Master-Prompt Oluşturma:**
-1. AI, kullanıcı parametrelerini alır
-2. Scope'a göre ilgili katmanları seçici biçimde tarar
-3. Tüm bilgiyi tek bir master-prompt'ta birleştirir (`07-Orders/`)
-4. Kullanıcıya incelemesi için sunar
+**Phase 1 — Master Prompt Generation:**
 
-**Aşama 2 — Proje Build:**
-1. Kullanıcı master-prompt'u onaylar (`<!-- APPROVED -->`)
-2. AI sadece master-prompt'i okuyarak projeyi inşa eder
-3. Katmanlara geri dönmez — tüm bilgi master-prompt'tadır
+1. AI receives the user parameters.
+2. It selectively scans the relevant layers according to the scope.
+3. It combines all information into a single master prompt (`07-Orders/`).
+4. It presents the result to the user for review.
 
----
+**Phase 2 — Project Build:**
 
-## 🤖 Yeni Bir AI ile Kullanım
-
-Bu sistem, herhangi bir AI modeli tarafından sıfır bağlamla kullanılabilir:
-
-1. **Sistem Prompt'u:** `system_prompt.md` dosyasını AI'ya sistem prompt'u olarak verin
-2. **Dizin Erişimi:** `ai-blueprint-core/` dizininin tamamına okuma erişimi
-3. **Kullanıcı Parametreleri:** İlk mesaj olarak parametreleri girin
-
-AI, `system_prompt.md`'deki talimatlarla katmanları seçici biçimde tarar, master-prompt oluşturur ve projeyi inşa eder.
-
-**Önemli notlar:**
-- AI katmanları asla kendi başına değiştirmez, sadece okur
-- AI, master-prompt'ta `<!-- APPROVED -->` header'ı olmadan build yapmaz
-- Revizyon istekleri doğrudan master-prompt üzerinde yapılır, katmanlar yeniden taranmaz
+1. The user approves the master prompt (`<!-- APPROVED -->`).
+2. AI builds the project using only the master prompt.
+3. It does not return to the layers — all required information is already in the master prompt.
 
 ---
 
-## 📋 Placeholder Konvansiyonları
+## 🤖 Using the System with a New AI
 
-| Format | Örnek |
-|--------|-------|
+This system can be used by any AI model with zero initial context:
+
+1. **System Prompt:** Provide `system_prompt.md` to the AI as its system prompt.
+2. **Directory Access:** Give read access to the entire `ai-blueprint-core/` directory.
+3. **User Parameters:** Enter the parameters as the first message.
+
+The AI selectively scans the layers according to the instructions in `system_prompt.md`, creates the master prompt, and builds the project.
+
+**Important notes:**
+
+- AI never modifies the layers on its own; it only reads them.
+- AI does not build without the `<!-- APPROVED -->` header in the master prompt.
+- Revision requests are made directly on the master prompt; the layers are not scanned again.
+
+---
+
+## 📋 Placeholder Conventions
+
+| Format | Example |
+|---|---|
 | PascalCase | `{{ProjectName}}` |
 | camelCase | `{{projectName}}` |
 | kebab-case | `{{project-name}}` |
@@ -399,167 +472,78 @@ AI, `system_prompt.md`'deki talimatlarla katmanları seçici biçimde tarar, mas
 
 ---
 
-## 🎯 Hedef
+## 🎯 Goal
 
-AI'nın, bir iş mantığı tanımından yola çıkarak, best practice'lere uygun, production-ready bir proje üretebilmesi.
+Enable AI to generate a **production-ready project that follows best practices from a business logic definition**.
 
-Her şey tek bir prensibe dayanır: AI'ya her şeyi anlatmak yerine, **sadece o an ihtiyacı olanı, doğru formatta, kesin kurallarla** vermek.
-=======
-## 🗂️ Hazır Stack Şablonları Matrisi
+Everything is based on one principle:
 
-Sistem bünyesinde 12 adet endüstri standardı mimari şablon yer alır:
-
-| # | Stack ID | Proje Türü | Frontend | Backend | Database | Deployment |
-|---|----------|------------|----------|---------|----------|------------|
-| 1 | `corporate-portfolio` | Kurumsal & Portfolyo | Astro.js (Tailwind) | Node.js (Opsiyonel) | SQLite | Vercel |
-| 2 | `landing-page` | Landing Page | Astro.js | - | - | Vercel |
-| 3 | `news-magazine` | Haber & Medya Portalı | Astro.js | Node.js / .NET | MSSQL | Vercel |
-| 4 | `ecommerce` | E-Ticaret Platformu | Nuxt.js (SSR) | .NET 8/9 Web API | MSSQL | Vercel + Azure |
-| 5 | `classifieds` | İlan & Seri İlanlar | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
-| 6 | `booking` | Randevu & Rezervasyon | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
-| 7 | `lms` | E-Öğrenme Sistemi | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
-| 8 | `saas-crm` | SaaS & CRM Platformu | Nuxt.js | .NET 8/9 Web API | MSSQL | Vercel + Azure |
-| 9 | `admin-panel` | Özel Yönetim Paneli | Nuxt.js / Blazor | .NET 8/9 Web API | MSSQL | Vercel / Azure |
-| 10 | `mobile-backend` | Mobil Backend | React Native | .NET 8/9 Web API | MSSQL | Azure |
-| 11 | `native-mobile` | Native Mobil (Cross) | .NET MAUI | .NET 8/9 Web API | MSSQL / SQLite | Azure + Stores |
-| 12 | `hybrid-blazor-maui` | Hibrit Mobil & Masaüstü | Blazor Hybrid (MAUI) | .NET 8/9 Web API | MSSQL / SQLite | Azure + Stores |
-
-Detaylı stack konfigürasyon parametreleri için [stacks/README.md](stacks/README.md) dosyasını inceleyin.
+> Instead of telling AI everything, provide **only what it needs at that moment, in the correct format, with precise rules**.
 
 ---
 
-## 🔗 İki Kademeli Ajan Orkestrasyonu
+## 🤝 Contributing Guide
 
-`agents-stack-mapping.json` kurallarına göre ajanlar hiyerarşik iki seviyede çalışır:
+Community contributions are welcome! You can add a new technology stack, agent specialization, or workflow by following the steps below.
 
-### 1. Seviye: Departman Kategorisi (Category)
-- `backend` (Veritabanı & API geliştirme)
-- `frontend` (Kullanıcı arayüzü, state yönetimi, componentler)
-- `qa` (Test stratejisi, test senaryoları, mock testler)
-- `devops` (CI/CD pipeline, Docker, cloud deployment)
-- `project-manager` (Gereksinim analizi, sprint breakdown)
-
-### 2. Seviye: Alan Uzmanı (Subagent)
-Bir kategoride stack'in gereksinimine göre nokta atışı uzman devreye girer:
-- **Backend:** `dotnet-developer`, `nodejs-developer`, `database-developer`
-- **Frontend:** `astro-developer`, `nuxt-developer`, `mobile-developer`, `ui-designer`
-- **DevOps:** `vercel-deploy`, `azure-deploy`, `ci-cd-pipeline`
-- **QA:** `testing-strategy`, `test-cases`
-- **PM:** `requirements`, `progress-tracking`
-
-### ⚡ Yürütme Stratejileri
-- **`serial` (Sıralı):** Önceki ajanın çıktısı sonraki ajanın girdisi olur (örn. DB Şeması ➔ API Controller ➔ Frontend Sayfası ➔ QA Testi).
-- **`parallel` (Eşzamanlı):** Birbirine bağımlı olmayan görevler aynı anda yürütülür (örn. Dağıtım yapılandırmaları, dokümantasyon).
-
----
-
-## 🚀 Hızlı Başlangıç
-
-### 1. Yeni Proje Başlatma (`project-init`)
-
-Bir proje türünü seçerek projeyi ve mimari konfigürasyonunu saniyeler içinde başlatın:
+### 🌟 Step-by-Step Contribution Process (GitHub Workflow)
 
 ```bash
-/project-init my-store --stack ecommerce --name "Online Mağaza"
-```
-
-**Ne gerçekleşir?**
-1. `projects/my-store.json` konfigürasyonu üretilir.
-2. Seçilen `ecommerce.json` stack kuralları projeye kopyalanır.
-3. Proje dizini ve temel mimari iskeleti hazırlanır.
-
-### 2. Özellik Geliştirme Akışı (`feature-dev`)
-
-Mevcut bir projede yeni bir özellik geliştirmek için:
-
-```bash
-/workflow feature-dev --stack ecommerce --feature "Sepet ve İndirim Kuponu Modülü"
-```
-
-Ajanlar sırayla çalışarak şunları üretir:
-- 🗄️ **Database Subagent:** SQL migration scriptleri ve tablo modelleri
-- ⚡ **Backend Subagent:** CQRS/Controller, Service ve DTO sınıfları
-- 🖥️ **Frontend Subagent:** Vue/Nuxt componentleri, Pinia store ve responsive sayfalar
-- 🧪 **QA Subagent:** Unit & Integration test dosyaları
-- 📊 **DevOps Subagent:** Deployment & CI/CD yapılandırması
-
----
-
-## 🛠️ Entegre Komutlar (Slash Commands)
-
-| Komut | Açıklama | Örnek |
-|-------|----------|-------|
-| `/project-init` | Seçilen stack ile yeni bir proje konfigürasyonu oluşturur | `/project-init blog-app --stack news-magazine` |
-| `/workflow` | Tanımlı iş akışlarını (`feature-dev`, `test`, `lint-fix`, `deploy-check`) çalıştırır | `/workflow feature-dev --stack saas-crm --feature "Fatura Modülü"` |
-| `/review` | Kod kalitesi, güvenlik ve mimari uyumluluk incelemesi yapar | `/review --scope full` |
-| `/rules` | Proje kodlama standartları ve best-practice kurallarını listeler | `/rules` |
-| `/setup` | Ortam bağımlılıkları ve geliştirici kurulum adımlarını sunar | `/setup` |
-| `/init-docs` | Proje mimarisi ve API dokümantasyonunu otomatik üretir | `/init-docs` |
-
----
-
-## 🤝 Katkıda Bulunma Rehberi (Contributing)
-
-Topluluk katkılarını memnuniyetle karşılıyoruz! Yeni bir teknoloji stack'i, yeni bir ajan uzmanlığı veya workflow eklemek için aşağıdaki adımları izleyebilirsiniz.
-
-### 🌟 Adım Adım Katkı Süreci (GitHub Workflow)
-
-```bash
-# 1. Depoyu kendi GitHub hesabınıza Fork edin ve lokale klonlayın
-git clone https://github.com/<kullanici-adiniz>/ai-blueprint-core.git
+# 1. Fork the repository to your GitHub account and clone it locally
+git clone https://github.com/<your-username>/ai-blueprint-core.git
 cd ai-blueprint-core
 
-# 2. Yeni bir feature/fix dalı (branch) açın
+# 2. Create a new feature/fix branch
 git checkout -b feature/add-fastapi-stack
 
-# 3. Geliştirmelerinizi yapın ve doğrulayın
-# (Örn: Yeni stack veya yeni agent tanımı ekleme)
+# 3. Make and validate your changes
+# (e.g. add a new stack or agent definition)
 
-# 4. Değişikliklerinizi commit edin (Conventional Commits standardı)
+# 4. Commit your changes (Conventional Commits standard)
 git commit -m "feat(stacks): add fastapi-postgresql python stack template"
 
-# 5. Kendi forkladığınız depoya pushlayın
+# 5. Push to your fork
 git push origin feature/add-fastapi-stack
 
-# 6. GitHub üzerinden ana depoya (upstream) Pull Request (PR) açın
+# 6. Open a Pull Request (PR) to the main repository through GitHub
 ```
 
----
+### 🧩 1. Adding a New Stack
 
-### 🧩 1. Yeni Bir Stack Eklemek
-1. `stacks/<yeni-stack-id>.json` dosyasını oluşturun (`ecommerce.json` dosyasını şablon olarak baz alabilirsiniz).
-2. Stack'in `frontend`, `backend`, `database`, `deploy`, `uiLibraries` ve `departmentPrompts` alanlarını doldurun.
-3. `agents-stack-mapping.json` dosyasına girerek stack koşulunu (`stackAgentRules`) ekleyin.
-4. `stacks/README.md` ve ana `README.md` matrisine yeni stack'i dahil edin.
+1. Create `stacks/<new-stack-id>.json` (you can use `ecommerce.json` as a template).
+2. Fill in the stack's `frontend`, `backend`, `database`, `deploy`, `uiLibraries`, and `departmentPrompts` fields.
+3. Add the stack condition (`stackAgentRules`) to `agents-stack-mapping.json`.
+4. Add the new stack to `stacks/README.md` and the main `README.md` matrix.
 
-### 🤖 2. Yeni Bir Ajan (Subagent) Eklemek
-1. `agents/<kategori>/<subagent-adi>.md` dosyasını oluşturun.
-2. Format olarak `# Rol`, `## Sorumluluklar`, `## Çıktı Formatı`, `## Kodlama Standartları` başlıklarını kullanın.
-3. `agents-stack-mapping.json` içerisindeki `categories[kategori].subagents` listesine yeni subagent'ı ekleyin.
+### 🤖 2. Adding a New Agent (Subagent)
 
-### 📐 3. Yeni Bir Tasarım Pratiği (Design Practice) Eklemek
-1. `design-practices/<pratik-adi>.json` dosyasını oluşturun.
-2. Bileşen yapısı, responsive kurallar, renk paleti ve erişilebilirlik (a11y) standartlarını tanımlayın.
+1. Create `agents/<category>/<subagent-name>.md`.
+2. Use the following headings: `# Role`, `## Responsibilities`, `## Output Format`, `## Coding Standards`.
+3. Add the new subagent to the `categories[category].subagents` list in `agents-stack-mapping.json`.
 
----
+### 📐 3. Adding a New Design Practice
 
-## 🗺️ Yol Haritası (Roadmap)
-
-- [x] 12 Temel Stack Şablonu & İki Kademeli Ajan Orkestrasyonu
-- [x] Node.js Tabanlı `feature-dev.mjs` Pipeline Motoru
-- [ ] **Python / FastAPI + PostgreSQL** Stack Şablonu
-- [ ] **Go / Fiber + PostgreSQL** Stack Şablonu
-- [ ] **MCP (Model Context Protocol) Server Entegrasyonu** (Ajanların IDE ve CLI ile doğrudan haberleşmesi)
-- [ ] Otomatik Benchmark & Kod Kalite Puanlama Sistemi
-- [ ] Çoklu Dil Desteği (EN / TR Döküman Seçeneği)
+1. Create `design-practices/<practice-name>.json`.
+2. Define component structure, responsive rules, color palette, and accessibility (a11y) standards.
 
 ---
 
-## 📄 Lisans
+## 🗺️ Roadmap
 
-Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır. Dilediğiniz gibi kullanabilir, özelleştirebilir ve katkıda bulunabilirsiniz.
+- [x] 12 Core Stack Templates & Two-Tier Agent Orchestration
+- [x] Node.js-Based `feature-dev.mjs` Pipeline Engine
+- [ ] **Python / FastAPI + PostgreSQL** Stack Template
+- [ ] **Go / Fiber + PostgreSQL** Stack Template
+- [ ] **MCP (Model Context Protocol) Server Integration** (Direct communication between agents and IDE/CLI)
+- [ ] Automated Benchmark & Code Quality Scoring System
+- [ ] Multi-Language Support (EN / TR Documentation Option)
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE). You are free to use, customize, and contribute to it.
 
 <div align="center">
-  <sub>Yapay zeka odaklı yazılım mimarisi geliştirmeyi standartlaştırmak amacıyla geliştirilmiştir.</sub>
+  <sub>Built to standardize AI-focused software architecture development.</sub>
 </div>
->>>>>>> 9dedac147c5903601773520c34b338fa82251c46

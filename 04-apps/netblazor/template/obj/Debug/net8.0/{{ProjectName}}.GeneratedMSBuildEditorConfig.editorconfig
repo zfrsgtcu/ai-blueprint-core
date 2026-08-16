@@ -13,31 +13,31 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = browser
 build_property.RootNamespace = {{ProjectName}}
 build_property.RootNamespace = {{ProjectName}}
-build_property.ProjectDir = D:\Projeler\create-projects\ai-blueprint-core\04-apps\netblazor\template\
+build_property.ProjectDir = D:\Projeler\github\ai-blueprint-core\04-apps\netblazor\template\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = false
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = D:\Projeler\create-projects\ai-blueprint-core\04-apps\netblazor\template
+build_property.MSBuildProjectDirectory = D:\Projeler\github\ai-blueprint-core\04-apps\netblazor\template
 build_property._RazorSourceGeneratorDebug = 
 
-[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netblazor/template/App.razor]
+[D:/Projeler/github/ai-blueprint-core/04-apps/netblazor/template/App.razor]
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netblazor/template/Pages/Index.razor]
+[D:/Projeler/github/ai-blueprint-core/04-apps/netblazor/template/Pages/Index.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSW5kZXgucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netblazor/template/Shared/MainLayout.razor]
+[D:/Projeler/github/ai-blueprint-core/04-apps/netblazor/template/Shared/MainLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXE1haW5MYXlvdXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netblazor/template/Shared/NavMenu.razor]
+[D:/Projeler/github/ai-blueprint-core/04-apps/netblazor/template/Shared/NavMenu.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXE5hdk1lbnUucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netblazor/template/_Imports.razor]
+[D:/Projeler/github/ai-blueprint-core/04-apps/netblazor/template/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 

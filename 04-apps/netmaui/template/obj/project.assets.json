@@ -38582,11 +38582,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Projeler\\create-projects\\ai-blueprint-core\\04-apps\\netmaui\\template\\{{ProjectName}}.csproj",
+      "projectUniqueName": "D:\\Projeler\\github\\ai-blueprint-core\\04-apps\\netmaui\\template\\{{ProjectName}}.csproj",
       "projectName": "{{ProjectName}}",
-      "projectPath": "D:\\Projeler\\create-projects\\ai-blueprint-core\\04-apps\\netmaui\\template\\{{ProjectName}}.csproj",
+      "projectPath": "D:\\Projeler\\github\\ai-blueprint-core\\04-apps\\netmaui\\template\\{{ProjectName}}.csproj",
       "packagesPath": "C:\\Users\\ZAFER\\.nuget\\packages\\",
-      "outputPath": "D:\\Projeler\\create-projects\\ai-blueprint-core\\04-apps\\netmaui\\template\\obj\\",
+      "outputPath": "D:\\Projeler\\github\\ai-blueprint-core\\04-apps\\netmaui\\template\\obj\\",
       "projectStyle": "PackageReference",
       "crossTargeting": true,
       "fallbackFolders": [
