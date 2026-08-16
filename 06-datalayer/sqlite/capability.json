@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "description": "SQLite Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. Gömülü, sunucusuz, tek dosya SQL veritabanı.",
+    "resource_type": "data-layer",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "sqlite",
+  "category": "data-layer",
+  "display_name": "SQLite",
+  "description": "Sunucusuz, sıfır konfigürasyonlu, tek dosyada çalışan gömülü SQL veritabanı. Taşınabilir, cross-platform, public domain. Mobil, edge ve lightweight uygulamalar için ideal.",
+
+  "installation_context": {
+    "nodejs": {
+      "npm": ["better-sqlite3"],
+      "npm_dev": [],
+      "connection_string_format": "dosya yolu: ./data/{{project-name}}.db",
+      "orm_options": ["Drizzle ORM (npm: drizzle-orm better-sqlite3 drizzle-kit)", "Knex.js (npm: knex better-sqlite3)"],
+      "entry_point": "src/config/database.js"
+    },
+    "netwebapi": {
+      "nuget": ["Microsoft.EntityFrameworkCore.Sqlite"],
+      "connection_string_format": "Data Source=./data/{{project-name}}.db",
+      "entry_point": "Program.cs (builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(...)))"
+    }
+  },
+
+  "config_template": "integration_template/sqlite-config.template",
+  "usage_pattern": "Dosya tabanlı, sunucusuz çalışır. docker-compose'da servis tanımı GEREKTİRMEZ. Production'da yazma eşzamanlılığı sınırlıdır (single-writer). Yüksek trafikli production için PostgreSQL'e geçiş önerilir.",
+
+  "verification_steps": [
+    "Veritabanı dosyası `data/` dizininde, .gitignore'da mı?",
+    "WAL (Write-Ahead Logging) modu aktif mi?",
+    "Concurrent yazma senaryosu test edildi mi?",
+    "Migration mekanizması var mı?",
+    "Production için uygun mu? (düşük trafik = uygun, yüksek trafik = postgresql)"
+  ],
+
+  "docker_compose_requirement": {
+    "note": "SQLite sunucusuzdur, docker-compose servisi GEREKTİRMEZ. Veritabanı dosyası container içinde veya bind mount volume ile saklanır.",
+    "volume_mount": "./data:/app/data"
+  }
+}

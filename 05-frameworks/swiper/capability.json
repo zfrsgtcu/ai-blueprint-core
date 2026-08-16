@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "description": "Swiper Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. Modern, touch-friendly slider/carousel kütüphanesi.",
+    "resource_type": "ui-lib",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "swiper",
+  "category": "ui-lib",
+  "display_name": "Swiper",
+  "description": "Modern, performanslı, touch-friendly slider/carousel kütüphanesi. Mobil-first, CSS Scroll Snap tabanlı, donanım hızlandırmalı geçişler, virtual slides, lazy loading, thumbs, fade/coverflow/creative efektleri.",
+
+  "installation_context": {
+    "react": {
+      "npm": ["swiper"],
+      "usage": "import { Swiper, SwiperSlide } from 'swiper/react'; — Navigation, Pagination modülleri import edilir",
+      "css_import": "import 'swiper/css'; import 'swiper/css/navigation'; import 'swiper/css/pagination';",
+      "entry_point": "Component içi Swiper kullanımı"
+    },
+    "vue": {
+      "npm": ["swiper"],
+      "usage": "import { Swiper, SwiperSlide } from 'swiper/vue';",
+      "css_import": "import 'swiper/css'; // main.ts içinde",
+      "entry_point": "Component içi Swiper kullanımı"
+    },
+    "html": {
+      "cdn": "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css\" />",
+      "cdn_js": "<script src=\"https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js\"></script>"
+    }
+  },
+
+  "config_template": "integration_template/swiper-carousel.template",
+  "usage_pattern": "Swiper container + SwiperSlide child'ları ile kullanılır. Navigation, Pagination, Scrollbar, Autoplay, Thumbs modülleri ihtiyaca göre import edilir. Erişilebilirlik için `a11y` modülü zorunludur. CSS import'ları unutulmamalıdır.",
+
+  "verification_steps": [
+    "swiper + swiper/css import'ları yapıldı mı?",
+    "a11y modülü içe aktarıldı mı? (Swiper v11'de varsayılan)",
+    "Slide'lara aria-label ve aria-roledescription verilmiş mi?",
+    "Navigation butonlarına aria-label eklenmiş mi?",
+    "prefers-reduced-motion kontrolü var mı? (autoplay disable)",
+    "Lazy loading kullanılıyorsa, placeholder boyutları tanımlanmış mı? (CLS önleme)",
+    "Virtual slides gerekiyor mu? (>50 slide için)"
+  ]
+}

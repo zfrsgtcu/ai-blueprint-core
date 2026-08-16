@@ -1,0 +1,150 @@
+{
+  "_meta": {
+    "description": ".NET 8 Web API stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Controller-based veya Minimal API, EF Core, JWT auth, FluentValidation ve Serilog ile kurumsal backend.",
+    "stack": "netwebapi",
+    "display_name": ".NET Web API",
+    "type": "backend_api",
+    "language": "C# 12 (.NET 8)",
+    "version": "net8.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": ".NET 8 Web API",
+    "description": "C# ile kurumsal REST API. Controller-based (tercih edilen) veya Minimal API yaklaşımları. Entity Framework Core 8, JWT Bearer authentication, FluentValidation ve Serilog ile production-ready backend.",
+    "use_cases": [
+      "E-Ticaret backend",
+      "SaaS API",
+      "LMS backend",
+      "Booking sistemi API",
+      "CRM API",
+      "Finans/ERP API",
+      "Mikroservis mimarisi"
+    ],
+    "paired_frontend": "nuxtjs",
+    "not_suitable_for": [
+      "Basit CRUD API'ler (node-express daha hızlı geliştirilir)",
+      "Serverless function'lar (cold start süresi uzun)",
+      "WebSocket ağırlıklı uygulamalar"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceApi" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "ecommerce-api" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Kurumsal e-ticaret API" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "database": [
+      { "key": "{{CONNECTION_STRING}}", "description": "SQL Server connection string", "example": "Server=.;Database=ECommerceDb;Trusted_Connection=true;TrustServerCertificate=true;" },
+      { "key": "{{DB_PROVIDER}}", "description": "EF Core database provider", "example": "SqlServer", "options": ["SqlServer", "PostgreSQL", "SQLite"] }
+    ],
+    "auth": [
+      { "key": "{{JWT_SECRET}}", "description": "JWT signing key (min 256-bit)", "example": "super-secret-key-change-in-production" },
+      { "key": "{{JWT_ISSUER}}", "description": "JWT issuer", "example": "ecommerce-api" },
+      { "key": "{{JWT_AUDIENCE}}", "description": "JWT audience", "example": "ecommerce-client" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain / Azure URL", "example": "api.example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": ".NET 8 Web API projesinin zorunlu dizin yapısı",
+    "directories": {
+      "Controllers/": "API controller'ları",
+      "Models/": "Entity/DTO sınıfları",
+      "Services/": "İş mantığı servisleri",
+      "Data/": "DbContext ve migration'lar",
+      "Validators/": "FluentValidation validator'ları",
+      "Middleware/": "Custom middleware'ler",
+      "Mappings/": "AutoMapper profilleri"
+    },
+    "files": {
+      "Program.cs": "Uygulama giriş noktası — DI, middleware pipeline",
+      "appsettings.json": "Konfigürasyon (connection strings, JWT, log)",
+      "appsettings.Development.json": "Development ortamı konfigürasyonu",
+      "{{ProjectName}}.csproj": "Proje dosyası — NuGet paketleri, framework version"
+    }
+  },
+
+  "entry_point": "Program.cs",
+  "config_file": "appsettings.json",
+
+  "dependencies": {
+    "core": [
+      { "package": "Microsoft.AspNetCore.Authentication.JwtBearer", "version": "8.0.*" },
+      { "package": "Microsoft.EntityFrameworkCore", "version": "8.0.*" },
+      { "package": "Microsoft.EntityFrameworkCore.SqlServer", "version": "8.0.*", "note": "SQL Server provider" }
+    ],
+    "validation": [
+      { "package": "FluentValidation.AspNetCore", "version": "11.3.*" }
+    ],
+    "logging": [
+      { "package": "Serilog.AspNetCore", "version": "8.0.*" },
+      { "package": "Serilog.Sinks.Console", "version": "5.0.*" },
+      { "package": "Serilog.Sinks.File", "version": "5.0.*" }
+    ],
+    "optional": [
+      { "package": "AutoMapper", "version": "13.0.*", "use_case": "Entity-DTO mapping" },
+      { "package": "Swashbuckle.AspNetCore", "version": "6.5.*", "use_case": "Swagger/OpenAPI" },
+      { "package": "AspNetCore.HealthChecks.SqlServer", "version": "8.0.*", "use_case": "Health checks" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "controller_based": {
+      "description": "ControllerBase'tan türeyen attribute-based routing",
+      "rule": "Controller isimleri çoğul, PascalCase + Controller suffix: {{ModelName}}sController"
+    },
+    "repository_pattern": {
+      "description": "Data access soyutlaması — IRepository<T> ve EF Core implementasyonu",
+      "rule": "Controller'lar repository interface'ine bağımlı, EF Core implementasyonuna değil"
+    },
+    "jwt_auth": {
+      "description": "JWT Bearer token authentication",
+      "rule": "[Authorize] attribute ile korunan endpoint'ler. JWT secret appsettings'ten veya Azure Key Vault'tan"
+    },
+    "validation_pipeline": {
+      "description": "FluentValidation ile request validation",
+      "rule": "Her request DTO'su için bir validator sınıfı. Validasyon otomatik pipeline'da"
+    },
+    "serilog_logging": {
+      "description": "Yapılandırılmış loglama",
+      "rule": "Console + File sink, production'da Application Insights veya Seq"
+    }
+  },
+
+  "deployment": {
+    "primary": "Azure Container Apps",
+    "alternatives": ["Azure App Service", "Azure Kubernetes Service"],
+    "build_command": "dotnet publish -c Release -o ./publish",
+    "dockerfile": true,
+    "health_check": "/health"
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Dizin yapısını olduğu gibi kopyala",
+      "Program.cs'teki DI kaydı ve middleware pipeline yapısını koru",
+      "appsettings.json şablonundaki yapılandırma bölümlerini koru",
+      "Core NuGet paketlerini .csproj'a ekle"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Connection string'te placeholder bırakma — geçersiz EF Core migrasyonu",
+      "JWT secret'ı varsayılan değerde bırakma"
+    ],
+    "customize_for_domain": [
+      "Controllers/ → domain entity'lerine göre API controller'lar oluştur",
+      "Models/ → entity ve DTO sınıflarını domain modellere göre tanımla",
+      "Services/ → iş mantığı servislerini oluştur",
+      "Data/AppDbContext.cs → DbSet tanımlarını ekle",
+      "Validators/ → her request DTO'su için validator ekle",
+      "Program.cs → CORS policy'sini frontend URL'ine göre ayarla"
+    ]
+  }
+}

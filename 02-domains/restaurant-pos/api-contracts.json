@@ -1,0 +1,78 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Restaurant POS System",
+    "error_format": "{ status, code, message, details }",
+    "rate_limiting": "POS Terminal: 200/min | Staff: 100/min | Admin: 50/min"
+  },
+  "endpoints": {
+    "pos": {
+      "POST /api/v1/pos/orders": "Create new order",
+      "GET /api/v1/pos/orders/{id}": "Get order details",
+      "PUT /api/v1/pos/orders/{id}": "Update order (add/remove items)",
+      "PUT /api/v1/pos/orders/{id}/status": "Update order status",
+      "POST /api/v1/pos/orders/{id}/split": "Split order into separate checks",
+      "POST /api/v1/pos/orders/{id}/payment": "Process payment",
+      "POST /api/v1/pos/orders/{id}/refund": "Process refund",
+      "POST /api/v1/pos/orders/{id}/void": "Void order/item",
+      "GET /api/v1/pos/orders/active": "Active orders for station"
+    },
+    "menu": {
+      "GET /api/v1/menu": "Get active menu (with time-based filtering)",
+      "GET /api/v1/menu/categories": "List menu categories",
+      "GET /api/v1/menu/items/{id}": "Get menu item details with modifiers",
+      "POST /api/v1/menu/items": "Create menu item",
+      "PUT /api/v1/menu/items/{id}": "Update menu item",
+      "DELETE /api/v1/menu/items/{id}": "Archive/Remove menu item",
+      "POST /api/v1/menu/specials": "Create daily special",
+      "DELETE /api/v1/menu/specials/{id}": "Remove daily special"
+    },
+    "tables": {
+      "GET /api/v1/tables": "Get floor plan with table statuses",
+      "PUT /api/v1/tables/{id}/status": "Update table status",
+      "POST /api/v1/tables/{id}/transfer": "Transfer order to another table",
+      "POST /api/v1/reservations": "Create reservation",
+      "GET /api/v1/reservations": "List reservations (filter: date)",
+      "PUT /api/v1/reservations/{id}": "Update reservation",
+      "DELETE /api/v1/reservations/{id}": "Cancel reservation",
+      "POST /api/v1/waitlist": "Add to waitlist",
+      "PUT /api/v1/waitlist/{id}": "Update waitlist entry (seat/remove)"
+    },
+    "kitchen": {
+      "GET /api/v1/kds/orders": "Kitchen display - incoming orders",
+      "PUT /api/v1/kds/orders/{id}/items/{itemId}/status": "Update item preparation status",
+      "POST /api/v1/kds/items/{id}/out-of-stock": "Mark item as out of stock"
+    },
+    "inventory": {
+      "GET /api/v1/inventory": "List inventory items",
+      "GET /api/v1/inventory/low-stock": "Low stock alerts",
+      "POST /api/v1/inventory/items": "Create inventory item",
+      "PUT /api/v1/inventory/items/{id}": "Update stock level",
+      "POST /api/v1/inventory/recipes": "Create recipe (BOM for menu item)",
+      "GET /api/v1/inventory/recipes/{menuItemId}": "Get recipe breakdown",
+      "POST /api/v1/inventory/purchase-orders": "Create purchase order",
+      "PUT /api/v1/inventory/purchase-orders/{id}/receive": "Receive purchase order"
+    },
+    "staff": {
+      "POST /api/v1/staff/clock-in": "Clock in",
+      "POST /api/v1/staff/clock-out": "Clock out",
+      "GET /api/v1/staff/shifts": "Get shift schedule",
+      "POST /api/v1/staff/shifts": "Create shift schedule",
+      "GET /api/v1/staff/performance": "Staff performance metrics",
+      "GET /api/v1/staff/time-tracking": "Time tracking reports"
+    },
+    "reports": {
+      "GET /api/v1/reports/sales": "Sales report (daily/weekly/monthly)",
+      "GET /api/v1/reports/financial": "Financial report (revenue, costs, profit)",
+      "GET /api/v1/reports/popular": "Popular items report",
+      "GET /api/v1/reports/inventory-usage": "Inventory usage report",
+      "GET /api/v1/reports/labor": "Labor cost report"
+    },
+    "admin": {
+      "POST /api/v1/admin/locations": "Manage multi-location settings",
+      "POST /api/v1/admin/loyalty": "Configure loyalty program",
+      "POST /api/v1/admin/promotions": "Create promotion/coupon",
+      "GET /api/v1/admin/integrations": "Third-party platform integrations",
+      "PUT /api/v1/admin/settings": "Update system settings"
+    }
+  }
+}

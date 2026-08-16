@@ -1,0 +1,165 @@
+{
+  "_meta": {
+    "description": "Bulut Depolama veritabanı şeması. Kullanıcı, klasör hiyerarşisi, dosya sürümleme, paylaşım bağlantısı, multipart yükleme takibi, etkinlik logu ve denetim modellerini içerir. Tüm dosyalar S3/DigitalOcean Spaces üzerinde saklanır. Pre-signed URL ile güvenli yükleme/indirme yapılır."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "displayName": "String",
+        "avatarUrl": "String (Nullable)",
+        "plan": "Enum (free, pro, enterprise) (Default: free)",
+        "storageQuota": "BigInt (Bayt cinsinden: free=5GB, pro=100GB, enterprise=1TB)",
+        "storageUsed": "BigInt (Default: 0, trigger/ORM hook ile otomatik güncellenir)",
+        "fileCount": "Int (Default: 0, denormalize, toplam dosya sayısı)",
+        "folderCount": "Int (Default: 0, denormalize, toplam klasör sayısı)",
+        "maxFileSize": "BigInt (Default: 5368709120, 5 GB)",
+        "isActive": "Boolean (Default: true)",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "plan"],
+      "note": "storageUsed trigger ile güncellenir: File INSERT/DELETE olduğunda kullanıcının storageUsed değeri yeniden hesaplanır. storageQuota bayt cinsinden: 5GB=5368709120, 100GB=107374182400, 1TB=1099511627776."
+    },
+    "Folder": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, ON DELETE CASCADE, Index)",
+        "parentId": "UUID (Nullable, Foreign Key → Folder.id, self-relation)",
+        "name": "String (max 255 karakter)",
+        "path": "String (Materialized path, sorgu performansı için, örn: '/root-id/sub-id/')",
+        "fileCount": "Int (Default: 0, denormalize, klasördeki dosya sayısı)",
+        "childFolderCount": "Int (Default: 0, denormalize, alt klasör sayısı)",
+        "isTrashed": "Boolean (Default: false)",
+        "trashedAt": "DateTime (Nullable, UTC)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["ownerId", "parentId", "path", "isTrashed", "(ownerId, isTrashed)"],
+      "note": "path: kök klasörler için '/', alt klasörler için '/parentId/'. Move işleminde transaction içinde parentId ve path atomik güncellenir. Döngüsel referans engeli: hedef klasörün path'i taşınan klasörün path'ini içermemeli. isTrashed=true → çöp kutusu, 30 gün sonra cron job ile kalıcı silinir."
+    },
+    "File": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, ON DELETE CASCADE, Index)",
+        "folderId": "UUID (Nullable, Foreign Key → Folder.id, Index)",
+        "name": "String (max 255 karakter, dosya adı + uzantı)",
+        "mimeType": "String",
+        "sizeBytes": "BigInt (Dosya boyutu, bayt)",
+        "storageKey": "String (S3/DigitalOcean Spaces object key, benzersiz)",
+        "fileHash": "String (Nullable, SHA-256, tekilleştirme için)",
+        "versionNumber": "Int (Default: 1)",
+        "previousVersionId": "UUID (Nullable, Foreign Key → File.id, self-relation, sürüm zinciri)",
+        "isLatest": "Boolean (Default: true, bu sürüm en güncel mü)",
+        "thumbnailKey": "String (Nullable, thumbnail S3 key)",
+        "isTrashed": "Boolean (Default: false)",
+        "trashedAt": "DateTime (Nullable, UTC)",
+        "isQuarantined": "Boolean (Default: false, zararlı dosya taraması sonucu)",
+        "quarantineReason": "String (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["ownerId", "folderId", "fileHash", "storageKey", "isTrashed", "isLatest", "(folderId, isTrashed)", "(ownerId, isTrashed)"],
+      "note": "Yeni sürüm: versionNumber++, previousVersionId=eski.id. isLatest: sadece son sürüm true. Çöp kutusu: isTrashed=true, 30 gün sonra S3 nesnesi + DB kaydı silinir. fileHash ile opsiyonel tekilleştirme. storageKey formatı: 'users/{userId}/{uuid}-{filename}'. thumbnailKey: 'thumbnails/{storageKey}'."
+    },
+    "MultipartUpload": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "uploadId": "String (Unique, Index, S3 multipart upload ID)",
+        "fileName": "String",
+        "mimeType": "String",
+        "sizeBytes": "BigInt (Toplam dosya boyutu)",
+        "storageKey": "String (Tamamlandığında oluşturulacak S3 key)",
+        "folderId": "UUID (Nullable, hedef klasör)",
+        "partCount": "Int (Toplam parça sayısı)",
+        "partsUploaded": "JSONB (Yüklenen parçalar: [{ partNumber, etag, sizeBytes }], varsayılan: [])",
+        "status": "Enum (initialized, uploading, completed, aborted) (Default: initialized)",
+        "progressBytes": "BigInt (Default: 0, yüklenen toplam bayt)",
+        "expiresAt": "DateTime (24 saat sonra, abort için)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "uploadId", "status", "expiresAt"],
+      "note": "Multipart yükleme yaşam döngüsü: init → uploading (her parça için pre-signed URL) → complete (tüm parçalar yüklendi). 24 saat sonra status=initialized|uploading olanlar abort edilir ve S3 parçaları temizlenir. Parça boyutu: 5-50 MB."
+    },
+    "SharedLink": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index)",
+        "fileId": "UUID (Nullable, Foreign Key → File.id, ON DELETE CASCADE)",
+        "folderId": "UUID (Nullable, Foreign Key → Folder.id, ON DELETE CASCADE)",
+        "token": "String (Unique, Index, 32 karakter güvenli rastgele)",
+        "accessType": "Enum (view, edit)",
+        "passwordHash": "String (Nullable, bcrypt hash, opsiyonel şifre koruması)",
+        "expiresAt": "DateTime (Nullable, son kullanma tarihi)",
+        "downloadCount": "Int (Default: 0)",
+        "lastAccessedAt": "DateTime (Nullable)",
+        "isActive": "Boolean (Default: true, iptal edildiğinde false)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["token", "ownerId", "fileId", "folderId", "isActive", "expiresAt"],
+      "note": "fileId ve folderId'den EN AZ biri dolu olmalıdır (CHECK constraint). token: crypto.randomBytes(32).toString('base64url'). passwordHash opsiyonel, boşsa şifresiz erişim. expiresAt sonrası 410 Gone. folderId için edit → tüm alt öğeler recursive edit. downloadCount her indirmede artar."
+    },
+    "ShareAccessLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sharedLinkId": "UUID (Foreign Key → SharedLink.id, ON DELETE CASCADE, Index)",
+        "action": "Enum (view, download, edit, upload, delete, rename)",
+        "ipAddress": "String (Nullable)",
+        "userAgent": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["sharedLinkId", "createdAt DESC"],
+      "note": "Paylaşımlı link üzerinden yapılan tüm işlemler burada loglanır. Aylık paylaşım raporu için kullanılır."
+    },
+    "Activity": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (upload, download, move, rename, delete, restore, share_create, share_revoke, version_restore, folder_create, folder_delete)",
+        "entityType": "String ('file', 'folder', 'share')",
+        "entityId": "UUID",
+        "entityName": "String (İşlem anındaki dosya/klasör adı)",
+        "details": "JSONB (Nullable, { fromFolderId?, toFolderId?, oldName?, newName?, versionNumber?, sizeBytes? })",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, createdAt DESC)", "(entityType, entityId)", "type"],
+      "note": "Kullanıcı dashboard'unda son aktiviteleri göstermek için. Son 90 günlük aktiviteler tutulur."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (quota_80, quota_100, share_received, file_quarantined, upload_completed, multipart_failed)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'file', 'folder', 'share')",
+        "entityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)"],
+      "note": "Kritik bildirimler (quota_100, file_quarantined) e-posta ile de gönderilir. In-app bildirimler WebSocket ile gerçek zamanlı iletilir."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "action": "String (örn: 'file.upload', 'file.delete', 'file.move', 'file.rename', 'file.version_restore', 'folder.create', 'folder.delete', 'folder.move', 'share.create', 'share.revoke', 'quota.change', 'user.plan_change')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "details": "JSONB (Nullable, { changes?: {}, reason?: string })",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "action", "(entityType, entityId)", "createdAt DESC"],
+      "note": "90 gün saklanır. Dosya içeriği/saklama anahtarı loglanmaz, sadece metadata."
+    }
+  }
+}

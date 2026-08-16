@@ -1,0 +1,1536 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Job Board Platform | Kapsamli API Sozlesmeleri",
+    "version": "2.0.0",
+    "base_url": "https://api.example.com/api/v1",
+    "error_format": "{ status: number, code: string, message: string, details: string|null, traceId: string }",
+    "rate_limiting": "Public: 500/dk | Auth (Seeker): 100/dk | Employer: 200/dk | Admin: 50/dk",
+    "auth": {
+      "scheme": "Bearer",
+      "header": "Authorization: Bearer <JWT_TOKEN>",
+      "token_type": "JWT (Access token, 15min expiry | Refresh token, 7d expiry)"
+    },
+    "pagination": {
+      "style": "cursor-based (default) or offset-based",
+      "default_limit": 20,
+      "max_limit": 100
+    }
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/jobs": {
+        "description": "List jobs / Is ilanlarini listele",
+        "description_en": "List published job listings with filtering, sorting, and pagination",
+        "auth_required": false,
+        "query_parameters": {
+          "page": { "type": "integer", "default": 1, "min": 1, "example": 1, "description": "Sayfa numarasi / Page number" },
+          "limit": { "type": "integer", "default": 20, "min": 1, "max": 100, "example": 20, "description": "Sayfa basina kayit / Records per page" },
+          "sort": { "type": "string", "enum": ["created_at", "salary_min", "views_count", "title"], "default": "created_at", "example": "created_at", "description": "Siralama alani / Sort field" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "desc", "description": "Siralama yonu / Sort direction" },
+          "category": { "type": "string", "example": "engineering", "description": "Kategori slug / Category slug" },
+          "jobType": { "type": "string", "enum": ["full_time", "part_time", "contract", "freelance", "internship", "temporary"], "example": "full_time", "description": "Is tipi / Job type" },
+          "workModel": { "type": "string", "enum": ["on_site", "hybrid", "remote"], "example": "remote", "description": "Calisma modeli / Work model" },
+          "location": { "type": "string", "example": "Istanbul", "description": "Konum / Location" },
+          "experienceLevel": { "type": "string", "enum": ["entry", "mid", "senior", "lead", "executive"], "example": "senior", "description": "Deneyim seviyesi / Experience level" },
+          "salaryMin": { "type": "number", "example": 50000, "description": "Minimum maas / Minimum salary" },
+          "salaryMax": { "type": "number", "example": 150000, "description": "Maximum maas / Maximum salary" },
+          "salaryCurrency": { "type": "string", "default": "TRY", "example": "TRY", "description": "Para birimi / Currency" },
+          "search": { "type": "string", "example": "react developer", "description": "Baslik ve aciklamada ara / Search in title and description" },
+          "isFeatured": { "type": "boolean", "example": true, "description": "One cikan ilanlar / Featured listings only" },
+          "dateFrom": { "type": "string", "format": "date", "example": "2026-01-01", "description": "Baslangic tarihi / Start date" },
+          "dateTo": { "type": "string", "format": "date", "example": "2026-07-20", "description": "Bitis tarihi / End date" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "data": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440000" },
+                "title": { "type": "string", "example": "Senior React Developer" },
+                "slug": { "type": "string", "example": "senior-react-developer-abc123" },
+                "company": {
+                  "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440001" },
+                  "name": { "type": "string", "example": "TechCorp A.S." },
+                  "slug": { "type": "string", "example": "techcorp-as" },
+                  "logoUrl": { "type": "string", "example": "https://cdn.example.com/logos/techcorp.png" },
+                  "isVerified": { "type": "boolean", "example": true }
+                },
+                "category": {
+                  "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440002" },
+                  "name": { "type": "string", "example": "Engineering" },
+                  "slug": { "type": "string", "example": "engineering" }
+                },
+                "jobType": { "type": "string", "example": "full_time" },
+                "workModel": { "type": "string", "example": "remote" },
+                "location": { "type": "string", "example": "Istanbul, Turkiye" },
+                "salaryMin": { "type": "number", "example": 80000 },
+                "salaryMax": { "type": "number", "example": 120000 },
+                "salaryCurrency": { "type": "string", "example": "TRY" },
+                "experienceLevel": { "type": "string", "example": "senior" },
+                "skills": { "type": "array", "items": { "type": "string" }, "example": ["React", "TypeScript", "Node.js"] },
+                "isFeatured": { "type": "boolean", "example": true },
+                "createdAt": { "type": "string", "format": "date-time", "example": "2026-07-15T10:30:00Z" }
+              }
+            },
+            "meta": {
+              "total": { "type": "integer", "example": 245 },
+              "page": { "type": "integer", "example": 1 },
+              "limit": { "type": "integer", "example": 20 },
+              "totalPages": { "type": "integer", "example": 13 }
+            }
+          }
+        },
+        "errors": {
+          "400": "Gecersiz sorgu parametreleri / Invalid query parameters",
+          "422": "Filtre degerleri gecersiz / Invalid filter values",
+          "429": "Rate limit asildi / Rate limit exceeded"
+        }
+      },
+      "GET /api/v1/jobs/{id}": {
+        "description": "Get job listing details / Is ilani detayini getir",
+        "description_en": "Retrieve full job listing details including company info",
+        "auth_required": false,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Is ilani ID'si / Job listing UUID" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440000" },
+            "title": { "type": "string", "example": "Senior React Developer" },
+            "slug": { "type": "string", "example": "senior-react-developer-abc123" },
+            "description": { "type": "string", "format": "markdown", "example": "We are looking for a Senior React Developer..." },
+            "requirements": { "type": "string", "example": "- 5+ years React experience\n- TypeScript proficiency\n- Team leadership..." },
+            "responsibilities": { "type": "string", "example": "- Lead frontend team\n- Architect component library\n- Code review..." },
+            "benefits": { "type": "string", "example": "- Private health insurance\n- Remote work\n- Stock options..." },
+            "skills": { "type": "array", "items": { "type": "string" }, "example": ["React", "TypeScript", "Node.js", "AWS"] },
+            "jobType": { "type": "string", "example": "full_time" },
+            "workModel": { "type": "string", "example": "remote" },
+            "location": { "type": "string", "example": "Istanbul, Turkiye" },
+            "salaryMin": { "type": "number", "example": 80000 },
+            "salaryMax": { "type": "number", "example": 120000 },
+            "salaryCurrency": { "type": "string", "example": "TRY" },
+            "experienceLevel": { "type": "string", "example": "senior" },
+            "applicationUrl": { "type": "string", "nullable": true, "example": null },
+            "status": { "type": "string", "example": "published" },
+            "isFeatured": { "type": "boolean", "example": true },
+            "viewsCount": { "type": "integer", "example": 1542 },
+            "applicationCount": { "type": "integer", "example": 47 },
+            "expiresAt": { "type": "string", "format": "date-time", "example": "2026-08-15T23:59:59Z" },
+            "createdAt": { "type": "string", "format": "date-time", "example": "2026-07-15T10:30:00Z" },
+            "updatedAt": { "type": "string", "format": "date-time", "example": "2026-07-18T14:22:00Z" },
+            "company": {
+              "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440001" },
+              "name": { "type": "string", "example": "TechCorp A.S." },
+              "slug": { "type": "string", "example": "techcorp-as" },
+              "logoUrl": { "type": "string", "example": "https://cdn.example.com/logos/techcorp.png" },
+              "bannerUrl": { "type": "string", "example": "https://cdn.example.com/banners/techcorp.png" },
+              "description": { "type": "string", "example": "Leading technology company..." },
+              "website": { "type": "string", "example": "https://techcorp.com" },
+              "industry": { "type": "string", "example": "Information Technology" },
+              "size": { "type": "string", "example": "51-200" },
+              "isVerified": { "type": "boolean", "example": true }
+            },
+            "category": {
+              "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440002" },
+              "name": { "type": "string", "example": "Engineering" },
+              "slug": { "type": "string", "example": "engineering" }
+            }
+          }
+        },
+        "errors": {
+          "404": "Is ilani bulunamadi / Job listing not found",
+          "410": "Ilan suresi dolmus / Job listing expired",
+          "429": "Rate limit asildi / Rate limit exceeded"
+        }
+      },
+      "GET /api/v1/companies/{slug}": {
+        "description": "View company profile with active jobs / Sirket profilini ve aktif ilanlari gor",
+        "description_en": "Retrieve full company profile with active published jobs",
+        "auth_required": false,
+        "path_parameters": {
+          "slug": { "type": "string", "required": true, "example": "techcorp-as", "description": "Sirket slug'i / Company slug" }
+        },
+        "query_parameters": {
+          "page": { "type": "integer", "default": 1, "min": 1, "example": 1, "description": "Aktif ilanlar sayfasi / Active jobs page" },
+          "limit": { "type": "integer", "default": 10, "min": 1, "max": 50, "example": 10, "description": "Sayfa basina ilan / Jobs per page" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440001" },
+            "name": { "type": "string", "example": "TechCorp A.S." },
+            "slug": { "type": "string", "example": "techcorp-as" },
+            "logoUrl": { "type": "string", "example": "https://cdn.example.com/logos/techcorp.png" },
+            "bannerUrl": { "type": "string", "example": "https://cdn.example.com/banners/techcorp.png" },
+            "description": { "type": "string", "example": "Leading technology company..." },
+            "website": { "type": "string", "example": "https://techcorp.com" },
+            "industry": { "type": "string", "example": "Information Technology" },
+            "size": { "type": "string", "example": "51-200" },
+            "location": { "type": "string", "example": "Istanbul, Turkiye" },
+            "cultureDescription": { "type": "string", "example": "Innovation-driven culture..." },
+            "benefits": { "type": "array", "items": { "type": "string" }, "example": ["Private Health Insurance", "Remote Work", "Stock Options"] },
+            "socialLinks": {
+              "linkedin": { "type": "string", "example": "https://linkedin.com/company/techcorp" },
+              "twitter": { "type": "string", "example": "https://twitter.com/techcorp" },
+              "github": { "type": "string", "example": "https://github.com/techcorp" }
+            },
+            "isVerified": { "type": "boolean", "example": true },
+            "activeJobCount": { "type": "integer", "example": 12 },
+            "jobs": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "title": { "type": "string" },
+                "slug": { "type": "string" },
+                "jobType": { "type": "string" },
+                "workModel": { "type": "string" },
+                "location": { "type": "string" },
+                "salaryMin": { "type": "number" },
+                "salaryMax": { "type": "number" },
+                "salaryCurrency": { "type": "string" },
+                "experienceLevel": { "type": "string" },
+                "createdAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "jobsMeta": {
+              "total": { "type": "integer", "example": 12 },
+              "page": { "type": "integer", "example": 1 },
+              "limit": { "type": "integer", "example": 10 },
+              "totalPages": { "type": "integer", "example": 2 }
+            }
+          }
+        },
+        "errors": {
+          "404": "Sirket bulunamadi / Company not found",
+          "429": "Rate limit asildi / Rate limit exceeded"
+        }
+      },
+      "GET /api/v1/categories": {
+        "description": "List job categories / Is kategorilerini listele",
+        "description_en": "List all job categories (optionally nested tree structure)",
+        "auth_required": false,
+        "query_parameters": {
+          "flat": { "type": "boolean", "default": false, "example": false, "description": "Duz liste (true) veya agac yapisi (false) / Flat list or tree" },
+          "parentId": { "type": "string", "format": "uuid", "example": null, "description": "Ust kategoriye gore filtrele / Filter by parent category" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "type": "array",
+            "items": {
+              "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440002" },
+              "name": { "type": "string", "example": "Engineering" },
+              "slug": { "type": "string", "example": "engineering" },
+              "parentId": { "type": "string", "format": "uuid", "nullable": true, "example": null },
+              "jobCount": { "type": "integer", "example": 45 },
+              "children": {
+                "type": "array",
+                "description": "Alt kategoriler (sadece flat=false iken) / Child categories (only when flat=false)",
+                "items": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "name": { "type": "string" },
+                  "slug": { "type": "string" },
+                  "jobCount": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "errors": {
+          "429": "Rate limit asildi / Rate limit exceeded"
+        }
+      },
+      "GET /api/v1/search/suggestions": {
+        "description": "Autocomplete suggestions / Otomatik tamamlama onerileri",
+        "description_en": "Get search autocomplete suggestions for jobs, companies, skills",
+        "auth_required": false,
+        "query_parameters": {
+          "q": { "type": "string", "required": true, "minLength": 2, "maxLength": 100, "example": "react dev", "description": "Arama terimi / Search term" },
+          "type": { "type": "string", "enum": ["jobs", "companies", "skills", "all"], "default": "all", "example": "all", "description": "Oneri tipi / Suggestion type" },
+          "limit": { "type": "integer", "default": 5, "min": 1, "max": 20, "example": 5, "description": "Maksimum oneri sayisi / Max suggestions" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "jobs": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "title": { "type": "string", "example": "React Developer" },
+                "slug": { "type": "string" },
+                "companyName": { "type": "string", "example": "TechCorp A.S." },
+                "location": { "type": "string" }
+              }
+            },
+            "companies": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "name": { "type": "string", "example": "Reactify" },
+                "slug": { "type": "string" },
+                "logoUrl": { "type": "string" }
+              }
+            },
+            "skills": {
+              "type": "array",
+              "items": { "type": "string", "example": ["React", "React Native", "Reactive Programming"] }
+            }
+          }
+        },
+        "errors": {
+          "400": "q parametresi gerekli ve en az 2 karakter olmali / Query parameter required (min 2 chars)",
+          "429": "Rate limit asildi / Rate limit exceeded"
+        }
+      },
+      "GET /api/v1/jobs/{id}/related": {
+        "description": "Get related job listings / Benzer is ilanlarini getir",
+        "description_en": "Get related/similar job listings based on category, skills, and location",
+        "auth_required": false,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Is ilani ID'si / Job listing UUID" }
+        },
+        "query_parameters": {
+          "limit": { "type": "integer", "default": 5, "min": 1, "max": 20, "example": 5, "description": "Maksimum oneri sayisi / Max suggestions" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "type": "array",
+            "items": {
+              "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440010" },
+              "title": { "type": "string", "example": "Frontend Developer" },
+              "slug": { "type": "string" },
+              "company": {
+                "name": { "type": "string" },
+                "slug": { "type": "string" },
+                "logoUrl": { "type": "string" }
+              },
+              "jobType": { "type": "string" },
+              "workModel": { "type": "string" },
+              "location": { "type": "string" },
+              "salaryMin": { "type": "number" },
+              "salaryMax": { "type": "number" },
+              "salaryCurrency": { "type": "string" },
+              "skills": { "type": "array", "items": { "type": "string" } },
+              "createdAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "errors": {
+          "404": "Is ilani bulunamadi / Job listing not found",
+          "429": "Rate limit asildi / Rate limit exceeded"
+        }
+      }
+    },
+    "seeker": {
+      "_auth": { "required": true, "role": "seeker", "header": "Authorization: Bearer <JWT>" },
+      "POST /api/v1/profile": {
+        "description": "Create/Update seeker profile / Aday profilini olustur/guncelle",
+        "description_en": "Create or update the authenticated seeker's profile (upsert)",
+        "auth_required": true,
+        "request_body": {
+          "required": ["fullName", "headline"],
+          "schema": {
+            "fullName": { "type": "string", "minLength": 2, "maxLength": 200, "example": "Ahmet Yilmaz", "description": "Tam ad / Full name" },
+            "headline": { "type": "string", "maxLength": 300, "example": "Senior React Developer | 8 yil deneyim", "description": "Profesyonel baslik / Professional headline" },
+            "bio": { "type": "string", "maxLength": 5000, "example": "Experienced frontend developer...", "description": "Kisa biyografi / Bio" },
+            "phone": { "type": "string", "pattern": "^\\+?[0-9]{7,15}$", "example": "+905551234567", "description": "Telefon numarasi / Phone number" },
+            "location": { "type": "string", "maxLength": 200, "example": "Istanbul, Turkiye", "description": "Konum / Location" },
+            "skills": { "type": "array", "items": { "type": "string" }, "maxItems": 50, "example": ["React", "TypeScript", "Node.js"], "description": "Yetenekler / Skills" },
+            "experience": {
+              "type": "array",
+              "items": {
+                "position": { "type": "string", "example": "Senior Frontend Developer" },
+                "company": { "type": "string", "example": "TechCorp A.S." },
+                "startDate": { "type": "string", "format": "date", "example": "2020-03-01" },
+                "endDate": { "type": "string", "format": "date", "nullable": true, "example": null },
+                "isCurrent": { "type": "boolean", "example": true },
+                "description": { "type": "string", "example": "Led frontend team of 5..." }
+              },
+              "example": [
+                {
+                  "position": "Senior Frontend Developer",
+                  "company": "TechCorp A.S.",
+                  "startDate": "2020-03-01",
+                  "endDate": null,
+                  "isCurrent": true,
+                  "description": "Led frontend team of 5 engineers"
+                }
+              ],
+              "description": "Is deneyimi / Work experience"
+            },
+            "education": {
+              "type": "array",
+              "items": {
+                "degree": { "type": "string", "example": "Bachelor of Computer Engineering" },
+                "institution": { "type": "string", "example": "Istanbul Technical University" },
+                "startDate": { "type": "string", "format": "date", "example": "2012-09-01" },
+                "endDate": { "type": "string", "format": "date", "example": "2016-06-01" }
+              },
+              "example": [
+                {
+                  "degree": "Bachelor of Computer Engineering",
+                  "institution": "Istanbul Technical University",
+                  "startDate": "2012-09-01",
+                  "endDate": "2016-06-01"
+                }
+              ],
+              "description": "Egitim bilgisi / Education"
+            },
+            "certifications": {
+              "type": "array",
+              "items": {
+                "name": { "type": "string", "example": "AWS Certified Developer" },
+                "issuer": { "type": "string", "example": "Amazon Web Services" },
+                "date": { "type": "string", "format": "date", "example": "2025-03-15" }
+              },
+              "example": [],
+              "description": "Sertifikalar / Certifications"
+            },
+            "portfolioUrls": { "type": "array", "items": { "type": "string", "format": "uri" }, "example": ["https://github.com/ahmet", "https://ahmetyilmaz.dev"], "description": "Portfolyo linkleri / Portfolio URLs" },
+            "preferredJobTypes": { "type": "array", "items": { "type": "string", "enum": ["full_time", "part_time", "contract", "freelance", "internship", "temporary"] }, "example": ["full_time", "contract"], "description": "Tercih edilen is tipleri / Preferred job types" },
+            "preferredLocations": { "type": "array", "items": { "type": "string" }, "example": ["Istanbul", "Remote"], "description": "Tercih edilen konumlar / Preferred locations" },
+            "salaryExpectation": { "type": "number", "minimum": 0, "example": 120000, "description": "Beklenen maas / Salary expectation" },
+            "isPublic": { "type": "boolean", "default": true, "example": true, "description": "Profil herkese acik mi / Profile visibility" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440100" },
+            "userId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440099" },
+            "fullName": { "type": "string", "example": "Ahmet Yilmaz" },
+            "headline": { "type": "string", "example": "Senior React Developer | 8 yil deneyim" },
+            "bio": { "type": "string" },
+            "phone": { "type": "string" },
+            "location": { "type": "string" },
+            "skills": { "type": "array", "items": { "type": "string" } },
+            "experience": { "type": "array" },
+            "education": { "type": "array" },
+            "certifications": { "type": "array" },
+            "portfolioUrls": { "type": "array" },
+            "preferredJobTypes": { "type": "array" },
+            "preferredLocations": { "type": "array" },
+            "salaryExpectation": { "type": "number" },
+            "resumeUrl": { "type": "string", "nullable": true },
+            "isPublic": { "type": "boolean" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "GET /api/v1/profile": {
+        "description": "Get seeker profile / Aday profilini getir",
+        "description_en": "Retrieve the authenticated seeker's full profile",
+        "auth_required": true,
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "userId": { "type": "string", "format": "uuid" },
+            "fullName": { "type": "string", "example": "Ahmet Yilmaz" },
+            "headline": { "type": "string" },
+            "bio": { "type": "string" },
+            "phone": { "type": "string" },
+            "location": { "type": "string" },
+            "skills": { "type": "array", "items": { "type": "string" } },
+            "experience": { "type": "array" },
+            "education": { "type": "array" },
+            "certifications": { "type": "array" },
+            "portfolioUrls": { "type": "array" },
+            "preferredJobTypes": { "type": "array" },
+            "preferredLocations": { "type": "array" },
+            "salaryExpectation": { "type": "number" },
+            "resumeUrl": { "type": "string", "nullable": true },
+            "isPublic": { "type": "boolean" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)",
+          "404": "Profil henuz olusturulmamis / Profile not created yet"
+        }
+      },
+      "POST /api/v1/profile/resume/upload": {
+        "description": "Upload resume (PDF/DOCX) / CV yukle (PDF/DOCX)",
+        "description_en": "Upload resume file; replaces existing resume if one exists",
+        "auth_required": true,
+        "request_body": {
+          "content_type": "multipart/form-data",
+          "schema": {
+            "file": { "type": "file", "accept": [".pdf", ".docx"], "maxSize": 10485760, "maxSizeText": "10MB", "required": true, "description": "CV dosyasi (PDF veya DOCX, max 10MB) / Resume file" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "resumeUrl": { "type": "string", "example": "https://cdn.example.com/resumes/user-123/resume.pdf", "description": "Yuklenen CV'nin URL'i / Uploaded resume URL" },
+            "fileName": { "type": "string", "example": "Ahmet_Yilmaz_CV.pdf" },
+            "fileSize": { "type": "integer", "example": 2457600, "description": "Byte cinsinden dosya boyutu / File size in bytes" },
+            "uploadedAt": { "type": "string", "format": "date-time", "example": "2026-07-20T14:30:00Z" }
+          }
+        },
+        "errors": {
+          "400": "Dosya formati veya boyutu gecersiz / Invalid file format or size",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)",
+          "413": "Dosya cok buyuk / File too large (>10MB)",
+          "415": "Desteklenmeyen dosya formati / Unsupported media type"
+        }
+      },
+      "POST /api/v1/jobs/{id}/apply": {
+        "description": "Submit job application / Is basvurusu yap",
+        "description_en": "Submit an application for a specific job listing",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Is ilani ID'si / Job listing UUID" }
+        },
+        "request_body": {
+          "schema": {
+            "coverLetter": { "type": "string", "maxLength": 10000, "example": "I am excited to apply for this position because...", "description": "On yazi (opsiyonel) / Cover letter (optional)" },
+            "resumeUrl": { "type": "string", "format": "uri", "example": "https://cdn.example.com/resumes/user-123/resume.pdf", "description": "CV URL'i (profildekinden farkliysa) / Resume URL (if different from profile)" }
+          }
+        },
+        "response": {
+          "status": 201,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440200" },
+            "jobListingId": { "type": "string", "format": "uuid" },
+            "seekerId": { "type": "string", "format": "uuid" },
+            "coverLetter": { "type": "string", "nullable": true },
+            "resumeUrl": { "type": "string" },
+            "status": { "type": "string", "example": "applied" },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Profil eksik: CV yuklemek zorunlu / Profile incomplete: resume required",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)",
+          "404": "Is ilani bulunamadi / Job listing not found",
+          "409": "Bu ilana daha once basvurulmus / Duplicate application",
+          "410": "Basvuru suresi dolmus / Application deadline passed",
+          "422": "Gecersiz basvuru verisi / Invalid application data"
+        }
+      },
+      "GET /api/v1/applications": {
+        "description": "List my applications with statuses / Basvurularimi listele",
+        "description_en": "List authenticated seeker's applications with current statuses",
+        "auth_required": true,
+        "query_parameters": {
+          "page": { "type": "integer", "default": 1, "min": 1, "example": 1, "description": "Sayfa numarasi / Page number" },
+          "limit": { "type": "integer", "default": 20, "min": 1, "max": 50, "example": 20, "description": "Sayfa basina kayit / Records per page" },
+          "status": { "type": "string", "enum": ["applied", "under_review", "screening", "interview", "offer", "hired", "rejected"], "example": "under_review", "description": "Duruma gore filtrele / Filter by status" },
+          "sort": { "type": "string", "enum": ["created_at", "updated_at"], "default": "created_at", "example": "created_at", "description": "Siralama / Sort field" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "desc", "description": "Siralama yonu / Sort direction" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "data": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "jobListing": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "title": { "type": "string", "example": "Senior React Developer" },
+                  "slug": { "type": "string" },
+                  "company": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "name": { "type": "string", "example": "TechCorp A.S." },
+                    "slug": { "type": "string" },
+                    "logoUrl": { "type": "string" }
+                  }
+                },
+                "status": { "type": "string", "example": "under_review" },
+                "employerNotes": { "type": "string", "example": "Strong candidate, moving to interview" },
+                "employerRating": { "type": "integer", "nullable": true, "example": 4 },
+                "createdAt": { "type": "string", "format": "date-time" },
+                "updatedAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "meta": {
+              "total": { "type": "integer", "example": 15 },
+              "page": { "type": "integer", "example": 1 },
+              "limit": { "type": "integer", "example": 20 },
+              "totalPages": { "type": "integer", "example": 1 }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)",
+          "422": "Gecersiz filtre / Invalid filter"
+        }
+      },
+      "POST /api/v1/jobs/{id}/save": {
+        "description": "Save/Unsave job / Is ilanini kaydet/kaydi kaldir",
+        "description_en": "Toggle save status: saves if not saved, removes if already saved",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Is ilani ID'si / Job listing UUID" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "saved": { "type": "boolean", "example": true, "description": "Kaydedildi mi / Is saved" },
+            "savedJobId": { "type": "string", "format": "uuid", "nullable": true, "example": "550e8400-e29b-41d4-a716-446655440300", "description": "Kaydedilen kaydin ID'si (kaldirildiysa null) / Saved record ID (null if unsaved)" },
+            "savedAt": { "type": "string", "format": "date-time", "nullable": true, "example": "2026-07-20T15:00:00Z" }
+          }
+        },
+        "errors": {
+          "400": "Gecersiz ilan ID / Invalid job ID",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)",
+          "404": "Is ilani bulunamadi / Job listing not found"
+        }
+      },
+      "GET /api/v1/saved-jobs": {
+        "description": "List saved jobs / Kaydedilen ilanlari listele",
+        "description_en": "List authenticated seeker's saved/bookmarked job listings",
+        "auth_required": true,
+        "query_parameters": {
+          "page": { "type": "integer", "default": 1, "min": 1, "example": 1, "description": "Sayfa numarasi / Page number" },
+          "limit": { "type": "integer", "default": 20, "min": 1, "max": 50, "example": 20, "description": "Sayfa basina kayit / Records per page" },
+          "sort": { "type": "string", "enum": ["created_at"], "default": "created_at", "example": "created_at", "description": "Siralama / Sort field" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "desc", "description": "Siralama yonu / Sort direction" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "data": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid", "description": "SavedJob ID" },
+                "savedAt": { "type": "string", "format": "date-time" },
+                "jobListing": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "title": { "type": "string", "example": "Senior React Developer" },
+                  "slug": { "type": "string" },
+                  "company": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "name": { "type": "string", "example": "TechCorp A.S." },
+                    "slug": { "type": "string" },
+                    "logoUrl": { "type": "string" }
+                  },
+                  "jobType": { "type": "string" },
+                  "workModel": { "type": "string" },
+                  "location": { "type": "string" },
+                  "salaryMin": { "type": "number" },
+                  "salaryMax": { "type": "number" },
+                  "salaryCurrency": { "type": "string" },
+                  "status": { "type": "string", "example": "published" },
+                  "createdAt": { "type": "string", "format": "date-time" }
+                }
+              }
+            },
+            "meta": {
+              "total": { "type": "integer", "example": 8 },
+              "page": { "type": "integer", "example": 1 },
+              "limit": { "type": "integer", "example": 20 },
+              "totalPages": { "type": "integer", "example": 1 }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)"
+        }
+      },
+      "POST /api/v1/alerts": {
+        "description": "Create job alert / Is alarmi olustur",
+        "description_en": "Create a new job alert for matching job notifications",
+        "auth_required": true,
+        "request_body": {
+          "required": ["keywords", "frequency"],
+          "schema": {
+            "keywords": { "type": "string", "maxLength": 500, "example": "React developer remote", "description": "Anahtar kelimeler / Keywords" },
+            "categories": { "type": "array", "items": { "type": "string", "format": "uuid" }, "example": ["550e8400-e29b-41d4-a716-446655440002"], "description": "Kategori ID'leri / Category UUIDs" },
+            "jobTypes": { "type": "array", "items": { "type": "string", "enum": ["full_time", "part_time", "contract", "freelance", "internship", "temporary"] }, "example": ["full_time", "contract"], "description": "Is tipleri / Job types" },
+            "location": { "type": "string", "maxLength": 200, "example": "Istanbul", "description": "Konum / Location" },
+            "salaryMin": { "type": "number", "minimum": 0, "example": 80000, "description": "Minimum maas / Minimum salary" },
+            "frequency": { "type": "string", "enum": ["daily", "weekly", "instant"], "example": "daily", "description": "Bildirim sikligi / Notification frequency" }
+          }
+        },
+        "response": {
+          "status": 201,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440400" },
+            "userId": { "type": "string", "format": "uuid" },
+            "keywords": { "type": "string", "example": "React developer remote" },
+            "categories": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+            "jobTypes": { "type": "array", "items": { "type": "string" } },
+            "location": { "type": "string" },
+            "salaryMin": { "type": "number" },
+            "frequency": { "type": "string", "example": "daily" },
+            "isActive": { "type": "boolean", "example": true },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "GET /api/v1/alerts": {
+        "description": "List my job alerts / Is alarmlarimi listele",
+        "description_en": "List authenticated seeker's job alerts",
+        "auth_required": true,
+        "query_parameters": {
+          "isActive": { "type": "boolean", "example": true, "description": "Sadece aktif/pasif / Active/inactive only" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "type": "array",
+            "items": {
+              "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440400" },
+              "keywords": { "type": "string", "example": "React developer remote" },
+              "categories": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+              "jobTypes": { "type": "array", "items": { "type": "string" } },
+              "location": { "type": "string" },
+              "salaryMin": { "type": "number" },
+              "frequency": { "type": "string", "example": "daily" },
+              "isActive": { "type": "boolean", "example": true },
+              "createdAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not a seeker)"
+        }
+      },
+      "PUT /api/v1/alerts/{id}": {
+        "description": "Update job alert / Is alarmini guncelle",
+        "description_en": "Update an existing job alert owned by the authenticated seeker",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Alarm ID'si / Alert UUID" }
+        },
+        "request_body": {
+          "schema": {
+            "keywords": { "type": "string", "maxLength": 500, "example": "React developer remote senior", "description": "Anahtar kelimeler / Keywords" },
+            "categories": { "type": "array", "items": { "type": "string", "format": "uuid" }, "example": ["550e8400-e29b-41d4-a716-446655440002"], "description": "Kategori ID'leri / Category UUIDs" },
+            "jobTypes": { "type": "array", "items": { "type": "string", "enum": ["full_time", "part_time", "contract", "freelance", "internship", "temporary"] }, "example": ["full_time"], "description": "Is tipleri / Job types" },
+            "location": { "type": "string", "maxLength": 200, "example": "Ankara", "description": "Konum / Location" },
+            "salaryMin": { "type": "number", "minimum": 0, "example": 100000, "description": "Minimum maas / Minimum salary" },
+            "frequency": { "type": "string", "enum": ["daily", "weekly", "instant"], "example": "weekly", "description": "Bildirim sikligi / Notification frequency" },
+            "isActive": { "type": "boolean", "example": true, "description": "Aktif mi / Is active" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "userId": { "type": "string", "format": "uuid" },
+            "keywords": { "type": "string" },
+            "categories": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+            "jobTypes": { "type": "array", "items": { "type": "string" } },
+            "location": { "type": "string" },
+            "salaryMin": { "type": "number" },
+            "frequency": { "type": "string" },
+            "isActive": { "type": "boolean" },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu alarm size ait degil / Forbidden (not owner)",
+          "404": "Alarm bulunamadi / Alert not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "DELETE /api/v1/alerts/{id}": {
+        "description": "Delete job alert / Is alarmini sil",
+        "description_en": "Delete a job alert owned by the authenticated seeker",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Alarm ID'si / Alert UUID" }
+        },
+        "response": {
+          "status": 204,
+          "description": "Basarili silme, response body yok / Successfully deleted, no response body"
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu alarm size ait degil / Forbidden (not owner)",
+          "404": "Alarm bulunamadi / Alert not found"
+        }
+      }
+    },
+    "employer": {
+      "_auth": { "required": true, "role": "employer", "header": "Authorization: Bearer <JWT>" },
+      "POST /api/v1/employer/jobs": {
+        "description": "Create job listing / Is ilani olustur",
+        "description_en": "Create a new job listing under the authenticated employer's company",
+        "auth_required": true,
+        "request_body": {
+          "required": ["title", "description", "categoryId", "jobType", "workModel", "location"],
+          "schema": {
+            "title": { "type": "string", "minLength": 5, "maxLength": 200, "example": "Senior React Developer", "description": "Is basligi / Job title" },
+            "description": { "type": "string", "format": "markdown", "maxLength": 50000, "example": "We are looking for an experienced React developer to join our team...", "description": "Is aciklamasi (Markdown) / Job description" },
+            "requirements": { "type": "string", "maxLength": 20000, "example": "- 5+ years React\n- TypeScript\n- Team leadership...", "description": "Gereksinimler / Requirements" },
+            "responsibilities": { "type": "string", "maxLength": 20000, "example": "- Lead frontend team\n- Architect solutions...", "description": "Sorumluluklar / Responsibilities" },
+            "benefits": { "type": "string", "maxLength": 20000, "example": "- Private health insurance\n- Remote work...", "description": "Yan haklar / Benefits" },
+            "skills": { "type": "array", "items": { "type": "string" }, "maxItems": 50, "example": ["React", "TypeScript", "Node.js", "AWS"], "description": "Gereken yetenekler / Required skills" },
+            "categoryId": { "type": "string", "format": "uuid", "required": true, "example": "550e8400-e29b-41d4-a716-446655440002", "description": "Kategori ID'si / Category UUID" },
+            "jobType": { "type": "string", "enum": ["full_time", "part_time", "contract", "freelance", "internship", "temporary"], "required": true, "example": "full_time", "description": "Is tipi / Job type" },
+            "workModel": { "type": "string", "enum": ["on_site", "hybrid", "remote"], "required": true, "example": "remote", "description": "Calisma modeli / Work model" },
+            "location": { "type": "string", "maxLength": 200, "required": true, "example": "Istanbul, Turkiye", "description": "Konum / Location" },
+            "salaryMin": { "type": "number", "minimum": 0, "example": 80000, "description": "Minimum maas / Minimum salary" },
+            "salaryMax": { "type": "number", "minimum": 0, "example": 120000, "description": "Maximum maas / Maximum salary" },
+            "salaryCurrency": { "type": "string", "default": "TRY", "example": "TRY", "description": "Para birimi / Currency" },
+            "experienceLevel": { "type": "string", "enum": ["entry", "mid", "senior", "lead", "executive"], "example": "senior", "description": "Deneyim seviyesi / Experience level" },
+            "applicationUrl": { "type": "string", "format": "uri", "example": null, "description": "Harici basvuru linki (opsiyonel) / External application URL (optional)" },
+            "expiresAt": { "type": "string", "format": "date-time", "example": "2026-08-20T23:59:59Z", "description": "Ilan bitis tarihi / Listing expiry date" },
+            "isFeatured": { "type": "boolean", "default": false, "example": false, "description": "One cikan ilan mi / Is featured" }
+          }
+        },
+        "response": {
+          "status": 201,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440000" },
+            "companyId": { "type": "string", "format": "uuid" },
+            "title": { "type": "string", "example": "Senior React Developer" },
+            "slug": { "type": "string", "example": "senior-react-developer-abc123" },
+            "status": { "type": "string", "example": "draft", "description": "Ilk durum: draft (admin onayi bekler) / Initial status: draft (pending admin review)" },
+            "isFeatured": { "type": "boolean", "example": false },
+            "expiresAt": { "type": "string", "format": "date-time" },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Sirketiniz yok veya yetkiniz yetersiz / No company profile or insufficient permissions",
+          "404": "Kategori bulunamadi / Category not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "PUT /api/v1/employer/jobs/{id}": {
+        "description": "Update job listing / Is ilanini guncelle",
+        "description_en": "Update an existing job listing; only sent fields are updated (partial update)",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Is ilani ID'si / Job listing UUID" }
+        },
+        "request_body": {
+          "schema": {
+            "title": { "type": "string", "minLength": 5, "maxLength": 200, "example": "Lead React Developer", "description": "Is basligi / Job title" },
+            "description": { "type": "string", "format": "markdown", "maxLength": 50000, "example": "Updated description...", "description": "Is aciklamasi / Job description" },
+            "requirements": { "type": "string", "maxLength": 20000, "example": "Updated requirements...", "description": "Gereksinimler / Requirements" },
+            "responsibilities": { "type": "string", "maxLength": 20000, "description": "Sorumluluklar / Responsibilities" },
+            "benefits": { "type": "string", "maxLength": 20000, "description": "Yan haklar / Benefits" },
+            "skills": { "type": "array", "items": { "type": "string" }, "maxItems": 50, "example": ["React", "TypeScript", "Node.js"], "description": "Gereken yetenekler / Required skills" },
+            "categoryId": { "type": "string", "format": "uuid", "description": "Kategori ID'si / Category UUID" },
+            "jobType": { "type": "string", "enum": ["full_time", "part_time", "contract", "freelance", "internship", "temporary"], "description": "Is tipi / Job type" },
+            "workModel": { "type": "string", "enum": ["on_site", "hybrid", "remote"], "description": "Calisma modeli / Work model" },
+            "location": { "type": "string", "maxLength": 200, "description": "Konum / Location" },
+            "salaryMin": { "type": "number", "minimum": 0, "description": "Minimum maas / Minimum salary" },
+            "salaryMax": { "type": "number", "minimum": 0, "description": "Maximum maas / Maximum salary" },
+            "salaryCurrency": { "type": "string", "description": "Para birimi / Currency" },
+            "experienceLevel": { "type": "string", "enum": ["entry", "mid", "senior", "lead", "executive"], "description": "Deneyim seviyesi / Experience level" },
+            "applicationUrl": { "type": "string", "format": "uri", "description": "Harici basvuru linki / External application URL" },
+            "status": { "type": "string", "enum": ["published", "paused", "filled"], "example": "published", "description": "Ilan durumu / Listing status" },
+            "expiresAt": { "type": "string", "format": "date-time", "description": "Ilan bitis tarihi / Listing expiry date" },
+            "isFeatured": { "type": "boolean", "description": "One cikan ilan mi / Is featured" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "title": { "type": "string", "example": "Lead React Developer" },
+            "slug": { "type": "string" },
+            "status": { "type": "string", "example": "published" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu ilan sirketinize ait degil / Forbidden (not your company's listing)",
+          "404": "Is ilani bulunamadi / Job listing not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "DELETE /api/v1/employer/jobs/{id}": {
+        "description": "Delete/Archive job listing / Is ilanini sil/arsivle",
+        "description_en": "Soft-delete (archive) a job listing; set status to 'archived'",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Is ilani ID'si / Job listing UUID" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "status": { "type": "string", "example": "archived" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu ilan sirketinize ait degil / Forbidden (not your company's listing)",
+          "404": "Is ilani bulunamadi / Job listing not found"
+        }
+      },
+      "GET /api/v1/employer/jobs": {
+        "description": "List my company's jobs / Sirketimin ilanlarini listele",
+        "description_en": "List all jobs for the authenticated employer's company",
+        "auth_required": true,
+        "query_parameters": {
+          "page": { "type": "integer", "default": 1, "min": 1, "example": 1, "description": "Sayfa numarasi / Page number" },
+          "limit": { "type": "integer", "default": 20, "min": 1, "max": 100, "example": 20, "description": "Sayfa basina kayit / Records per page" },
+          "status": { "type": "string", "enum": ["draft", "published", "paused", "filled", "expired", "archived"], "example": "published", "description": "Duruma gore filtrele / Filter by status" },
+          "sort": { "type": "string", "enum": ["created_at", "updated_at", "title", "applicationCount"], "default": "created_at", "example": "created_at", "description": "Siralama / Sort field" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "desc", "description": "Siralama yonu / Sort direction" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "data": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "title": { "type": "string" },
+                "slug": { "type": "string" },
+                "jobType": { "type": "string" },
+                "workModel": { "type": "string" },
+                "location": { "type": "string" },
+                "status": { "type": "string", "example": "published" },
+                "isFeatured": { "type": "boolean" },
+                "applicationCount": { "type": "integer", "example": 47 },
+                "viewsCount": { "type": "integer", "example": 1542 },
+                "createdAt": { "type": "string", "format": "date-time" },
+                "updatedAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "meta": {
+              "total": { "type": "integer", "example": 35 },
+              "page": { "type": "integer", "example": 1 },
+              "limit": { "type": "integer", "example": 20 },
+              "totalPages": { "type": "integer", "example": 2 }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Sirket profili bulunamadi / Forbidden (no company profile)",
+          "422": "Gecersiz filtre / Invalid filter"
+        }
+      },
+      "GET /api/v1/employer/jobs/{id}/applications": {
+        "description": "List applications for a job / Ilana yapilan basvurulari listele",
+        "description_en": "List all applications for a specific job listing owned by the employer's company",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Is ilani ID'si / Job listing UUID" }
+        },
+        "query_parameters": {
+          "page": { "type": "integer", "default": 1, "min": 1, "example": 1, "description": "Sayfa numarasi / Page number" },
+          "limit": { "type": "integer", "default": 20, "min": 1, "max": 100, "example": 20, "description": "Sayfa basina kayit / Records per page" },
+          "status": { "type": "string", "enum": ["applied", "under_review", "screening", "interview", "offer", "hired", "rejected"], "example": "under_review", "description": "Duruma gore filtrele / Filter by status" },
+          "sort": { "type": "string", "enum": ["created_at", "updated_at", "employerRating"], "default": "created_at", "example": "created_at", "description": "Siralama / Sort field" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "desc", "description": "Siralama yonu / Sort direction" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "data": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "seeker": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "fullName": { "type": "string", "example": "Ahmet Yilmaz" },
+                  "headline": { "type": "string", "example": "Senior React Developer" },
+                  "location": { "type": "string" },
+                  "resumeUrl": { "type": "string" }
+                },
+                "coverLetter": { "type": "string", "nullable": true },
+                "status": { "type": "string", "example": "under_review" },
+                "employerRating": { "type": "integer", "nullable": true, "example": 4 },
+                "createdAt": { "type": "string", "format": "date-time" },
+                "updatedAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "meta": {
+              "total": { "type": "integer", "example": 47 },
+              "page": { "type": "integer", "example": 1 },
+              "limit": { "type": "integer", "example": 20 },
+              "totalPages": { "type": "integer", "example": 3 }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu ilan sirketinize ait degil / Forbidden (not your company's listing)",
+          "404": "Is ilani bulunamadi / Job listing not found",
+          "422": "Gecersiz filtre / Invalid filter"
+        }
+      },
+      "GET /api/v1/employer/applications/{id}": {
+        "description": "Get application details / Basvuru detayini getir",
+        "description_en": "Get full details of a specific application including seeker profile",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Basvuru ID'si / Application UUID" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "jobListing": {
+              "id": { "type": "string", "format": "uuid" },
+              "title": { "type": "string", "example": "Senior React Developer" },
+              "slug": { "type": "string" }
+            },
+            "seeker": {
+              "id": { "type": "string", "format": "uuid" },
+              "fullName": { "type": "string", "example": "Ahmet Yilmaz" },
+              "headline": { "type": "string" },
+              "email": { "type": "string", "format": "email", "example": "ahmet@example.com" },
+              "phone": { "type": "string" },
+              "location": { "type": "string" },
+              "skills": { "type": "array", "items": { "type": "string" } },
+              "experience": { "type": "array" },
+              "education": { "type": "array" },
+              "certifications": { "type": "array" },
+              "resumeUrl": { "type": "string" }
+            },
+            "coverLetter": { "type": "string", "nullable": true },
+            "resumeUrl": { "type": "string" },
+            "status": { "type": "string", "example": "under_review" },
+            "employerNotes": { "type": "string", "nullable": true },
+            "employerRating": { "type": "integer", "nullable": true, "minimum": 1, "maximum": 5, "example": 4 },
+            "rejectionReason": { "type": "string", "nullable": true },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu basvuru sirketinize ait degil / Forbidden (not your company's application)",
+          "404": "Basvuru bulunamadi / Application not found"
+        }
+      },
+      "PUT /api/v1/employer/applications/{id}/status": {
+        "description": "Update application status / Basvuru durumunu guncelle",
+        "description_en": "Update the status of an application (ATS pipeline stage change)",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Basvuru ID'si / Application UUID" }
+        },
+        "request_body": {
+          "required": ["status"],
+          "schema": {
+            "status": { "type": "string", "enum": ["applied", "under_review", "screening", "interview", "offer", "hired", "rejected"], "required": true, "example": "interview", "description": "Yeni durum / New status" },
+            "employerNotes": { "type": "string", "maxLength": 5000, "example": "Good candidate, moved to interview stage", "description": "Dahili notlar / Internal notes" },
+            "rejectionReason": { "type": "string", "maxLength": 2000, "example": null, "description": "Red sebebi (status rejected ise) / Rejection reason (if status rejected)" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "status": { "type": "string", "example": "interview" },
+            "employerNotes": { "type": "string", "nullable": true },
+            "rejectionReason": { "type": "string", "nullable": true },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Gecersiz durum gecisi / Invalid status transition",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu basvuru sirketinize ait degil / Forbidden (not your company's application)",
+          "404": "Basvuru bulunamadi / Application not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "POST /api/v1/employer/applications/{id}/message": {
+        "description": "Send message to applicant / Adaya mesaj gonder",
+        "description_en": "Send a message to the applicant via the platform messaging system",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Basvuru ID'si / Application UUID" }
+        },
+        "request_body": {
+          "required": ["content"],
+          "schema": {
+            "content": { "type": "string", "minLength": 1, "maxLength": 10000, "required": true, "example": "Merhaba Ahmet Bey, basvurunuzu inceledik ve sizinle bir gorusme planlamak isteriz.", "description": "Mesaj icerigi / Message content" }
+          }
+        },
+        "response": {
+          "status": 201,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440500" },
+            "applicationId": { "type": "string", "format": "uuid" },
+            "senderId": { "type": "string", "format": "uuid" },
+            "content": { "type": "string", "example": "Merhaba Ahmet Bey, basvurunuzu inceledik..." },
+            "isRead": { "type": "boolean", "example": false },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Mesaj icerigi gerekli / Message content required",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu basvuru sirketinize ait degil / Forbidden (not your company's application)",
+          "404": "Basvuru bulunamadi / Application not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "PUT /api/v1/employer/company": {
+        "description": "Update company profile / Sirket profilini guncelle",
+        "description_en": "Update the authenticated employer's company profile (partial update)",
+        "auth_required": true,
+        "request_body": {
+          "schema": {
+            "name": { "type": "string", "minLength": 2, "maxLength": 200, "example": "TechCorp A.S.", "description": "Sirket adi / Company name" },
+            "description": { "type": "string", "maxLength": 10000, "example": "Leading technology company...", "description": "Sirket aciklamasi / Company description" },
+            "website": { "type": "string", "format": "uri", "example": "https://techcorp.com", "description": "Web sitesi / Website" },
+            "industry": { "type": "string", "maxLength": 200, "example": "Information Technology", "description": "Sektor / Industry" },
+            "size": { "type": "string", "enum": ["1-10", "11-50", "51-200", "201-1000", "1000+"], "example": "51-200", "description": "Sirket buyuklugu / Company size" },
+            "location": { "type": "string", "maxLength": 200, "example": "Istanbul, Turkiye", "description": "Konum / Location" },
+            "cultureDescription": { "type": "string", "maxLength": 5000, "example": "Innovation-driven culture...", "description": "Sirket kulturu / Culture description" },
+            "benefits": { "type": "array", "items": { "type": "string" }, "example": ["Private Health Insurance", "Remote Work", "Stock Options"], "description": "Yan haklar / Benefits" },
+            "socialLinks": { "type": "object", "example": { "linkedin": "https://linkedin.com/company/techcorp", "twitter": "https://twitter.com/techcorp" }, "description": "Sosyal medya linkleri / Social links" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "ownerId": { "type": "string", "format": "uuid" },
+            "name": { "type": "string" },
+            "slug": { "type": "string" },
+            "logoUrl": { "type": "string", "nullable": true },
+            "bannerUrl": { "type": "string", "nullable": true },
+            "description": { "type": "string" },
+            "website": { "type": "string" },
+            "industry": { "type": "string" },
+            "size": { "type": "string" },
+            "location": { "type": "string" },
+            "cultureDescription": { "type": "string" },
+            "benefits": { "type": "array", "items": { "type": "string" } },
+            "socialLinks": { "type": "object" },
+            "isVerified": { "type": "boolean" },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not employer or not company owner)",
+          "404": "Sirket profili bulunamadi / Company profile not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "GET /api/v1/employer/analytics": {
+        "description": "ATS analytics dashboard / ATS analitik paneli",
+        "description_en": "Get analytics for the employer's ATS (Applicant Tracking System)",
+        "auth_required": true,
+        "query_parameters": {
+          "period": { "type": "string", "enum": ["7d", "30d", "90d", "1y", "all"], "default": "30d", "example": "30d", "description": "Analiz periyodu / Analysis period" },
+          "jobId": { "type": "string", "format": "uuid", "example": null, "description": "Belirli bir ilan icin (opsiyonel) / For a specific job (optional)" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "overview": {
+              "totalJobs": { "type": "integer", "example": 35, "description": "Toplam ilan / Total jobs" },
+              "activeJobs": { "type": "integer", "example": 12, "description": "Aktif ilan / Active jobs" },
+              "totalApplications": { "type": "integer", "example": 450, "description": "Toplam basvuru / Total applications" },
+              "newApplications": { "type": "integer", "example": 28, "description": "Yeni basvuru (period) / New applications in period" },
+              "averageTimeToHire": { "type": "number", "example": 18.5, "description": "Ortalama ise alim suresi (gun) / Average time to hire (days)" },
+              "hiredCount": { "type": "integer", "example": 8, "description": "Ise alinan (period) / Hired in period" }
+            },
+            "pipelineBreakdown": {
+              "applied": { "type": "integer", "example": 150 },
+              "under_review": { "type": "integer", "example": 85 },
+              "screening": { "type": "integer", "example": 40 },
+              "interview": { "type": "integer", "example": 25 },
+              "offer": { "type": "integer", "example": 12 },
+              "hired": { "type": "integer", "example": 8 },
+              "rejected": { "type": "integer", "example": 130 }
+            },
+            "applicationTrend": {
+              "type": "array",
+              "items": {
+                "date": { "type": "string", "format": "date", "example": "2026-07-01" },
+                "count": { "type": "integer", "example": 15 }
+              },
+              "description": "Gunluk basvuru trendi / Daily application trend"
+            },
+            "topPerformingJobs": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "title": { "type": "string", "example": "Senior React Developer" },
+                "applicationCount": { "type": "integer", "example": 85 },
+                "viewsCount": { "type": "integer", "example": 2500 }
+              },
+              "maxItems": 10
+            },
+            "sourceBreakdown": {
+              "type": "object",
+              "description": "Basvuru kaynak dagilimi / Application source breakdown",
+              "example": { "organic": 180, "referral": 45, "linkedin": 120, "social_media": 60, "other": 45 }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin yetkiniz yok / Forbidden (not employer)"
+        }
+      },
+      "POST /api/v1/employer/interviews": {
+        "description": "Schedule interview / Gorusme planla",
+        "description_en": "Schedule a new interview for a specific application",
+        "auth_required": true,
+        "request_body": {
+          "required": ["applicationId", "scheduledAt", "durationMinutes", "type"],
+          "schema": {
+            "applicationId": { "type": "string", "format": "uuid", "required": true, "example": "550e8400-e29b-41d4-a716-446655440200", "description": "Basvuru ID'si / Application UUID" },
+            "scheduledAt": { "type": "string", "format": "date-time", "required": true, "example": "2026-07-25T14:00:00Z", "description": "Gorusme zamani / Scheduled time" },
+            "durationMinutes": { "type": "integer", "minimum": 15, "maximum": 480, "required": true, "example": 60, "description": "Sure (dakika) / Duration in minutes" },
+            "type": { "type": "string", "enum": ["phone", "video", "in_person", "technical"], "required": true, "example": "video", "description": "Gorusme tipi / Interview type" },
+            "meetingLink": { "type": "string", "format": "uri", "example": "https://meet.google.com/abc-defg-hij", "description": "Toplanti linki (video/phone icin) / Meeting link (for video/phone)" },
+            "notes": { "type": "string", "maxLength": 5000, "example": "Prepare system design case study", "description": "Notlar / Notes" }
+          }
+        },
+        "response": {
+          "status": 201,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440600" },
+            "applicationId": { "type": "string", "format": "uuid" },
+            "scheduledAt": { "type": "string", "format": "date-time" },
+            "durationMinutes": { "type": "integer", "example": 60 },
+            "type": { "type": "string", "example": "video" },
+            "meetingLink": { "type": "string", "nullable": true },
+            "notes": { "type": "string", "nullable": true },
+            "status": { "type": "string", "example": "scheduled" },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu basvuru sirketinize ait degil / Forbidden (not your company's application)",
+          "404": "Basvuru bulunamadi / Application not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "PUT /api/v1/employer/interviews/{id}": {
+        "description": "Update interview details / Gorusme detaylarini guncelle",
+        "description_en": "Update scheduled interview details (reschedule, change type, add notes, cancel)",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Gorusme ID'si / Interview UUID" }
+        },
+        "request_body": {
+          "schema": {
+            "scheduledAt": { "type": "string", "format": "date-time", "example": "2026-07-26T10:00:00Z", "description": "Yeni gorusme zamani / Rescheduled time" },
+            "durationMinutes": { "type": "integer", "minimum": 15, "maximum": 480, "example": 45, "description": "Sure (dakika) / Duration in minutes" },
+            "type": { "type": "string", "enum": ["phone", "video", "in_person", "technical"], "example": "in_person", "description": "Gorusme tipi / Interview type" },
+            "meetingLink": { "type": "string", "format": "uri", "example": "https://meet.google.com/new-link", "description": "Toplanti linki / Meeting link" },
+            "notes": { "type": "string", "maxLength": 5000, "example": "Updated: changed to in-person", "description": "Notlar / Notes" },
+            "status": { "type": "string", "enum": ["scheduled", "completed", "cancelled", "rescheduled"], "example": "rescheduled", "description": "Gorusme durumu / Interview status" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "applicationId": { "type": "string", "format": "uuid" },
+            "scheduledAt": { "type": "string", "format": "date-time" },
+            "durationMinutes": { "type": "integer" },
+            "type": { "type": "string" },
+            "meetingLink": { "type": "string", "nullable": true },
+            "notes": { "type": "string", "nullable": true },
+            "status": { "type": "string", "example": "rescheduled" },
+            "createdAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu gorusme sirketinize ait degil / Forbidden (not your company's interview)",
+          "404": "Gorusme bulunamadi / Interview not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      }
+    },
+    "admin": {
+      "_auth": { "required": true, "role": "admin", "header": "Authorization: Bearer <JWT>" },
+      "GET /api/v1/admin/jobs/pending": {
+        "description": "Pending approval listings / Onay bekleyen ilanlar",
+        "description_en": "List job listings with status 'draft' pending admin approval",
+        "auth_required": true,
+        "query_parameters": {
+          "page": { "type": "integer", "default": 1, "min": 1, "example": 1, "description": "Sayfa numarasi / Page number" },
+          "limit": { "type": "integer", "default": 20, "min": 1, "max": 100, "example": 20, "description": "Sayfa basina kayit / Records per page" },
+          "sort": { "type": "string", "enum": ["created_at", "title"], "default": "created_at", "example": "created_at", "description": "Siralama / Sort field" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "desc", "description": "Siralama yonu / Sort direction" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "data": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "title": { "type": "string", "example": "Senior React Developer" },
+                "slug": { "type": "string" },
+                "company": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "name": { "type": "string", "example": "TechCorp A.S." },
+                  "slug": { "type": "string" },
+                  "isVerified": { "type": "boolean" }
+                },
+                "category": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "name": { "type": "string" },
+                  "slug": { "type": "string" }
+                },
+                "jobType": { "type": "string" },
+                "workModel": { "type": "string" },
+                "location": { "type": "string" },
+                "status": { "type": "string", "example": "draft" },
+                "createdAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "meta": {
+              "total": { "type": "integer", "example": 12 },
+              "page": { "type": "integer", "example": 1 },
+              "limit": { "type": "integer", "example": 20 },
+              "totalPages": { "type": "integer", "example": 1 }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin admin yetkisi gerekli / Forbidden (admin only)"
+        }
+      },
+      "PUT /api/v1/admin/jobs/{id}/approve": {
+        "description": "Approve/Reject listing / Ilani onayla/reddet",
+        "description_en": "Approve (set status to 'published') or reject (set status to 'draft' with notes) a job listing",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Is ilani ID'si / Job listing UUID" }
+        },
+        "request_body": {
+          "required": ["action"],
+          "schema": {
+            "action": { "type": "string", "enum": ["approve", "reject"], "required": true, "example": "approve", "description": "Islem: onayla veya reddet / Action: approve or reject" },
+            "reason": { "type": "string", "maxLength": 2000, "example": null, "description": "Reddetme sebebi (action reject ise zorunlu) / Rejection reason (required if action is reject)" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "status": { "type": "string", "example": "published" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "errors": {
+          "400": "Gecersiz islem / Invalid action. 'reject' secildiginde reason zorunlu / Reason required when action is 'reject'",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin admin yetkisi gerekli / Forbidden (admin only)",
+          "404": "Is ilani bulunamadi / Job listing not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "GET /api/v1/admin/users": {
+        "description": "User management / Kullanici yonetimi",
+        "description_en": "List and search all platform users with filtering",
+        "auth_required": true,
+        "query_parameters": {
+          "page": { "type": "integer", "default": 1, "min": 1, "example": 1, "description": "Sayfa numarasi / Page number" },
+          "limit": { "type": "integer", "default": 50, "min": 1, "max": 200, "example": 50, "description": "Sayfa basina kayit / Records per page" },
+          "role": { "type": "string", "enum": ["seeker", "employer", "admin"], "example": "employer", "description": "Role gore filtrele / Filter by role" },
+          "isActive": { "type": "boolean", "example": true, "description": "Aktif/pasif / Active/inactive" },
+          "search": { "type": "string", "example": "ahmet@example.com", "description": "E-posta ile ara / Search by email" },
+          "sort": { "type": "string", "enum": ["created_at", "email"], "default": "created_at", "example": "created_at", "description": "Siralama / Sort field" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "desc", "description": "Siralama yonu / Sort direction" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "data": {
+              "type": "array",
+              "items": {
+                "id": { "type": "string", "format": "uuid" },
+                "email": { "type": "string", "format": "email", "example": "ahmet@example.com" },
+                "role": { "type": "string", "example": "seeker" },
+                "isActive": { "type": "boolean", "example": true },
+                "createdAt": { "type": "string", "format": "date-time" }
+              }
+            },
+            "meta": {
+              "total": { "type": "integer", "example": 1250 },
+              "page": { "type": "integer", "example": 1 },
+              "limit": { "type": "integer", "example": 50 },
+              "totalPages": { "type": "integer", "example": 25 }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin admin yetkisi gerekli / Forbidden (admin only)",
+          "422": "Gecersiz filtre / Invalid filter"
+        }
+      },
+      "PUT /api/v1/admin/users/{id}/status": {
+        "description": "Suspend/Activate user / Kullaniciyi askiya al/aktif et",
+        "description_en": "Suspend (deactivate) or activate a user account",
+        "auth_required": true,
+        "path_parameters": {
+          "id": { "type": "string", "format": "uuid", "required": true, "description": "Kullanici ID'si / User UUID" }
+        },
+        "request_body": {
+          "required": ["isActive"],
+          "schema": {
+            "isActive": { "type": "boolean", "required": true, "example": false, "description": "true: aktif, false: askiya al / true: activate, false: suspend" },
+            "reason": { "type": "string", "maxLength": 2000, "example": "Terms of service violation - repeated spam postings", "description": "Islem sebebi / Reason for action" }
+          }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "id": { "type": "string", "format": "uuid" },
+            "email": { "type": "string", "format": "email" },
+            "role": { "type": "string" },
+            "isActive": { "type": "boolean", "example": false }
+          }
+        },
+        "errors": {
+          "400": "Kendi hesabinizi devre disi birakamazsiniz / Cannot deactivate own account",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin admin yetkisi gerekli / Forbidden (admin only)",
+          "404": "Kullanici bulunamadi / User not found",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      },
+      "GET /api/v1/admin/analytics": {
+        "description": "Platform analytics / Platform analitigi",
+        "description_en": "Retrieve platform-wide analytics and metrics",
+        "auth_required": true,
+        "query_parameters": {
+          "period": { "type": "string", "enum": ["7d", "30d", "90d", "1y", "all"], "default": "30d", "example": "30d", "description": "Analiz periyodu / Analysis period" }
+        },
+        "response": {
+          "status": 200,
+          "schema": {
+            "userMetrics": {
+              "totalUsers": { "type": "integer", "example": 12500 },
+              "activeUsers": { "type": "integer", "example": 9800 },
+              "newUsers": { "type": "integer", "example": 350, "description": "Period icinde yeni / New in period" },
+              "seekers": { "type": "integer", "example": 11000 },
+              "employers": { "type": "integer", "example": 1480 },
+              "admins": { "type": "integer", "example": 20 }
+            },
+            "jobMetrics": {
+              "totalListings": { "type": "integer", "example": 5800 },
+              "activeListings": { "type": "integer", "example": 1200 },
+              "newListings": { "type": "integer", "example": 85, "description": "Period icinde yeni / New in period" },
+              "approvedListings": { "type": "integer", "example": 78 },
+              "rejectedListings": { "type": "integer", "example": 7 }
+            },
+            "applicationMetrics": {
+              "totalApplications": { "type": "integer", "example": 45000 },
+              "applicationsThisPeriod": { "type": "integer", "example": 1200 },
+              "hiredCount": { "type": "integer", "example": 320 },
+              "averageApplicationsPerJob": { "type": "number", "example": 37.5 }
+            },
+            "revenueMetrics": {
+              "totalRevenue": { "type": "number", "example": 250000 },
+              "currency": { "type": "string", "example": "TRY" },
+              "activeSubscriptions": { "type": "integer", "example": 145 }
+            },
+            "trends": {
+              "userGrowth": {
+                "type": "array",
+                "items": {
+                  "date": { "type": "string", "format": "date", "example": "2026-07-01" },
+                  "newUsers": { "type": "integer", "example": 45 }
+                },
+                "description": "Gunluk kullanici buyumesi / Daily user growth"
+              },
+              "applicationTrend": {
+                "type": "array",
+                "items": {
+                  "date": { "type": "string", "format": "date", "example": "2026-07-01" },
+                  "count": { "type": "integer", "example": 180 }
+                },
+                "description": "Gunluk basvuru trendi / Daily application trend"
+              }
+            }
+          }
+        },
+        "errors": {
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin admin yetkisi gerekli / Forbidden (admin only)"
+        }
+      },
+      "POST /api/v1/admin/subscriptions": {
+        "description": "Manage employer subscriptions / Isveren aboneliklerini yonet",
+        "description_en": "Create or manage employer subscription plans",
+        "auth_required": true,
+        "request_body": {
+          "required": ["companyId", "plan", "billingCycle"],
+          "schema": {
+            "companyId": { "type": "string", "format": "uuid", "required": true, "example": "550e8400-e29b-41d4-a716-446655440001", "description": "Sirket ID'si / Company UUID" },
+            "plan": { "type": "string", "enum": ["free", "basic", "pro", "enterprise"], "required": true, "example": "pro", "description": "Abonelik plani / Subscription plan" },
+            "billingCycle": { "type": "string", "enum": ["monthly", "annual"], "required": true, "example": "monthly", "description": "Faturalama donemi / Billing cycle" },
+            "maxActiveJobListings": { "type": "integer", "minimum": 1, "example": 20, "description": "Maksimum aktif ilan sayisi / Max active listings" },
+            "hasFeaturedJobs": { "type": "boolean", "default": false, "example": true, "description": "One cikan ilan hakki / Featured job access" },
+            "hasAnalytics": { "type": "boolean", "default": false, "example": true, "description": "Analitik erisimi / Analytics access" },
+            "startsAt": { "type": "string", "format": "date-time", "example": "2026-07-20T00:00:00Z", "description": "Baslangic tarihi / Start date" },
+            "endsAt": { "type": "string", "format": "date-time", "example": "2026-08-20T00:00:00Z", "description": "Bitis tarihi (opsiyonel) / End date (optional)" },
+            "notes": { "type": "string", "maxLength": 2000, "example": "Upgraded from basic plan", "description": "Notlar / Notes" }
+          }
+        },
+        "response": {
+          "status": 201,
+          "schema": {
+            "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440700" },
+            "companyId": { "type": "string", "format": "uuid" },
+            "plan": { "type": "string", "example": "pro" },
+            "billingCycle": { "type": "string", "example": "monthly" },
+            "maxActiveJobListings": { "type": "integer", "example": 20 },
+            "hasFeaturedJobs": { "type": "boolean", "example": true },
+            "hasAnalytics": { "type": "boolean", "example": true },
+            "status": { "type": "string", "example": "active" },
+            "startsAt": { "type": "string", "format": "date-time" },
+            "endsAt": { "type": "string", "format": "date-time", "nullable": true }
+          }
+        },
+        "errors": {
+          "400": "Validasyon hatasi / Validation error",
+          "401": "Yetkilendirme gerekli / Authentication required",
+          "403": "Bu islem icin admin yetkisi gerekli / Forbidden (admin only)",
+          "404": "Sirket bulunamadi / Company not found",
+          "409": "Bu sirketin zaten aktif bir aboneligi var / Company already has an active subscription",
+          "422": "Gecersiz veri / Unprocessable entity"
+        }
+      }
+    }
+  }
+}

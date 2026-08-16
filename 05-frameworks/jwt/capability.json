@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "description": "JWT Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. JSON Web Token ile stateless authentication.",
+    "resource_type": "util",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "jwt",
+  "category": "util",
+  "display_name": "JSON Web Token (JWT)",
+  "description": "RFC 7519 standardı, stateless authentication token formatı. Access token (kısa ömürlü) + Refresh token (uzun ömürlü) pattern'i. HS256/RS256 algoritmaları. Cookie (httpOnly, secure, sameSite) veya Authorization header ile taşıma.",
+
+  "installation_context": {
+    "netwebapi": {
+      "nuget": ["Microsoft.AspNetCore.Authentication.JwtBearer"],
+      "config": "builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(...)",
+      "entry_point": "Program.cs",
+      "key_storage": "appsettings.json → Azure Key Vault → environment variable"
+    },
+    "node-express": {
+      "npm": ["jsonwebtoken"],
+      "npm_dev": ["@types/jsonwebtoken"],
+      "entry_point": "src/utils/jwt.js",
+      "key_storage": "JWT_SECRET environment variable"
+    },
+    "nodejs": {
+      "npm": ["jsonwebtoken"],
+      "entry_point": "src/utils/jwt.js",
+      "key_storage": "JWT_SECRET environment variable"
+    }
+  },
+
+  "config_template": "integration_template/jwt-auth.template",
+  "usage_pattern": "Login sonrası Access Token (15dk) ve Refresh Token (7gün) oluşturulur. Access token Authorization: Bearer header ile taşınır. Refresh token httpOnly cookie'de saklanır. Client 401 aldığında /auth/refresh endpoint'ine istek atar.",
+
+  "verification_steps": [
+    "JWT_SECRET environment variable tanımlı mı? (≥256-bit rastgele)",
+    "Access token expiry ≤ 15 dakika mı?",
+    "Refresh token httpOnly + secure + sameSite cookie mi?",
+    "Token payload'ı minimal mi? (sadece sub, role, iat, exp)",
+    "Middleware token expiry doğruluyor mu? (exp claim)",
+    "Refresh token rotation yapılıyor mu? (her refresh'te yeni refresh token)"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Real Estate Portal",
+    "error_format": "{ status, code, message, details }",
+    "rate_limiting": "Public: 500/min | Auth: 100/min | Agent: 200/min | Admin: 50/min"
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/properties": "List properties (filter: type, purpose, price, location, amenities)",
+      "GET /api/v1/properties/{id}": "Get property details with media",
+      "GET /api/v1/properties/{id}/similar": "Get similar properties",
+      "GET /api/v1/properties/map": "Get properties for map bounds (query: ne/sw coordinates)",
+      "GET /api/v1/properties/{id}/price-history": "Price change history",
+      "GET /api/v1/agents/{id}": "Get agent profile",
+      "GET /api/v1/agencies/{slug}": "Get agency profile with listings",
+      "GET /api/v1/search/suggestions": "Autocomplete for locations",
+      "GET /api/v1/neighborhoods/{id}": "Neighborhood insights (POIs, stats)"
+    },
+    "buyer": {
+      "POST /api/v1/favorites/{propertyId}": "Add/Remove favorite",
+      "GET /api/v1/favorites": "List favorite properties",
+      "POST /api/v1/shortlists": "Create shortlist",
+      "GET /api/v1/shortlists": "List shortlists",
+      "PUT /api/v1/shortlists/{id}": "Update shortlist",
+      "DELETE /api/v1/shortlists/{id}": "Delete shortlist",
+      "POST /api/v1/properties/{id}/viewing": "Request property viewing",
+      "POST /api/v1/properties/{id}/inquiry": "Send inquiry to agent",
+      "POST /api/v1/agents/{id}/message": "Send message to agent",
+      "POST /api/v1/alerts": "Create saved search alert",
+      "GET /api/v1/alerts": "List alerts",
+      "DELETE /api/v1/alerts/{id}": "Delete alert",
+      "POST /api/v1/properties/compare": "Compare properties (body: propertyIds array)"
+    },
+    "agent": {
+      "POST /api/v1/agent/properties": "Create property listing",
+      "PUT /api/v1/agent/properties/{id}": "Update property",
+      "DELETE /api/v1/agent/properties/{id}": "Remove listing",
+      "GET /api/v1/agent/properties": "List my listings",
+      "GET /api/v1/agent/inquiries": "List buyer inquiries",
+      "PUT /api/v1/agent/inquiries/{id}": "Update inquiry status",
+      "GET /api/v1/agent/viewings": "Schedule management",
+      "PUT /api/v1/agent/viewings/{id}": "Confirm/Reschedule viewing",
+      "GET /api/v1/agent/analytics": "Agent dashboard metrics",
+      "PUT /api/v1/agent/profile": "Update agent profile"
+    },
+    "admin": {
+      "GET /api/v1/admin/properties/pending": "Pending moderation queue",
+      "PUT /api/v1/admin/properties/{id}/approve": "Approve/Reject listing",
+      "GET /api/v1/admin/agents": "Manage agents",
+      "PUT /api/v1/admin/agents/{id}/verify": "Verify agent identity",
+      "PUT /api/v1/admin/agents/{id}/status": "Suspend/Activate agent",
+      "GET /api/v1/admin/analytics": "Platform analytics",
+      "POST /api/v1/admin/subscriptions": "Manage agent subscriptions"
+    }
+  }
+}

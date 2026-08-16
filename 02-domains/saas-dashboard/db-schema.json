@@ -1,0 +1,220 @@
+{
+  "_meta": { "description": "Enterprise SaaS Dashboard Schema (Organizations, Users, Subscriptions, Analytics, Audit)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "displayName": "String",
+        "avatarUrl": "String",
+        "jobTitle": "String",
+        "department": "String",
+        "phone": "String",
+        "timezone": "String",
+        "language": "String",
+        "mfaEnabled": "Boolean",
+        "mfaSecret": "String (Encrypted)",
+        "mfaBackupCodes": "String Array (Hashed)",
+        "ssoProvider": "String (Nullable)",
+        "lastLoginAt": "DateTime",
+        "lastLoginIp": "String",
+        "isActive": "Boolean",
+        "settings": "JSON (Notification preferences, UI preferences)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      }
+    },
+    "Organization": {
+      "fields": {
+        "id": "UUID",
+        "ownerId": "UUID (FK User)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "logoUrl": "String",
+        "domain": "String (Custom SSO domain, nullable)",
+        "industry": "String",
+        "size": "Enum (1-10, 11-50, 51-200, 201-1000, 1000+)",
+        "branding": "JSON (Colors, logo, favicon)",
+        "defaultLanguage": "String",
+        "timezone": "String",
+        "features": "JSON (Enabled/disabled feature flags)",
+        "securityPolicies": "JSON (Password rules, session timeout, MFA enforcement)",
+        "dataRegion": "Enum (us, eu, apac)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "members": "One-to-Many with OrganizationMember"
+      }
+    },
+    "OrganizationMember": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization)",
+        "userId": "UUID (FK User)",
+        "role": "Enum (owner, admin, member, viewer)",
+        "customPermissions": "JSON (Optional override permissions)",
+        "invitationToken": "String (Unique, nullable)",
+        "invitationExpiresAt": "DateTime",
+        "invitationAcceptedAt": "DateTime",
+        "joinedAt": "DateTime"
+      }
+    },
+    "Team": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization)",
+        "name": "String",
+        "description": "String",
+        "createdAt": "DateTime"
+      },
+      "relations": {
+        "members": "Many-to-Many with User via TeamMember"
+      }
+    },
+    "TeamMember": {
+      "fields": {
+        "id": "UUID",
+        "teamId": "UUID (FK Team)",
+        "userId": "UUID (FK User)"
+      }
+    },
+    "Subscription": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization, Unique)",
+        "planId": "String (Stripe Price ID or plan identifier)",
+        "planName": "String",
+        "tier": "Enum (free, pro, business, enterprise)",
+        "status": "Enum (active, past_due, canceled, expired, trialing)",
+        "billingCycle": "Enum (monthly, yearly)",
+        "currentPeriodStart": "DateTime",
+        "currentPeriodEnd": "DateTime",
+        "trialEndsAt": "DateTime",
+        "canceledAt": "DateTime",
+        "paymentProvider": "Enum (stripe, paypal)",
+        "paymentProviderSubscriptionId": "String",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      }
+    },
+    "Invoice": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization)",
+        "subscriptionId": "UUID (FK Subscription)",
+        "invoiceNumber": "String (Unique)",
+        "amount": "Decimal",
+        "currency": "String",
+        "status": "Enum (draft, open, paid, void, uncollectible)",
+        "paymentMethod": "String",
+        "paidAt": "DateTime",
+        "invoicePdfUrl": "String",
+        "createdAt": "DateTime"
+      }
+    },
+    "UsageRecord": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization)",
+        "metric": "Enum (api_calls, storage_gb, active_users, bandwidth_gb, seats)",
+        "value": "Decimal",
+        "recordedAt": "Date"
+      },
+      "indexes": ["organizationId", "metric", "recordedAt"]
+    },
+    "ApiKey": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization)",
+        "name": "String",
+        "key": "String (Hashed, partial for display)",
+        "scopes": "String Array (Permissions)",
+        "lastUsedAt": "DateTime",
+        "expiresAt": "DateTime (Nullable)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "WebhookEndpoint": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization)",
+        "url": "String",
+        "secret": "String (Signing secret)",
+        "eventTypes": "String Array",
+        "status": "Enum (active, disabled, failing)",
+        "lastDeliveryAt": "DateTime",
+        "failureCount": "Int",
+        "createdAt": "DateTime"
+      }
+    },
+    "WebhookLog": {
+      "fields": {
+        "id": "UUID",
+        "webhookId": "UUID (FK WebhookEndpoint)",
+        "eventType": "String",
+        "payload": "JSON",
+        "responseStatus": "Int",
+        "responseBody": "Text",
+        "status": "Enum (success, failed, retrying)",
+        "attemptNumber": "Int",
+        "deliveredAt": "DateTime"
+      }
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization)",
+        "userId": "UUID (FK User)",
+        "action": "String (e.g., user.invited, subscription.changed, settings.updated)",
+        "targetType": "String (e.g., user, subscription, organization)",
+        "targetId": "UUID",
+        "metadata": "JSON (Details of the action)",
+        "ipAddress": "String",
+        "userAgent": "String",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["organizationId", "userId", "action", "createdAt"]
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "type": "Enum (billing, system, team, security, feature)",
+        "title": "String",
+        "message": "String",
+        "link": "String",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "SupportTicket": {
+      "fields": {
+        "id": "UUID",
+        "organizationId": "UUID (FK Organization)",
+        "userId": "UUID (FK User)",
+        "subject": "String",
+        "description": "Text",
+        "priority": "Enum (low, medium, high, critical)",
+        "status": "Enum (open, in_progress, waiting_customer, resolved, closed)",
+        "category": "String",
+        "assignedTo": "UUID (FK User, admin staff)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      }
+    },
+    "TicketReply": {
+      "fields": {
+        "id": "UUID",
+        "ticketId": "UUID (FK SupportTicket)",
+        "userId": "UUID (FK User)",
+        "content": "Text",
+        "isInternal": "Boolean (Staff-only notes)",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

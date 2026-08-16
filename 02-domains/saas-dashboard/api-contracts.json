@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for SaaS Dashboard",
+    "error_format": "{ status, code, message, details }",
+    "rate_limiting": "Public: 500/min | Auth: 200/min | Admin: 100/min | API Keys: 1000/min"
+  },
+  "endpoints": {
+    "public": {
+      "POST /api/v1/auth/login": "Login with email/password",
+      "POST /api/v1/auth/social": "Social login callback",
+      "POST /api/v1/auth/saml": "SAML SSO login",
+      "POST /api/v1/auth/register": "Register new account",
+      "POST /api/v1/auth/forgot-password": "Request password reset",
+      "POST /api/v1/auth/reset-password": "Reset password with token"
+    },
+    "organization": {
+      "POST /api/v1/org": "Create organization",
+      "GET /api/v1/org": "Get organization details",
+      "PUT /api/v1/org": "Update organization settings",
+      "PUT /api/v1/org/branding": "Update branding settings",
+      "POST /api/v1/org/invite": "Invite team member",
+      "POST /api/v1/org/invite/bulk": "Bulk invite (CSV)",
+      "GET /api/v1/org/members": "List team members",
+      "PUT /api/v1/org/members/{id}/role": "Change member role",
+      "DELETE /api/v1/org/members/{id}": "Remove team member",
+      "POST /api/v1/org/features": "Enable/Disable feature flags"
+    },
+    "user": {
+      "GET /api/v1/user/profile": "Get my profile",
+      "PUT /api/v1/user/profile": "Update profile",
+      "PUT /api/v1/user/password": "Change password",
+      "POST /api/v1/user/mfa/enable": "Enable MFA",
+      "POST /api/v1/user/mfa/verify": "Verify MFA setup",
+      "POST /api/v1/user/mfa/disable": "Disable MFA",
+      "GET /api/v1/user/sessions": "Active sessions",
+      "DELETE /api/v1/user/sessions/{id}": "Revoke session",
+      "GET /api/v1/user/notifications": "List notifications",
+      "PATCH /api/v1/user/notifications/{id}": "Mark notification read",
+      "PUT /api/v1/user/notification-preferences": "Update notification prefs"
+    },
+    "subscription": {
+      "GET /api/v1/subscription/plans": "List available plans",
+      "GET /api/v1/subscription/my": "Current subscription details",
+      "POST /api/v1/subscription/create": "Create subscription",
+      "PUT /api/v1/subscription/change": "Change plan (upgrade/downgrade)",
+      "POST /api/v1/subscription/cancel": "Cancel subscription",
+      "POST /api/v1/subscription/reactivate": "Reactivate canceled subscription",
+      "GET /api/v1/subscription/invoices": "Invoice history",
+      "GET /api/v1/subscription/invoices/{id}": "Get invoice details",
+      "PUT /api/v1/subscription/payment-method": "Update payment method",
+      "POST /api/v1/subscription/coupon": "Apply coupon code"
+    },
+    "analytics": {
+      "GET /api/v1/analytics/dashboard": "Dashboard summary metrics",
+      "GET /api/v1/analytics/users": "User analytics (DAU, MAU, growth)",
+      "GET /api/v1/analytics/revenue": "Revenue analytics (MRR, ARR, churn)",
+      "GET /api/v1/analytics/usage": "Usage analytics (API, storage, etc.)",
+      "GET /api/v1/analytics/timeseries": "Time-series data for charts",
+      "POST /api/v1/analytics/export": "Export analytics report"
+    },
+    "api-keys": {
+      "POST /api/v1/api-keys": "Generate API key",
+      "GET /api/v1/api-keys": "List API keys",
+      "DELETE /api/v1/api-keys/{id}": "Revoke API key",
+      "GET /api/v1/api-keys/{id}/usage": "API key usage metrics"
+    },
+    "webhooks": {
+      "POST /api/v1/webhooks": "Create webhook endpoint",
+      "GET /api/v1/webhooks": "List webhooks",
+      "PUT /api/v1/webhooks/{id}": "Update webhook",
+      "DELETE /api/v1/webhooks/{id}": "Delete webhook",
+      "GET /api/v1/webhooks/{id}/logs": "Webhook delivery logs"
+    },
+    "audit": {
+      "GET /api/v1/audit-logs": "Audit trail (filter: user, action, date)",
+      "POST /api/v1/audit-logs/export": "Export audit logs"
+    },
+    "admin": {
+      "GET /api/v1/admin/audit-logs": "All organizations audit logs",
+      "GET /api/v1/admin/analytics": "Platform-level analytics",
+      "PUT /api/v1/admin/orgs/{id}": "Manage organization (suspend/activate)",
+      "GET /api/v1/admin/users": "All users across orgs",
+      "PUT /api/v1/admin/users/{id}": "Manage user account"
+    }
+  }
+}

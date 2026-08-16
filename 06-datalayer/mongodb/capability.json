@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "description": "MongoDB Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. JSON tabanlı belge veritabanı.",
+    "resource_type": "data-layer",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "mongodb",
+  "category": "data-layer",
+  "display_name": "MongoDB",
+  "description": "JSON/BSON tabanlı belge veritabanı. Esnek şema (schemaless), yatay ölçeklenebilirlik (sharding), aggregation pipeline, change streams ile gerçek zamanlı veri akışı.",
+
+  "installation_context": {
+    "node-express": {
+      "npm": ["mongoose"],
+      "npm_dev": [],
+      "connection_string_format": "mongodb://{{DB_USER}}:{{DB_PASSWORD}}@{{DB_HOST}}:{{DB_PORT}}/{{DB_NAME}}?authSource=admin",
+      "odm": "Mongoose",
+      "entry_point": "src/config/database.js (mongoose.connect)"
+    },
+    "nodejs": {
+      "npm": ["mongodb"],
+      "npm_dev": [],
+      "connection_string_format": "mongodb://{{DB_USER}}:{{DB_PASSWORD}}@{{DB_HOST}}:{{DB_PORT}}/{{DB_NAME}}?authSource=admin",
+      "odm": "none (native MongoDB driver)",
+      "entry_point": "src/config/db.js (MongoClient.connect)"
+    }
+  },
+
+  "config_template": "integration_template/db-connect.template",
+  "usage_pattern": "Repository Pattern ile tüm veritabanı erişimleri soyutlanır. Mongoose Schema/model tanımları /src/models/ altında, native driver kullanılıyorsa service katmanı içinde collection erişimi yapılır.",
+
+  "verification_steps": [
+    "Mongoose veya native driver doğru yüklenmiş mi?",
+    "Connection string environment variable'dan okunuyor mu?",
+    "Schema/model tanımları ayrı dosyalarda mı?",
+    "Bağlantı hataları için retry mekanizması var mı?",
+    "03-infrastructures'da docker-compose mongodb servisi tanımlanmış mı?",
+    "Index'ler tanımlanmış mı (performans için)?"
+  ],
+
+  "docker_compose_requirement": {
+    "service_name": "mongodb",
+    "image": "mongo:7",
+    "environment": ["MONGO_INITDB_DATABASE={{DB_NAME}}", "MONGO_INITDB_ROOT_USERNAME={{DB_USER}}", "MONGO_INITDB_ROOT_PASSWORD={{DB_PASSWORD}}"],
+    "volumes": ["mongodb_data:/data/db"],
+    "ports": ["{{DB_PORT}}:27017"]
+  }
+}

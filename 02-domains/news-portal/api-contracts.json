@@ -1,0 +1,57 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for News Portal",
+    "error_format": "{ status, code, message, details }",
+    "rate_limiting": "Public: 2000/min | Auth: 200/min | Editorial: 100/min | Admin: 50/min"
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/articles": "List articles (filter: category, tag, author, date, featured)",
+      "GET /api/v1/articles/{slug}": "Get full article (with paywall check)",
+      "GET /api/v1/sections/{slug}": "Get section landing page with top articles",
+      "GET /api/v1/categories": "List categories/sections",
+      "GET /api/v1/tags": "List popular tags",
+      "GET /api/v1/search": "Full-text search articles",
+      "GET /api/v1/articles/trending": "Trending articles (based on recent views)",
+      "GET /api/v1/authors/{username}": "Author profile with articles",
+      "GET /api/v1/articles/{id}/related": "Related/similar articles",
+      "GET /api/v1/feed/rss": "RSS feed (query: category)",
+      "GET /api/v1/articles/{id}/amp": "AMP version of article",
+      "GET /api/v1/polls": "Active reader polls"
+    },
+    "reader": {
+      "POST /api/v1/articles/{id}/reactions": "Add emoji reaction",
+      "POST /api/v1/articles/{id}/comments": "Post comment",
+      "GET /api/v1/articles/{id}/comments": "List comments",
+      "POST /api/v1/comments/{id}/vote": "Upvote/Downvote comment",
+      "POST /api/v1/newsletter/subscribe": "Subscribe to newsletter",
+      "POST /api/v1/newsletter/unsubscribe": "Unsubscribe"
+    },
+    "subscription": {
+      "POST /api/v1/subscriptions/plans": "List available plans",
+      "POST /api/v1/subscriptions/create": "Create new subscription",
+      "GET /api/v1/subscriptions/my": "My current subscription",
+      "PUT /api/v1/subscriptions/my": "Update/change plan",
+      "DELETE /api/v1/subscriptions/my": "Cancel subscription"
+    },
+    "editorial": {
+      "POST /api/v1/editor/articles": "Create article draft",
+      "PUT /api/v1/editor/articles/{id}": "Update article content",
+      "DELETE /api/v1/editor/articles/{id}": "Delete/Archive article",
+      "GET /api/v1/editor/articles": "My articles (by status)",
+      "PUT /api/v1/editor/articles/{id}/status": "Submit for review / approve / publish",
+      "GET /api/v1/editor/queue": "Editorial review queue",
+      "POST /api/v1/editor/articles/{id}/comments": "Add editorial comment/annotation",
+      "GET /api/v1/editor/calendar": "Content calendar"
+    },
+    "admin": {
+      "POST /api/v1/admin/categories": "CRUD Categories/Sections",
+      "PUT /api/v1/admin/categories/{id}": "Update section settings",
+      "GET /api/v1/admin/users": "Staff user management",
+      "PUT /api/v1/admin/users/{id}/role": "Change user role/permissions",
+      "GET /api/v1/admin/analytics": "Platform analytics dashboard",
+      "GET /api/v1/admin/analytics/articles": "Article performance metrics",
+      "POST /api/v1/admin/subscriptions/manage": "Manage subscriber accounts"
+    }
+  }
+}

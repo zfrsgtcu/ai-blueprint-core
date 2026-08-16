@@ -1,0 +1,94 @@
+<!-- PURPOSE OF THIS FILE: Ana sayfa — semantic HTML5 yapısı, ARIA landmark'lar, skip-to-content, header/nav/main/footer -->
+<!DOCTYPE html>
+<html lang="tr" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{{Description}}">
+  <meta name="theme-color" content="#2563eb">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{{ProjectName}}">
+  <meta property="og:description" content="{{Description}}">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="tr_TR">
+
+  <title>{{ProjectName}}</title>
+
+  <!-- Stylesheets -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- skip-to-content: Klavye kullanıcıları için ana içeriğe atlama -->
+  <a class="skip-to-content" href="#main-content">Ana içeriğe atla</a>
+
+  <!-- ===== HEADER: banner landmark ===== -->
+  <header role="banner">
+    <div class="container header__inner">
+      <a href="/" class="header__logo" aria-label="{{ProjectName}} — Ana sayfa">
+        <span class="header__logo-text">{{ProjectName}}</span>
+      </a>
+      <nav class="header__nav" role="navigation" aria-label="Ana menü">
+        <ul class="header__nav-list">
+          <li><a href="#/" class="header__nav-link" aria-current="page">Ana Sayfa</a></li>
+          <li><a href="#/{{model_names}}" class="header__nav-link">{{HumanReadableName}}</a></li>
+        </ul>
+      </nav>
+      <button class="header__menu-toggle" aria-label="Menüyü aç/kapat" aria-expanded="false" type="button">
+        <span class="header__menu-icon" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== MAIN: main landmark ===== -->
+  <main id="main-content" role="main">
+    <div id="app" class="container">
+      <!-- Hero bölümü -->
+      <section class="hero" aria-labelledby="hero-heading">
+        <h1 id="hero-heading" class="hero__title">{{ProjectName}}</h1>
+        <p class="hero__lead">{{Description}}</p>
+        <a href="#/{{model_names}}" class="btn btn--primary">
+          {{model_names}} sayfasına git
+          <span aria-hidden="true">→</span>
+        </a>
+      </section>
+
+      <!-- Özellikler -->
+      <section class="features" aria-labelledby="features-heading">
+        <h2 id="features-heading" class="section__title">Özellikler</h2>
+        <div class="features__grid">
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">🔒</div>
+            <h3 class="feature-card__title">Güvenli</h3>
+            <p class="feature-card__desc">JWT tabanlı kimlik doğrulama ile güvenli erişim.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">⚡</div>
+            <h3 class="feature-card__title">Hızlı</h3>
+            <p class="feature-card__desc">Statik HTML + vanilya JS ile sıfır build süresi.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">♿</div>
+            <h3 class="feature-card__title">Erişilebilir</h3>
+            <p class="feature-card__desc">WCAG 2.1 AA uyumlu, tamamen klavye ile gezilebilir.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER: contentinfo landmark ===== -->
+  <footer role="contentinfo">
+    <div class="container footer__inner">
+      <p class="footer__copy">&copy; <time datetime="2026">{{current_year}}</time> {{ProjectName}}. Tüm hakları saklıdır.</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript (ES6 modules) -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1228 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Landing Page Builder",
+    "error_format": "{ status, code, message, details }",
+    "rate_limiting": "Public: 2000/min | Auth: 200/min | Admin: 100/min"
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/pages/{slug}": {
+        "description": "Render published landing page (public) / Yayınlanmış landing page'i getir",
+        "auth": "None (public, istege bagli Bearer token analitik icin)",
+        "path_parameters": {
+          "slug": { "type": "string", "description": "Unique slug of the published page / Sayfanin benzersiz slug degeri", "example": "summer-sale-2024" }
+        },
+        "query_parameters": {
+          "v": { "type": "string", "required": false, "description": "Variant ID for A/B test preview / A/B test varyant ID onizlemesi", "example": "a1b2c3d4-..." },
+          "preview": { "type": "boolean", "required": false, "default": false, "description": "Preview mode (draft pages) / Onizleme modu (taslak sayfalar)", "example": true }
+        },
+        "responses": {
+          "200": {
+            "description": "Page content with sections / Sayfa icerigi ve bolumler",
+            "body": {
+              "id": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "title": { "type": "string", "example": "Summer Sale 2024" },
+              "slug": { "type": "string", "example": "summer-sale-2024" },
+              "metaTitle": { "type": "string", "example": "Summer Sale - Up to 70% Off" },
+              "metaDescription": { "type": "string", "example": "Discover amazing summer deals with up to 70% discount on selected items." },
+              "customDomain": { "type": "string | null", "example": "summer.myshop.com" },
+              "status": { "type": "string", "example": "published" },
+              "isPasswordProtected": { "type": "boolean", "example": false },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "id": { "type": "UUID", "example": "660e8400-e29b-41d4-a716-446655440001" },
+                  "type": { "type": "string", "enum": ["hero","features","testimonials","pricing","faq","form","media","stats","footer","custom"], "example": "hero" },
+                  "content": { "type": "object", "description": "Section-specific configuration / Bölüme özel yapılandırma", "example": { "headline": "Summer Sale", "subheadline": "Up to 70% off", "ctaText": "Shop Now", "ctaUrl": "/shop", "backgroundImage": "https://cdn.example.com/bg.jpg" } },
+                  "orderIndex": { "type": "integer", "example": 0 },
+                  "visibility": { "type": "object", "description": "Desktop, tablet, mobile visibility / Masaüstü, tablet, mobil görünürlük", "example": { "desktop": true, "tablet": true, "mobile": true } },
+                  "animation": { "type": "object | null", "description": "Scroll-triggered animation / Kaydırma tetiklemeli animasyon", "example": { "type": "fadeIn", "duration": 800, "delay": 200 } }
+                }
+              },
+              "variants": {
+                "type": "array",
+                "description": "Active A/B test variants (if applicable) / Aktif A/B test varyantlari",
+                "items": {
+                  "id": { "type": "UUID", "example": "770e8400-e29b-41d4-a716-446655440002" },
+                  "name": { "type": "string", "example": "Variant B - Bold CTA" },
+                  "sections": { "type": "object", "description": "Overridden sections / Degistirilmis bolumler" }
+                }
+              },
+              "publishedAt": { "type": "string (ISO 8601)", "example": "2024-07-15T10:30:00Z" },
+              "version": { "type": "integer", "example": 3 }
+            }
+          },
+          "404": { "description": "Page not found or not published / Sayfa bulunamadi veya yayinlanmamis", "body": { "status": 404, "code": "PAGE_NOT_FOUND", "message": "The requested page does not exist or is not published." } }
+        }
+      },
+      "POST /api/v1/pages/{slug}/forms/{formId}": {
+        "description": "Submit lead form / Lead formu gonder",
+        "auth": "None (public)",
+        "path_parameters": {
+          "slug": { "type": "string", "description": "Page slug / Sayfa slug degeri", "example": "summer-sale-2024" },
+          "formId": { "type": "UUID", "description": "Section ID of the form / Formun section ID'si", "example": "660e8400-e29b-41d4-a716-446655440001" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "formData": {
+              "type": "object",
+              "description": "Key-value pairs of form field values / Form alan degerleri",
+              "example": { "name": "John Doe", "email": "john@example.com", "phone": "+905551234567", "message": "I'm interested in your summer deals" }
+            },
+            "utmSource": { "type": "string", "required": false, "example": "google" },
+            "utmMedium": { "type": "string", "required": false, "example": "cpc" },
+            "utmCampaign": { "type": "string", "required": false, "example": "summer_2024" },
+            "utmTerm": { "type": "string", "required": false, "example": "summer+sale" },
+            "utmContent": { "type": "string", "required": false, "example": "banner_ad_1" },
+            "variantId": { "type": "UUID", "required": false, "description": "A/B test variant ID if applicable / A/B test varyant ID varsa", "example": "770e8400-e29b-41d4-a716-446655440002" }
+          }
+        },
+        "headers": {
+          "X-Forwarded-For": { "type": "string", "required": false, "description": "Client IP (auto-captured) / İstemci IP (otomatik yakalanir)" },
+          "User-Agent": { "type": "string", "required": false, "description": "Browser user agent (auto-captured) / Tarayici bilgisi (otomatik yakalanir)" }
+        },
+        "responses": {
+          "201": {
+            "description": "Lead created successfully / Lead basariyla olusturuldu",
+            "body": {
+              "id": { "type": "UUID", "example": "880e8400-e29b-41d4-a716-446655440003" },
+              "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "convertedAt": { "type": "string (ISO 8601)", "example": "2024-07-20T14:22:00Z" }
+            }
+          },
+          "400": { "description": "Validation error / Dogrulama hatasi", "body": { "status": 400, "code": "VALIDATION_ERROR", "message": "Invalid form data.", "details": [ { "field": "email", "message": "Email is required" } ] } },
+          "404": { "description": "Page or form not found / Sayfa veya form bulunamadi" }
+        }
+      },
+      "POST /api/v1/pages/{slug}/analytics/click": {
+        "description": "Track CTA click (anonymous) / CTA tiklamasini izle (anonim)",
+        "auth": "None (public)",
+        "path_parameters": {
+          "slug": { "type": "string", "description": "Page slug / Sayfa slug degeri", "example": "summer-sale-2024" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "element": { "type": "string", "description": "CSS selector or CTA identifier / CSS secici veya CTA tanimlayicisi", "example": "#hero-cta-button" },
+            "label": { "type": "string", "description": "Human-readable element label / Okunabilir eleman etiketi", "example": "Shop Now - Hero Section" },
+            "sessionId": { "type": "string", "description": "Browser session ID / Tarayici oturum ID'si", "example": "sess_abc123def456" },
+            "variantId": { "type": "UUID", "required": false, "description": "A/B test variant ID / A/B test varyant ID", "example": "770e8400-e29b-41d4-a716-446655440002" }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Click event recorded / Tiklama kaydedildi",
+            "body": {
+              "id": { "type": "UUID", "example": "990e8400-e29b-41d4-a716-446655440004" },
+              "recorded": { "type": "boolean", "example": true }
+            }
+          },
+          "400": { "description": "Missing required fields / Zorunlu alanlar eksik" }
+        }
+      },
+      "POST /api/v1/pages/{slug}/analytics/view": {
+        "description": "Track page view (anonymous) / Sayfa goruntulemesini izle (anonim)",
+        "auth": "None (public)",
+        "path_parameters": {
+          "slug": { "type": "string", "description": "Page slug / Sayfa slug degeri", "example": "summer-sale-2024" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "sessionId": { "type": "string", "description": "Browser session ID / Tarayici oturum ID'si", "example": "sess_abc123def456" },
+            "referrer": { "type": "string", "required": false, "description": "Referrer URL / Yonlendiren URL", "example": "https://google.com" },
+            "utmSource": { "type": "string", "required": false, "example": "facebook" },
+            "utmMedium": { "type": "string", "required": false, "example": "social" },
+            "utmCampaign": { "type": "string", "required": false, "example": "summer_2024" },
+            "duration": { "type": "integer", "required": false, "description": "Seconds spent on page (sent on unload) / Sayfada gecirilen saniye", "example": 45 },
+            "scrollDepth": { "type": "integer", "required": false, "description": "Maximum scroll depth percentage / Maksimum kaydirma derinligi yuzdesi", "example": 85 },
+            "variantId": { "type": "UUID", "required": false, "example": "770e8400-e29b-41d4-a716-446655440002" }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Page view recorded / Sayfa goruntuleme kaydedildi",
+            "body": {
+              "id": { "type": "UUID", "example": "aa0e8400-e29b-41d4-a716-446655440005" },
+              "recorded": { "type": "boolean", "example": true }
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "POST /api/v1/pages": {
+        "description": "Create new landing page / Yeni landing page olustur",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "title": { "type": "string", "required": true, "minLength": 1, "maxLength": 255, "description": "Page title / Sayfa basligi", "example": "Summer Sale 2024" },
+            "slug": { "type": "string", "required": false, "description": "Custom slug (auto-generated from title if omitted) / Ozel slug (belirtilmezse basliktan otomatik uretilir)", "example": "summer-sale-2024", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+            "metaTitle": { "type": "string", "required": false, "maxLength": 70, "description": "SEO meta title / SEO meta basligi", "example": "Summer Sale - Up to 70% Off" },
+            "metaDescription": { "type": "string", "required": false, "maxLength": 160, "description": "SEO meta description / SEO meta aciklamasi", "example": "Discover amazing summer deals." },
+            "customDomain": { "type": "string", "required": false, "nullable": true, "description": "Custom domain (requires admin setup) / Ozel alan adi (admin kurulumu gerekir)", "example": "summer.myshop.com" },
+            "isPasswordProtected": { "type": "boolean", "required": false, "default": false, "example": false },
+            "password": { "type": "string", "required": false, "nullable": true, "description": "Access password (only if isPasswordProtected is true) / Erisim sifresi (sadece isPasswordProtected true ise)", "example": "preview2024" },
+            "status": { "type": "string", "required": false, "default": "draft", "enum": ["draft"], "description": "Initial status (always draft on creation) / Baslangic durumu (olusturmada her zaman taslak)" }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Page created / Sayfa olusturuldu",
+            "body": {
+              "id": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "title": { "type": "string", "example": "Summer Sale 2024" },
+              "slug": { "type": "string", "example": "summer-sale-2024" },
+              "metaTitle": { "type": "string", "example": "Summer Sale - Up to 70% Off" },
+              "metaDescription": { "type": "string", "example": "Discover amazing summer deals." },
+              "customDomain": { "type": "string | null", "example": null },
+              "status": { "type": "string", "example": "draft" },
+              "isPasswordProtected": { "type": "boolean", "example": false },
+              "version": { "type": "integer", "example": 1 },
+              "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T10:00:00Z" },
+              "updatedAt": { "type": "string (ISO 8601)", "example": "2024-07-20T10:00:00Z" }
+            }
+          },
+          "400": { "description": "Validation error / Dogrulama hatasi", "body": { "status": 400, "code": "VALIDATION_ERROR", "message": "Request body validation failed.", "details": [ { "field": "slug", "message": "Slug must be unique and contain only lowercase letters, numbers, and hyphens." } ] } },
+          "401": { "description": "Missing or invalid token / Token eksik veya gecersiz", "body": { "status": 401, "code": "UNAUTHORIZED", "message": "Authentication required." } },
+          "409": { "description": "Slug already exists / Slug zaten kullaniliyor", "body": { "status": 409, "code": "SLUG_CONFLICT", "message": "A page with this slug already exists." } }
+        }
+      },
+      "GET /api/v1/pages": {
+        "description": "List user's landing pages / Kullanicinin landing page'lerini listele",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "query_parameters": {
+          "page": { "type": "integer", "required": false, "default": 1, "min": 1, "description": "Page number / Sayfa numarasi", "example": 1 },
+          "limit": { "type": "integer", "required": false, "default": 20, "min": 1, "max": 100, "description": "Items per page / Sayfa basina oge", "example": 20 },
+          "sort": { "type": "string", "required": false, "default": "-updatedAt", "description": "Sort field (prefix with - for descending) / Siralama alani (- ile azalan)", "example": "-createdAt", "enum": ["title", "-title", "status", "-status", "createdAt", "-createdAt", "updatedAt", "-updatedAt"] },
+          "status": { "type": "string", "required": false, "description": "Filter by status / Duruma gore filtrele", "example": "published", "enum": ["draft", "review", "published", "archived"] },
+          "search": { "type": "string", "required": false, "description": "Search in title / Baslikta arama", "example": "summer" }
+        },
+        "responses": {
+          "200": {
+            "description": "Paginated list of pages / Sayfalanmis sayfa listesi",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "id": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+                  "title": { "type": "string", "example": "Summer Sale 2024" },
+                  "slug": { "type": "string", "example": "summer-sale-2024" },
+                  "status": { "type": "string", "example": "published" },
+                  "version": { "type": "integer", "example": 3 },
+                  "publishedAt": { "type": "string (ISO 8601) | null", "example": "2024-07-15T10:30:00Z" },
+                  "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-10T08:00:00Z" },
+                  "updatedAt": { "type": "string (ISO 8601)", "example": "2024-07-19T16:45:00Z" }
+                }
+              },
+              "pagination": {
+                "page": { "type": "integer", "example": 1 },
+                "limit": { "type": "integer", "example": 20 },
+                "total": { "type": "integer", "example": 47 },
+                "totalPages": { "type": "integer", "example": 3 }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" }
+        }
+      },
+      "GET /api/v1/pages/{id}": {
+        "description": "Get page with components / Sayfayi bilesenleriyle getir",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "responses": {
+          "200": {
+            "description": "Full page with sections / Tam sayfa ve bolumler",
+            "body": {
+              "id": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "title": { "type": "string", "example": "Summer Sale 2024" },
+              "slug": { "type": "string", "example": "summer-sale-2024" },
+              "metaTitle": { "type": "string", "example": "Summer Sale - Up to 70% Off" },
+              "metaDescription": { "type": "string", "example": "Discover amazing summer deals." },
+              "customDomain": { "type": "string | null", "example": null },
+              "status": { "type": "string", "example": "draft" },
+              "isPasswordProtected": { "type": "boolean", "example": false },
+              "scheduledAt": { "type": "string (ISO 8601) | null", "example": null },
+              "publishedAt": { "type": "string (ISO 8601) | null", "example": null },
+              "version": { "type": "integer", "example": 2 },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "id": { "type": "UUID", "example": "660e8400-e29b-41d4-a716-446655440001" },
+                  "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+                  "type": { "type": "string", "enum": ["hero","features","testimonials","pricing","faq","form","media","stats","footer","custom"], "example": "hero" },
+                  "content": { "type": "object", "example": { "headline": "Summer Sale", "subheadline": "Up to 70% off", "ctaText": "Shop Now" } },
+                  "orderIndex": { "type": "integer", "example": 0 },
+                  "visibility": { "type": "object", "example": { "desktop": true, "tablet": true, "mobile": true } },
+                  "animation": { "type": "object | null", "example": null },
+                  "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-10T08:30:00Z" }
+                }
+              },
+              "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-10T08:00:00Z" },
+              "updatedAt": { "type": "string (ISO 8601)", "example": "2024-07-19T16:45:00Z" }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - not the owner / Yasak - sayfa sahibi degilsiniz" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "PUT /api/v1/pages/{id}": {
+        "description": "Update page content/settings / Sayfa icerigini/ayarlarini guncelle",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "title": { "type": "string", "required": false, "minLength": 1, "maxLength": 255, "example": "Summer Sale 2024 - Updated" },
+            "metaTitle": { "type": "string", "required": false, "maxLength": 70, "example": "Updated SEO Title" },
+            "metaDescription": { "type": "string", "required": false, "maxLength": 160, "example": "Updated SEO description." },
+            "isPasswordProtected": { "type": "boolean", "required": false, "example": true },
+            "password": { "type": "string", "required": false, "nullable": true, "example": "newpassword2024" },
+            "scheduledAt": { "type": "string (ISO 8601)", "required": false, "nullable": true, "description": "Schedule publish date / Planlanan yayin tarihi", "example": "2024-08-01T00:00:00Z" },
+            "customDomain": { "type": "string", "required": false, "nullable": true, "example": "summer.myshop.com" }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Page updated / Sayfa guncellendi",
+            "body": {
+              "id": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "title": { "type": "string", "example": "Summer Sale 2024 - Updated" },
+              "slug": { "type": "string", "example": "summer-sale-2024" },
+              "metaTitle": { "type": "string", "example": "Updated SEO Title" },
+              "metaDescription": { "type": "string", "example": "Updated SEO description." },
+              "customDomain": { "type": "string | null", "example": "summer.myshop.com" },
+              "status": { "type": "string", "example": "draft" },
+              "isPasswordProtected": { "type": "boolean", "example": true },
+              "scheduledAt": { "type": "string (ISO 8601) | null", "example": "2024-08-01T00:00:00Z" },
+              "version": { "type": "integer", "example": 3 },
+              "updatedAt": { "type": "string (ISO 8601)", "example": "2024-07-20T11:00:00Z" }
+            }
+          },
+          "400": { "description": "Validation error / Dogrulama hatasi" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - not the owner / Yasak - sayfa sahibi degilsiniz" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "DELETE /api/v1/pages/{id}": {
+        "description": "Delete landing page / Landing page'i sil",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "responses": {
+          "200": {
+            "description": "Page deleted / Sayfa silindi",
+            "body": {
+              "id": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "deleted": { "type": "boolean", "example": true }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - not the owner / Yasak - sayfa sahibi degilsiniz" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "POST /api/v1/pages/{id}/publish": {
+        "description": "Publish landing page / Landing page'i yayinla",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "request_body": {
+          "required": false,
+          "content_type": "application/json",
+          "schema": {
+            "scheduledAt": { "type": "string (ISO 8601)", "required": false, "nullable": true, "description": "Schedule publish for future / Gelecekte yayinlamak icin zamanlama", "example": "2024-08-01T00:00:00Z" }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Page published (or scheduled) / Sayfa yayinlandi (veya zamanlandi)",
+            "body": {
+              "id": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "status": { "type": "string", "example": "published" },
+              "publishedAt": { "type": "string (ISO 8601)", "example": "2024-07-20T12:00:00Z" },
+              "version": { "type": "integer", "example": 3 }
+            }
+          },
+          "400": {
+            "description": "Page cannot be published (e.g., missing required sections) / Sayfa yayinlanamaz (ornegin, zorunlu bolumler eksik)",
+            "body": { "status": 400, "code": "PUBLISH_FAILED", "message": "Page must have at least one section to publish.", "details": [] }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "POST /api/v1/pages/{id}/duplicate": {
+        "description": "Duplicate page / Sayfayi kopyala",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Source page ID / Kaynak sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "request_body": {
+          "required": false,
+          "content_type": "application/json",
+          "schema": {
+            "title": { "type": "string", "required": false, "description": "Title for the duplicate (defaults to '{original title} (Copy)') / Kopya basligi (varsayilan: '{orijinal baslik} (Kopya)')", "example": "Summer Sale 2024 (Copy)" }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Page duplicated / Sayfa kopyalandi",
+            "body": {
+              "id": { "type": "UUID", "example": "bb0e8400-e29b-41d4-a716-446655440006" },
+              "title": { "type": "string", "example": "Summer Sale 2024 (Copy)" },
+              "slug": { "type": "string", "example": "summer-sale-2024-copy" },
+              "status": { "type": "string", "example": "draft" },
+              "version": { "type": "integer", "example": 1 },
+              "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T12:30:00Z" }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Source page not found / Kaynak sayfa bulunamadi" }
+        }
+      },
+      "POST /api/v1/pages/{id}/sections": {
+        "description": "Add section / Bolum ekle",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "type": { "type": "string", "required": true, "enum": ["hero","features","testimonials","pricing","faq","form","media","stats","footer","custom"], "description": "Section type / Bolum tipi", "example": "features" },
+            "content": { "type": "object", "required": true, "description": "Section-specific configuration / Bolume ozel yapilandirma", "example": { "headline": "Our Features", "items": [ { "title": "Feature 1", "description": "Amazing feature", "icon": "rocket" } ] } },
+            "orderIndex": { "type": "integer", "required": false, "description": "Insert position (auto-appends to end if omitted) / Ekleme pozisyonu (belirtilmezse sona eklenir)", "example": 1 },
+            "visibility": { "type": "object", "required": false, "default": { "desktop": true, "tablet": true, "mobile": true }, "example": { "desktop": true, "tablet": true, "mobile": false } },
+            "animation": { "type": "object", "required": false, "nullable": true, "example": { "type": "slideInLeft", "duration": 600 } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Section created / Bolum olusturuldu",
+            "body": {
+              "id": { "type": "UUID", "example": "cc0e8400-e29b-41d4-a716-446655440007" },
+              "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "type": { "type": "string", "example": "features" },
+              "content": { "type": "object", "example": { "headline": "Our Features", "items": [ { "title": "Feature 1" } ] } },
+              "orderIndex": { "type": "integer", "example": 1 },
+              "visibility": { "type": "object", "example": { "desktop": true, "tablet": true, "mobile": false } },
+              "animation": { "type": "object | null", "example": { "type": "slideInLeft", "duration": 600 } },
+              "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T13:00:00Z" }
+            }
+          },
+          "400": { "description": "Validation error / Dogrulama hatasi" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "PUT /api/v1/pages/{id}/sections/{sectionId}": {
+        "description": "Update section / Bolumu guncelle",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" },
+          "sectionId": { "type": "UUID", "description": "Section ID / Bolum ID'si", "example": "cc0e8400-e29b-41d4-a716-446655440007" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "type": { "type": "string", "required": false, "enum": ["hero","features","testimonials","pricing","faq","form","media","stats","footer","custom"], "example": "features" },
+            "content": { "type": "object", "required": false, "description": "Updated section content / Guncellenmis bolum icerigi", "example": { "headline": "Our Amazing Features", "items": [ { "title": "Updated Feature" } ] } },
+            "visibility": { "type": "object", "required": false, "example": { "desktop": true, "tablet": true, "mobile": true } },
+            "animation": { "type": "object", "required": false, "nullable": true, "example": null }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Section updated / Bolum guncellendi",
+            "body": {
+              "id": { "type": "UUID", "example": "cc0e8400-e29b-41d4-a716-446655440007" },
+              "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "type": { "type": "string", "example": "features" },
+              "content": { "type": "object", "example": { "headline": "Our Amazing Features" } },
+              "orderIndex": { "type": "integer", "example": 1 },
+              "visibility": { "type": "object", "example": { "desktop": true, "tablet": true, "mobile": true } },
+              "animation": { "type": "object | null", "example": null }
+            }
+          },
+          "400": { "description": "Validation error / Dogrulama hatasi" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page or section not found / Sayfa veya bolum bulunamadi" }
+        }
+      },
+      "DELETE /api/v1/pages/{id}/sections/{sectionId}": {
+        "description": "Delete section / Bolumu sil",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" },
+          "sectionId": { "type": "UUID", "description": "Section ID / Bolum ID'si", "example": "cc0e8400-e29b-41d4-a716-446655440007" }
+        },
+        "responses": {
+          "200": {
+            "description": "Section deleted / Bolum silindi",
+            "body": {
+              "id": { "type": "UUID", "example": "cc0e8400-e29b-41d4-a716-446655440007" },
+              "deleted": { "type": "boolean", "example": true }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page or section not found / Sayfa veya bolum bulunamadi" }
+        }
+      },
+      "PUT /api/v1/pages/{id}/sections/reorder": {
+        "description": "Reorder sections / Bolumleri yeniden sirala",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "orders": {
+              "type": "array",
+              "description": "Ordered list of section IDs / Sirali bolum ID listesi",
+              "items": {
+                "sectionId": { "type": "UUID", "description": "Section ID / Bolum ID'si", "example": "cc0e8400-e29b-41d4-a716-446655440007" },
+                "orderIndex": { "type": "integer", "description": "New position (0-based) / Yeni pozisyon (0 tabanli)", "example": 0 }
+              },
+              "example": [
+                { "sectionId": "cc0e8400-e29b-41d4-a716-446655440007", "orderIndex": 0 },
+                { "sectionId": "660e8400-e29b-41d4-a716-446655440001", "orderIndex": 1 }
+              ]
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sections reordered / Bolumler yeniden siralandi",
+            "body": {
+              "sections": {
+                "type": "array",
+                "items": {
+                  "id": { "type": "UUID" },
+                  "type": { "type": "string" },
+                  "orderIndex": { "type": "integer" }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error (duplicate/missing orders) / Dogrulama hatasi (tekrarli/eksik siralama)" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      }
+    },
+    "variants": {
+      "POST /api/v1/pages/{id}/variants": {
+        "description": "Create A/B test variant / A/B test varyanti olustur",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "name": { "type": "string", "required": true, "minLength": 1, "maxLength": 255, "description": "Variant name / Varyant adi", "example": "Variant B - Bold CTA" },
+            "trafficPercent": { "type": "integer", "required": true, "min": 1, "max": 100, "description": "Traffic allocation percentage / Trafik dagilim yuzdesi", "example": 50 },
+            "sections": { "type": "object", "required": true, "description": "Section overrides keyed by section ID / Bolum ID'sine gore degisiklikler", "example": { "660e8400-e29b-41d4-a716-446655440001": { "content": { "headline": "Bold Summer Sale!", "ctaText": "Claim Your Deal" } } } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Variant created / Varyant olusturuldu",
+            "body": {
+              "id": { "type": "UUID", "example": "dd0e8400-e29b-41d4-a716-446655440008" },
+              "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "name": { "type": "string", "example": "Variant B - Bold CTA" },
+              "trafficPercent": { "type": "integer", "example": 50 },
+              "isActive": { "type": "boolean", "example": false },
+              "isWinner": { "type": "boolean", "example": false },
+              "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T14:00:00Z" }
+            }
+          },
+          "400": { "description": "Validation error or total traffic exceeds 100% / Dogrulama hatasi veya toplam trafik %100'u asti" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "GET /api/v1/pages/{id}/variants": {
+        "description": "List variants / Varyantlari listele",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "query_parameters": {
+          "isActive": { "type": "boolean", "required": false, "description": "Filter by active status / Aktiflik durumuna gore filtrele", "example": true }
+        },
+        "responses": {
+          "200": {
+            "description": "List of variants / Varyant listesi",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "id": { "type": "UUID", "example": "dd0e8400-e29b-41d4-a716-446655440008" },
+                  "name": { "type": "string", "example": "Variant B - Bold CTA" },
+                  "trafficPercent": { "type": "integer", "example": 50 },
+                  "isActive": { "type": "boolean", "example": false },
+                  "isWinner": { "type": "boolean", "example": false },
+                  "startedAt": { "type": "string (ISO 8601) | null", "example": null },
+                  "endedAt": { "type": "string (ISO 8601) | null", "example": null },
+                  "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T14:00:00Z" }
+                }
+              },
+              "total": { "type": "integer", "example": 2 }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "PUT /api/v1/variants/{id}": {
+        "description": "Update variant / Varyanti guncelle",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Variant ID / Varyant ID'si", "example": "dd0e8400-e29b-41d4-a716-446655440008" }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "name": { "type": "string", "required": false, "minLength": 1, "maxLength": 255, "example": "Variant B - Revised CTA" },
+            "trafficPercent": { "type": "integer", "required": false, "min": 1, "max": 100, "example": 30 },
+            "sections": { "type": "object", "required": false, "description": "Updated section overrides / Guncellenmis bolum degisiklikleri", "example": { "660e8400-e29b-41d4-a716-446655440001": { "content": { "headline": "Revised Headline" } } } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Variant updated / Varyant guncellendi",
+            "body": {
+              "id": { "type": "UUID", "example": "dd0e8400-e29b-41d4-a716-446655440008" },
+              "name": { "type": "string", "example": "Variant B - Revised CTA" },
+              "trafficPercent": { "type": "integer", "example": 30 },
+              "isActive": { "type": "boolean", "example": false },
+              "isWinner": { "type": "boolean", "example": false },
+              "sections": { "type": "object" }
+            }
+          },
+          "400": { "description": "Validation error / Dogrulama hatasi" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - not the page owner / Yasak - sayfa sahibi degilsiniz" },
+          "404": { "description": "Variant not found / Varyant bulunamadi" }
+        }
+      },
+      "POST /api/v1/variants/{id}/activate": {
+        "description": "Start A/B test / A/B testi baslat",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Variant ID / Varyant ID'si", "example": "dd0e8400-e29b-41d4-a716-446655440008" }
+        },
+        "responses": {
+          "200": {
+            "description": "A/B test started (activates all variants of the page) / A/B testi baslatildi (sayfanin tum varyantlari aktif edilir)",
+            "body": {
+              "id": { "type": "UUID", "example": "dd0e8400-e29b-41d4-a716-446655440008" },
+              "isActive": { "type": "boolean", "example": true },
+              "startedAt": { "type": "string (ISO 8601)", "example": "2024-07-20T15:00:00Z" }
+            }
+          },
+          "400": { "description": "Cannot activate - requires at least 2 variants / En az 2 varyant gerekli" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "404": { "description": "Variant not found / Varyant bulunamadi" }
+        }
+      },
+      "GET /api/v1/variants/{id}/results": {
+        "description": "Get A/B test results / A/B test sonuclarini getir",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Variant ID / Varyant ID'si", "example": "dd0e8400-e29b-41d4-a716-446655440008" }
+        },
+        "query_parameters": {
+          "from": { "type": "string (ISO 8601)", "required": false, "description": "Start date for results / Sonuclar icin baslangic tarihi", "example": "2024-07-01T00:00:00Z" },
+          "to": { "type": "string (ISO 8601)", "required": false, "description": "End date for results / Sonuclar icin bitis tarihi", "example": "2024-07-31T23:59:59Z" }
+        },
+        "responses": {
+          "200": {
+            "description": "A/B test results summary / A/B test sonuc ozeti",
+            "body": {
+              "variantId": { "type": "UUID", "example": "dd0e8400-e29b-41d4-a716-446655440008" },
+              "variantName": { "type": "string", "example": "Variant B - Bold CTA" },
+              "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "startedAt": { "type": "string (ISO 8601)", "example": "2024-07-20T15:00:00Z" },
+              "endedAt": { "type": "string (ISO 8601) | null", "example": null },
+              "isWinner": { "type": "boolean", "example": false },
+              "metrics": {
+                "views": { "type": "integer", "example": 1520 },
+                "conversions": { "type": "integer", "example": 98 },
+                "conversionRate": { "type": "number (percentage)", "example": 6.45 },
+                "avgScrollDepth": { "type": "number (percentage)", "example": 72.3 },
+                "avgDuration": { "type": "number (seconds)", "example": 48 },
+                "clicks": { "type": "integer", "example": 245 },
+                "clickThroughRate": { "type": "number (percentage)", "example": 16.12 }
+              },
+              "allVariants": {
+                "type": "array",
+                "description": "All variants for comparison / Karsilastirma icin tum varyantlar",
+                "items": {
+                  "id": { "type": "UUID" },
+                  "name": { "type": "string" },
+                  "trafficPercent": { "type": "integer" },
+                  "views": { "type": "integer" },
+                  "conversions": { "type": "integer" },
+                  "conversionRate": { "type": "number" },
+                  "isWinner": { "type": "boolean" }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "404": { "description": "Variant not found / Varyant bulunamadi" }
+        }
+      }
+    },
+    "analytics": {
+      "GET /api/v1/pages/{id}/analytics": {
+        "description": "Page analytics (views, conversions, CTR) / Sayfa analitigi (goruntuleme, donusum, TO)",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "query_parameters": {
+          "from": { "type": "string (ISO 8601)", "required": false, "description": "Start date / Baslangic tarihi", "example": "2024-07-01T00:00:00Z" },
+          "to": { "type": "string (ISO 8601)", "required": false, "description": "End date / Bitis tarihi", "example": "2024-07-31T23:59:59Z" },
+          "variantId": { "type": "UUID", "required": false, "description": "Filter by variant / Varyanta gore filtrele", "example": "dd0e8400-e29b-41d4-a716-446655440008" }
+        },
+        "responses": {
+          "200": {
+            "description": "Aggregated analytics / Toplulastirilmis analitik",
+            "body": {
+              "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "period": {
+                "from": { "type": "string (ISO 8601)", "example": "2024-07-01T00:00:00Z" },
+                "to": { "type": "string (ISO 8601)", "example": "2024-07-31T23:59:59Z" }
+              },
+              "summary": {
+                "totalViews": { "type": "integer", "example": 12500 },
+                "uniqueVisitors": { "type": "integer", "example": 9800 },
+                "totalConversions": { "type": "integer", "example": 450 },
+                "conversionRate": { "type": "number (percentage)", "example": 3.6 },
+                "totalClicks": { "type": "integer", "example": 2100 },
+                "clickThroughRate": { "type": "number (percentage)", "example": 16.8 },
+                "avgScrollDepth": { "type": "number (percentage)", "example": 68.4 },
+                "avgDuration": { "type": "number (seconds)", "example": 52 },
+                "bounceRate": { "type": "number (percentage)", "example": 34.2 }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "GET /api/v1/pages/{id}/analytics/timeseries": {
+        "description": "Time-series analytics data / Zaman serisi analitik verisi",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "query_parameters": {
+          "from": { "type": "string (ISO 8601)", "required": true, "description": "Start date / Baslangic tarihi", "example": "2024-07-01T00:00:00Z" },
+          "to": { "type": "string (ISO 8601)", "required": true, "description": "End date / Bitis tarihi", "example": "2024-07-31T23:59:59Z" },
+          "granularity": { "type": "string", "required": false, "default": "day", "enum": ["hour", "day", "week", "month"], "description": "Time bucket size / Zaman dilimi boyutu", "example": "day" },
+          "metrics": { "type": "string", "required": false, "default": "views,conversions,clicks", "description": "Comma-separated metrics / Virgulle ayrilmis metrikler", "example": "views,conversions,clicks,conversionRate" },
+          "variantId": { "type": "UUID", "required": false, "description": "Filter by variant / Varyanta gore filtrele", "example": "dd0e8400-e29b-41d4-a716-446655440008" }
+        },
+        "responses": {
+          "200": {
+            "description": "Time-series data points / Zaman serisi veri noktalari",
+            "body": {
+              "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "granularity": { "type": "string", "example": "day" },
+              "series": {
+                "type": "array",
+                "items": {
+                  "timestamp": { "type": "string (ISO 8601)", "example": "2024-07-15T00:00:00Z" },
+                  "views": { "type": "integer", "example": 450 },
+                  "conversions": { "type": "integer", "example": 18 },
+                  "conversionRate": { "type": "number (percentage)", "example": 4.0 },
+                  "clicks": { "type": "integer", "example": 78 },
+                  "avgScrollDepth": { "type": "number", "example": 65.2 },
+                  "avgDuration": { "type": "number", "example": 49 }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid date range or granularity / Gecersiz tarih araligi veya zaman dilimi" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      },
+      "GET /api/v1/pages/{id}/analytics/sources": {
+        "description": "Traffic source breakdown / Trafik kaynagi dagilimi",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Page ID / Sayfa ID'si", "example": "550e8400-e29b-41d4-a716-446655440000" }
+        },
+        "query_parameters": {
+          "from": { "type": "string (ISO 8601)", "required": false, "description": "Start date / Baslangic tarihi", "example": "2024-07-01T00:00:00Z" },
+          "to": { "type": "string (ISO 8601)", "required": false, "description": "End date / Bitis tarihi", "example": "2024-07-31T23:59:59Z" }
+        },
+        "responses": {
+          "200": {
+            "description": "Traffic source breakdown / Trafik kaynagi dagilimi",
+            "body": {
+              "pageId": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+              "totalViews": { "type": "integer", "example": 12500 },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "source": { "type": "string", "example": "google" },
+                  "medium": { "type": "string", "example": "cpc" },
+                  "campaign": { "type": "string | null", "example": "summer_2024" },
+                  "views": { "type": "integer", "example": 4500 },
+                  "conversions": { "type": "integer", "example": 180 },
+                  "conversionRate": { "type": "number (percentage)", "example": 4.0 },
+                  "percentageOfTotal": { "type": "number (percentage)", "example": 36.0 }
+                }
+              },
+              "referrers": {
+                "type": "array",
+                "description": "Top referring URLs / En cok yonlendiren URL'ler",
+                "items": {
+                  "url": { "type": "string", "example": "https://facebook.com" },
+                  "views": { "type": "integer", "example": 2100 },
+                  "percentageOfTotal": { "type": "number (percentage)", "example": 16.8 }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden / Yasak" },
+          "404": { "description": "Page not found / Sayfa bulunamadi" }
+        }
+      }
+    },
+    "admin": {
+      "POST /api/v1/admin/domains": {
+        "description": "Add custom domain / Ozel alan adi ekle",
+        "auth": "Bearer token required (admin role) / Bearer token zorunlu (admin rolu)",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token> (requires admin role)", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "domain": { "type": "string", "required": true, "description": "Fully qualified domain name / Tam alan adi", "example": "summer.myshop.com", "pattern": "^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\\.[A-Za-z]{2,})+$" }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Domain added (pending verification) / Alan adi eklendi (dogrulama bekleniyor)",
+            "body": {
+              "id": { "type": "UUID", "example": "ee0e8400-e29b-41d4-a716-446655440009" },
+              "domain": { "type": "string", "example": "summer.myshop.com" },
+              "sslStatus": { "type": "string", "example": "pending" },
+              "dnsVerified": { "type": "boolean", "example": false },
+              "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T16:00:00Z" },
+              "dnsInstructions": {
+                "type": "object",
+                "description": "DNS records the user must add / Kullanicinin eklemesi gereken DNS kayitlari",
+                "example": { "cname": { "name": "summer", "value": "pages.example.com", "ttl": 3600 } }
+              }
+            }
+          },
+          "400": { "description": "Validation error or invalid domain / Dogrulama hatasi veya gecersiz alan adi" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - admin role required / Yasak - admin rolu gerekli" },
+          "409": { "description": "Domain already exists / Alan adi zaten kayitli" }
+        }
+      },
+      "GET /api/v1/admin/domains": {
+        "description": "List custom domains / Ozel alan adlarini listele",
+        "auth": "Bearer token required (admin role) / Bearer token zorunlu (admin rolu)",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token> (requires admin role)", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "query_parameters": {
+          "page": { "type": "integer", "required": false, "default": 1, "min": 1, "example": 1 },
+          "limit": { "type": "integer", "required": false, "default": 20, "min": 1, "max": 100, "example": 20 },
+          "sort": { "type": "string", "required": false, "default": "-createdAt", "enum": ["domain", "-domain", "sslStatus", "-sslStatus", "createdAt", "-createdAt"], "example": "-createdAt" },
+          "sslStatus": { "type": "string", "required": false, "enum": ["pending", "active", "failed"], "example": "active" },
+          "dnsVerified": { "type": "boolean", "required": false, "example": true }
+        },
+        "responses": {
+          "200": {
+            "description": "Paginated domain list / Sayfalanmis alan adi listesi",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "id": { "type": "UUID", "example": "ee0e8400-e29b-41d4-a716-446655440009" },
+                  "userId": { "type": "UUID", "example": "ff0e8400-e29b-41d4-a716-446655440010" },
+                  "domain": { "type": "string", "example": "summer.myshop.com" },
+                  "sslStatus": { "type": "string", "example": "active" },
+                  "dnsVerified": { "type": "boolean", "example": true },
+                  "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T16:00:00Z" }
+                }
+              },
+              "pagination": {
+                "page": { "type": "integer", "example": 1 },
+                "limit": { "type": "integer", "example": 20 },
+                "total": { "type": "integer", "example": 5 },
+                "totalPages": { "type": "integer", "example": 1 }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - admin role required / Yasak - admin rolu gerekli" }
+        }
+      },
+      "DELETE /api/v1/admin/domains/{id}": {
+        "description": "Remove custom domain / Ozel alan adini kaldir",
+        "auth": "Bearer token required (admin role) / Bearer token zorunlu (admin rolu)",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token> (requires admin role)", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Domain record ID / Alan adi kayit ID'si", "example": "ee0e8400-e29b-41d4-a716-446655440009" }
+        },
+        "responses": {
+          "200": {
+            "description": "Domain removed / Alan adi kaldirildi",
+            "body": {
+              "id": { "type": "UUID", "example": "ee0e8400-e29b-41d4-a716-446655440009" },
+              "deleted": { "type": "boolean", "example": true }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - admin role required / Yasak - admin rolu gerekli" },
+          "404": { "description": "Domain not found / Alan adi bulunamadi" }
+        }
+      },
+      "GET /api/v1/admin/pages": {
+        "description": "All pages (admin view) / Tum sayfalar (admin goruntuleme)",
+        "auth": "Bearer token required (admin role) / Bearer token zorunlu (admin rolu)",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token> (requires admin role)", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "query_parameters": {
+          "page": { "type": "integer", "required": false, "default": 1, "min": 1, "example": 1 },
+          "limit": { "type": "integer", "required": false, "default": 50, "min": 1, "max": 200, "example": 50 },
+          "sort": { "type": "string", "required": false, "default": "-updatedAt", "enum": ["title", "-title", "status", "-status", "createdAt", "-createdAt", "updatedAt", "-updatedAt"], "example": "-createdAt" },
+          "status": { "type": "string", "required": false, "example": "published", "enum": ["draft", "review", "published", "archived"] },
+          "search": { "type": "string", "required": false, "example": "summer" },
+          "ownerId": { "type": "UUID", "required": false, "description": "Filter by owner / Sahibine gore filtrele", "example": "ff0e8400-e29b-41d4-a716-446655440010" }
+        },
+        "responses": {
+          "200": {
+            "description": "Paginated list of all pages / Tum sayfalarin sayfalanmis listesi",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "id": { "type": "UUID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+                  "ownerId": { "type": "UUID", "example": "ff0e8400-e29b-41d4-a716-446655440010" },
+                  "title": { "type": "string", "example": "Summer Sale 2024" },
+                  "slug": { "type": "string", "example": "summer-sale-2024" },
+                  "status": { "type": "string", "example": "published" },
+                  "customDomain": { "type": "string | null", "example": "summer.myshop.com" },
+                  "version": { "type": "integer", "example": 3 },
+                  "publishedAt": { "type": "string (ISO 8601) | null", "example": "2024-07-15T10:30:00Z" },
+                  "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-10T08:00:00Z" },
+                  "updatedAt": { "type": "string (ISO 8601)", "example": "2024-07-19T16:45:00Z" }
+                }
+              },
+              "pagination": {
+                "page": { "type": "integer", "example": 1 },
+                "limit": { "type": "integer", "example": 50 },
+                "total": { "type": "integer", "example": 230 },
+                "totalPages": { "type": "integer", "example": 5 }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - admin role required / Yasak - admin rolu gerekli" }
+        }
+      },
+      "GET /api/v1/admin/analytics": {
+        "description": "Platform analytics / Platform analitigi",
+        "auth": "Bearer token required (admin role) / Bearer token zorunlu (admin rolu)",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token> (requires admin role)", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "query_parameters": {
+          "from": { "type": "string (ISO 8601)", "required": false, "description": "Start date / Baslangic tarihi", "example": "2024-07-01T00:00:00Z" },
+          "to": { "type": "string (ISO 8601)", "required": false, "description": "End date / Bitis tarihi", "example": "2024-07-31T23:59:59Z" },
+          "granularity": { "type": "string", "required": false, "default": "day", "enum": ["hour", "day", "week", "month"], "example": "day" }
+        },
+        "responses": {
+          "200": {
+            "description": "Platform-wide analytics / Platform geneli analitik",
+            "body": {
+              "period": {
+                "from": { "type": "string (ISO 8601)", "example": "2024-07-01T00:00:00Z" },
+                "to": { "type": "string (ISO 8601)", "example": "2024-07-31T23:59:59Z" }
+              },
+              "summary": {
+                "totalPages": { "type": "integer", "example": 230 },
+                "publishedPages": { "type": "integer", "example": 185 },
+                "totalUsers": { "type": "integer", "example": 420 },
+                "totalViews": { "type": "integer", "example": 452000 },
+                "totalConversions": { "type": "integer", "example": 18200 },
+                "totalLeads": { "type": "integer", "example": 18200 },
+                "platformConversionRate": { "type": "number (percentage)", "example": 4.03 },
+                "totalCustomDomains": { "type": "integer", "example": 65 },
+                "activeABTests": { "type": "integer", "example": 12 }
+              },
+              "timeseries": {
+                "type": "array",
+                "description": "Platform-wide time-series / Platform geneli zaman serisi",
+                "items": {
+                  "timestamp": { "type": "string (ISO 8601)", "example": "2024-07-15T00:00:00Z" },
+                  "views": { "type": "integer", "example": 15200 },
+                  "conversions": { "type": "integer", "example": 610 },
+                  "newPages": { "type": "integer", "example": 8 },
+                  "newUsers": { "type": "integer", "example": 12 }
+                }
+              },
+              "topPages": {
+                "type": "array",
+                "description": "Top 10 pages by views / Goruntulemeye gore ilk 10 sayfa",
+                "items": {
+                  "id": { "type": "UUID" },
+                  "title": { "type": "string" },
+                  "slug": { "type": "string" },
+                  "views": { "type": "integer" },
+                  "conversions": { "type": "integer" },
+                  "conversionRate": { "type": "number" }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - admin role required / Yasak - admin rolu gerekli" }
+        }
+      }
+    },
+    "integrations": {
+      "POST /api/v1/integrations/email": {
+        "description": "Connect email marketing service / E-posta pazarlama servisi bagla",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "type": { "type": "string", "required": true, "enum": ["mailchimp", "convertkit", "sendgrid", "hubspot"], "description": "Email marketing provider / E-posta pazarlama saglayicisi", "example": "mailchimp" },
+            "config": {
+              "type": "object",
+              "required": true,
+              "description": "Provider-specific configuration / Saglayiciya ozel yapilandirma",
+              "example": {
+                "apiKey": "xxxxxxxxxxxxxxxxxxxx-us1",
+                "listId": "abc123def",
+                "listName": "Summer Sale Leads"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Email integration connected / E-posta entegrasyonu baglandi",
+            "body": {
+              "id": { "type": "UUID", "example": "gg0e8400-e29b-41d4-a716-446655440011" },
+              "type": { "type": "string", "example": "mailchimp" },
+              "isActive": { "type": "boolean", "example": true },
+              "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T17:00:00Z" }
+            }
+          },
+          "400": { "description": "Validation error or invalid credentials / Dogrulama hatasi veya gecersiz kimlik bilgileri" },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "409": { "description": "Integration of this type already exists / Bu turde bir entegrasyon zaten mevcut" }
+        }
+      },
+      "POST /api/v1/integrations/webhooks": {
+        "description": "Create conversion webhook / Donusum webhook'u olustur",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "type": { "type": "string", "required": true, "const": "webhook", "description": "Integration type / Entegrasyon tipi", "example": "webhook" },
+            "config": {
+              "type": "object",
+              "required": true,
+              "description": "Webhook configuration / Webhook yapilandirmasi",
+              "example": {
+                "url": "https://mycrm.com/api/lead-capture",
+                "secret": "whsec_xxxxxxxxxxxxx",
+                "events": ["lead.created"],
+                "headers": { "X-Custom-Auth": "my-auth-key" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook integration created / Webhook entegrasyonu olusturuldu",
+            "body": {
+              "id": { "type": "UUID", "example": "hh0e8400-e29b-41d4-a716-446655440012" },
+              "type": { "type": "string", "example": "webhook" },
+              "isActive": { "type": "boolean", "example": true },
+              "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T17:30:00Z" }
+            }
+          },
+          "400": { "description": "Validation error / Dogrulama hatasi" },
+          "401": { "description": "Unauthorized / Yetkisiz" }
+        }
+      },
+      "GET /api/v1/integrations": {
+        "description": "List connected integrations / Bagli entegrasyonlari listele",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "query_parameters": {
+          "type": { "type": "string", "required": false, "description": "Filter by integration type / Entegrasyon tipine gore filtrele", "enum": ["mailchimp", "convertkit", "sendgrid", "hubspot", "zapier", "webhook"], "example": "mailchimp" },
+          "isActive": { "type": "boolean", "required": false, "description": "Filter by active status / Aktiflik durumuna gore filtrele", "example": true }
+        },
+        "responses": {
+          "200": {
+            "description": "List of integrations / Entegrasyon listesi",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "id": { "type": "UUID", "example": "gg0e8400-e29b-41d4-a716-446655440011" },
+                  "type": { "type": "string", "example": "mailchimp" },
+                  "isActive": { "type": "boolean", "example": true },
+                  "config": {
+                    "type": "object",
+                    "description": "Sanitized config (secrets masked) / Temizlenmis yapilandirma (gizli bilgiler maskelenmis)",
+                    "example": { "listName": "Summer Sale Leads", "apiKey": "****-us1" }
+                  },
+                  "createdAt": { "type": "string (ISO 8601)", "example": "2024-07-20T17:00:00Z" }
+                }
+              },
+              "total": { "type": "integer", "example": 3 }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" }
+        }
+      },
+      "DELETE /api/v1/integrations/{id}": {
+        "description": "Remove integration / Entegrasyonu kaldir",
+        "auth": "Bearer token required / Bearer token zorunlu",
+        "headers": {
+          "Authorization": { "type": "string", "required": true, "description": "Bearer <jwt_token>", "example": "Bearer eyJhbGciOiJIUzI1NiIs..." }
+        },
+        "path_parameters": {
+          "id": { "type": "UUID", "description": "Integration ID / Entegrasyon ID'si", "example": "gg0e8400-e29b-41d4-a716-446655440011" }
+        },
+        "responses": {
+          "200": {
+            "description": "Integration removed / Entegrasyon kaldirildi",
+            "body": {
+              "id": { "type": "UUID", "example": "gg0e8400-e29b-41d4-a716-446655440011" },
+              "deleted": { "type": "boolean", "example": true }
+            }
+          },
+          "401": { "description": "Unauthorized / Yetkisiz" },
+          "403": { "description": "Forbidden - not the owner / Yasak - entegrasyon sahibi degilsiniz" },
+          "404": { "description": "Integration not found / Entegrasyon bulunamadi" }
+        }
+      }
+    }
+  }
+}

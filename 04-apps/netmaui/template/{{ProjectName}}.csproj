@@ -1,0 +1,49 @@
+<!-- PURPOSE OF THIS FILE: .NET MAUI proje dosyası — target frameworks, NuGet paketleri. -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>{{ProjectName}}</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Display name -->
+    <ApplicationTitle>{{ProjectName}}</ApplicationTitle>
+
+    <!-- App Identifier -->
+    <ApplicationId>{{PACKAGE_NAME}}</ApplicationId>
+
+    <!-- Versions -->
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Core MAUI -->
+    <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.*" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.*" />
+
+    <!-- MVVM Toolkit -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.*" />
+    <PackageReference Include="CommunityToolkit.Maui" Version="7.0.*" />
+
+    <!-- HTTP -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.*" />
+
+    <!-- Local DB (SQLite) — offline-first -->
+    <!-- <PackageReference Include="sqlite-net-pcl" Version="1.9.*" /> -->
+    <!-- <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.*" /> -->
+  </ItemGroup>
+
+</Project>

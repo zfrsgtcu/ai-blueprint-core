@@ -1,0 +1,221 @@
+{
+  "_meta": { "description": "Enterprise News Portal Schema (Articles, Authors, Sections, Subscriptions, Comments)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "displayName": "String",
+        "role": "Enum (reader, reporter, editor, senior_editor, publisher, admin)",
+        "isStaff": "Boolean",
+        "subscriptionTier": "Enum (free, premium, premium_plus, enterprise)",
+        "articleViewCount": "Int (Monthly paywall counter)",
+        "settings": "JSON (Notification prefs, newsletter subscriptions)",
+        "twoFactorEnabled": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "AuthorProfile": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User, Unique)",
+        "bio": "Text",
+        "avatarUrl": "String",
+        "title": "String (e.g., Senior Technology Reporter)",
+        "socialLinks": "JSON",
+        "specialization": "String Array (Categories they write for)",
+        "totalArticles": "Int",
+        "createdAt": "DateTime"
+      }
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID",
+        "parentId": "UUID (Self-referencing FK, nullable)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text",
+        "isSection": "Boolean (Top-level section)",
+        "orderIndex": "Int",
+        "editorId": "UUID (FK User, section editor)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Tag": {
+      "fields": {
+        "id": "UUID",
+        "name": "String (Unique)",
+        "slug": "String (Unique)"
+      }
+    },
+    "Article": {
+      "fields": {
+        "id": "UUID",
+        "authorId": "UUID (FK User, primary author)",
+        "categoryId": "UUID (FK Category)",
+        "title": "String",
+        "slug": "String (Unique)",
+        "subheadline": "String",
+        "body": "Text (Markdown or JSON content blocks)",
+        "excerpt": "Text (Short summary for cards)",
+        "featuredImageUrl": "String",
+        "featuredImageCaption": "String",
+        "contentType": "Enum (news, editorial, interview, photo_essay, video, podcast, live_blog, interactive)",
+        "status": "Enum (draft, review, scheduled, published, updated, archived)",
+        "isBreaking": "Boolean",
+        "isPinned": "Boolean",
+        "isPremium": "Boolean (Behind paywall)",
+        "readTimeMinutes": "Int",
+        "viewCount": "Int",
+        "shareCount": "Int",
+        "commentCount": "Int",
+        "reactions": "JSON (Emoji reaction counts)",
+        "publishedAt": "DateTime",
+        "scheduledAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "tags": "Many-to-Many with ArticleTag",
+        "authors": "Many-to-Many with ArticleAuthor (co-authors)"
+      },
+      "indexes": ["status", "categoryId", "publishedAt", "authorId"]
+    },
+    "ArticleAuthor": {
+      "fields": {
+        "id": "UUID",
+        "articleId": "UUID (FK Article)",
+        "userId": "UUID (FK User)",
+        "isPrimary": "Boolean",
+        "orderIndex": "Int"
+      }
+    },
+    "ArticleTag": {
+      "fields": {
+        "id": "UUID",
+        "articleId": "UUID (FK Article)",
+        "tagId": "UUID (FK Tag)"
+      }
+    },
+    "ArticleVersion": {
+      "fields": {
+        "id": "UUID",
+        "articleId": "UUID (FK Article)",
+        "version": "Int",
+        "title": "String",
+        "body": "Text",
+        "excerpt": "Text",
+        "editedBy": "UUID (FK User)",
+        "changeNote": "String",
+        "createdAt": "DateTime"
+      }
+    },
+    "EditorialComment": {
+      "fields": {
+        "id": "UUID",
+        "articleId": "UUID (FK Article)",
+        "authorId": "UUID (FK User)",
+        "content": "Text",
+        "isResolved": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Comment": {
+      "fields": {
+        "id": "UUID",
+        "articleId": "UUID (FK Article)",
+        "userId": "UUID (FK User)",
+        "parentCommentId": "UUID (Self-referencing FK, nullable)",
+        "content": "Text",
+        "upvoteCount": "Int",
+        "downvoteCount": "Int",
+        "status": "Enum (pending, approved, hidden, flagged)",
+        "createdAt": "DateTime"
+      }
+    },
+    "CommentVote": {
+      "fields": {
+        "id": "UUID",
+        "commentId": "UUID (FK Comment)",
+        "userId": "UUID (FK User)",
+        "value": "Int (-1 or 1)"
+      }
+    },
+    "Poll": {
+      "fields": {
+        "id": "UUID",
+        "articleId": "UUID (FK Article, nullable - standalone poll)",
+        "question": "String",
+        "isActive": "Boolean",
+        "expiresAt": "DateTime"
+      },
+      "relations": {
+        "options": "One-to-Many with PollOption"
+      }
+    },
+    "PollOption": {
+      "fields": {
+        "id": "UUID",
+        "pollId": "UUID (FK Poll)",
+        "text": "String",
+        "voteCount": "Int"
+      }
+    },
+    "PollVote": {
+      "fields": {
+        "id": "UUID",
+        "pollOptionId": "UUID (FK PollOption)",
+        "userId": "UUID (FK User)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Subscription": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User, Unique)",
+        "planId": "String (Stripe Price ID or similar)",
+        "tier": "Enum (premium, premium_plus, enterprise)",
+        "status": "Enum (active, cancelled, past_due, expired)",
+        "currentPeriodStart": "DateTime",
+        "currentPeriodEnd": "DateTime",
+        "canceledAt": "DateTime",
+        "createdAt": "DateTime"
+      }
+    },
+    "ArticleView": {
+      "fields": {
+        "id": "UUID",
+        "articleId": "UUID (FK Article)",
+        "userId": "UUID (FK User, nullable for anonymous)",
+        "sessionId": "String",
+        "referrer": "String",
+        "userAgent": "String",
+        "ipAddress": "String (Anonymized)",
+        "viewedAt": "DateTime"
+      },
+      "indexes": ["articleId", "viewedAt"]
+    },
+    "Newsletter": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "frequency": "Enum (daily, weekly, as_it_happens)",
+        "categories": "UUID Array (Preferred categories)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "type": "String (breaking_news, article_published, comment_reply, subscription_expiry, editorial_reminder)",
+        "message": "String",
+        "link": "String",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

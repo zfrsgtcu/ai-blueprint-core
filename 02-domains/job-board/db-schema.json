@@ -1,0 +1,181 @@
+{
+  "_meta": { "description": "Enterprise Job Board Schema (Jobs, Applications, Companies, Seekers, ATS Pipeline)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "role": "Enum (seeker, employer, admin)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "SeekerProfile": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User, Unique)",
+        "fullName": "String",
+        "headline": "String (Professional title)",
+        "bio": "Text",
+        "phone": "String",
+        "location": "String",
+        "skills": "String Array",
+        "experience": "JSON Array (Position, company, dates, description)",
+        "education": "JSON Array (Degree, institution, dates)",
+        "certifications": "JSON Array",
+        "portfolioUrls": "String Array",
+        "preferredJobTypes": "String Array",
+        "preferredLocations": "String Array",
+        "salaryExpectation": "Decimal",
+        "resumeUrl": "String",
+        "isPublic": "Boolean",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      }
+    },
+    "Company": {
+      "fields": {
+        "id": "UUID",
+        "ownerId": "UUID (FK User)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "logoUrl": "String",
+        "bannerUrl": "String",
+        "description": "Text",
+        "website": "String",
+        "industry": "String",
+        "size": "Enum (1-10, 11-50, 51-200, 201-1000, 1000+)",
+        "location": "String",
+        "cultureDescription": "Text",
+        "benefits": "Text Array",
+        "socialLinks": "JSON",
+        "isVerified": "Boolean",
+        "createdAt": "DateTime"
+      },
+      "relations": {
+        "teamMembers": "One-to-Many with CompanyMember"
+      }
+    },
+    "CompanyMember": {
+      "fields": {
+        "id": "UUID",
+        "companyId": "UUID (FK Company)",
+        "userId": "UUID (FK User)",
+        "role": "Enum (admin, hr, hiring_manager, viewer)",
+        "createdAt": "DateTime"
+      }
+    },
+    "JobCategory": {
+      "fields": {
+        "id": "UUID",
+        "name": "String",
+        "slug": "String (Unique)",
+        "parentId": "UUID (Self-referencing FK, nullable)"
+      }
+    },
+    "JobListing": {
+      "fields": {
+        "id": "UUID",
+        "companyId": "UUID (FK Company)",
+        "categoryId": "UUID (FK JobCategory)",
+        "title": "String",
+        "slug": "String",
+        "description": "Text (Markdown)",
+        "requirements": "Text",
+        "responsibilities": "Text",
+        "benefits": "Text",
+        "skills": "String Array",
+        "jobType": "Enum (full_time, part_time, contract, freelance, internship, temporary)",
+        "workModel": "Enum (on_site, hybrid, remote)",
+        "location": "String",
+        "salaryMin": "Decimal",
+        "salaryMax": "Decimal",
+        "salaryCurrency": "String",
+        "experienceLevel": "Enum (entry, mid, senior, lead, executive)",
+        "applicationUrl": "String (External URL, optional)",
+        "status": "Enum (draft, published, paused, filled, expired, archived)",
+        "isFeatured": "Boolean",
+        "featuredExpiresAt": "DateTime",
+        "viewsCount": "Int",
+        "applicationCount": "Int",
+        "expiresAt": "DateTime",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["status", "categoryId", "jobType", "createdAt"]
+    },
+    "Application": {
+      "fields": {
+        "id": "UUID",
+        "jobListingId": "UUID (FK JobListing)",
+        "seekerId": "UUID (FK User)",
+        "coverLetter": "Text (Optional)",
+        "resumeUrl": "String",
+        "status": "Enum (applied, under_review, screening, interview, offer, hired, rejected)",
+        "employerNotes": "Text (Internal)",
+        "employerRating": "Int (1-5, internal)",
+        "rejectionReason": "String",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["jobListingId", "seekerId", "status"]
+    },
+    "SavedJob": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "jobListingId": "UUID (FK JobListing)",
+        "createdAt": "DateTime"
+      }
+    },
+    "JobAlert": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "keywords": "String",
+        "categories": "UUID Array",
+        "jobTypes": "String Array",
+        "location": "String",
+        "salaryMin": "Decimal",
+        "frequency": "Enum (daily, weekly, instant)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Interview": {
+      "fields": {
+        "id": "UUID",
+        "applicationId": "UUID (FK Application)",
+        "scheduledAt": "DateTime",
+        "durationMinutes": "Int",
+        "type": "Enum (phone, video, in_person, technical)",
+        "meetingLink": "String",
+        "notes": "Text",
+        "status": "Enum (scheduled, completed, cancelled, rescheduled)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Message": {
+      "fields": {
+        "id": "UUID",
+        "applicationId": "UUID (FK Application)",
+        "senderId": "UUID (FK User)",
+        "content": "Text",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "type": "Enum (application_received, status_change, interview_invite, job_alert, message)",
+        "message": "String",
+        "link": "String",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

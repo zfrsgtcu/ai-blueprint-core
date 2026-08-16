@@ -1,0 +1,424 @@
+{
+  "_meta": {
+    "description": "Etkinlik Yönetim Platformu veritabanı şeması. Etkinlik, oturum, konuşmacı, sponsor, bilet, booking, transfer, check-in, bekleme listesi, anket ve bildirim modellerini içerir."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "firstName": "String",
+        "lastName": "String",
+        "avatar": "String (Nullable)",
+        "role": "Enum (attendee, organizer, admin)",
+        "isVerified": "Boolean (Default: false)",
+        "notificationPreferences": "JSONB (Default: { email: true, in_app: true })",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "role"],
+      "note": "Organizer rolü etkinlik oluşturabilir. Attendee bilet satın alır. Admin platform genel yönetim."
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text (Nullable)",
+        "icon": "String (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["slug", "isActive", "sortOrder"],
+      "note": "Etkinlik kategorileri: konferans, workshop, konser, festival, spor, networking, eğitim."
+    },
+    "Venue": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "organizerId": "UUID (Nullable, Foreign Key → User.id)",
+        "name": "String",
+        "address": "JSONB ({ street, city, state, postalCode, country })",
+        "capacity": "Int (Toplam kapasite)",
+        "timezone": "String (örn: 'Europe/Istanbul')",
+        "latitude": "Decimal (10, 7) (Nullable)",
+        "longitude": "Decimal (10, 7) (Nullable)",
+        "imageUrl": "String (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["organizerId", "timezone"],
+      "note": "Bir venue birden fazla room içerir. capacity: venue'ün toplam kapasitesi."
+    },
+    "Room": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "venueId": "UUID (Foreign Key → Venue.id, ON DELETE CASCADE, Index)",
+        "name": "String (örn: 'Ana Salon', 'Atölye A')",
+        "capacity": "Int",
+        "floorPlanUrl": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["venueId"],
+      "note": "Oturumlar room'lara atanır. Aynı room'da zaman çakışması kontrolü API seviyesinde yapılır."
+    },
+    "Event": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "organizerId": "UUID (Foreign Key → User.id, Index)",
+        "venueId": "UUID (Nullable, Foreign Key → Venue.id)",
+        "categoryId": "UUID (Foreign Key → Category.id, Index)",
+        "title": "String",
+        "slug": "String (Unique)",
+        "description": "Text (Markdown veya HTML)",
+        "startAt": "DateTime",
+        "endAt": "DateTime",
+        "timezone": "String (Varsayılan venue.timezone)",
+        "livestreamUrl": "String (Nullable, hibrit/sanal etkinlik için)",
+        "isHybrid": "Boolean (Default: false)",
+        "status": "Enum (draft, published, cancelled, completed)",
+        "refundPolicy": "JSONB (Nullable, { enabled, rules: [{ daysBeforeEvent, refundPercent }] })",
+        "coverImage": "String (Nullable)",
+        "tags": "JSONB (Nullable, string array)",
+        "maxAttendees": "Int (Nullable, toplam katılımcı limiti)",
+        "viewCount": "Int (Default: 0)",
+        "ticketSoldCount": "Int (Default: 0, denormalize)",
+        "revenueTotal": "Decimal (15, 2) (Default: 0, denormalize)",
+        "publishedAt": "DateTime (Nullable)",
+        "cancelledAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "organizerId", "categoryId", "status", "startAt", "(status, startAt DESC)", "venueId"],
+      "note": "Status workflow: draft → published → (cancelled|completed). completed: endAt geçtikten sonra cron job ile otomatik. refundPolicy JSONB'si booking cancel sırasında kullanılır."
+    },
+    "EventImage": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "eventId": "UUID (Foreign Key → Event.id, ON DELETE CASCADE, Index)",
+        "url": "String",
+        "altText": "String (Nullable)",
+        "orderIndex": "Int (Default: 0)",
+        "isCover": "Boolean (Default: false, etkinlik kartında gösterilecek ana görsel)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(eventId, orderIndex)"],
+      "note": "Etkinlik başına max 20 görsel. isCover: tek bir görsel cover olabilir (unique per event)."
+    },
+    "Speaker": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "organizerId": "UUID (Foreign Key → User.id, Index, konuşmacıyı ekleyen organizer)",
+        "name": "String",
+        "bio": "Text (Nullable)",
+        "photoUrl": "String (Nullable)",
+        "company": "String (Nullable)",
+        "title": "String (Nullable, unvan/pozisyon)",
+        "socialLinks": "JSONB (Nullable, { linkedin, twitter, github, website })",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["organizerId", "isActive"],
+      "note": "Konuşmacılar etkinlikten bağımsız kaydedilir, EventSpeaker junction ile etkinliğe bağlanır."
+    },
+    "EventSpeaker": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "eventId": "UUID (Foreign Key → Event.id, ON DELETE CASCADE)",
+        "speakerId": "UUID (Foreign Key → Speaker.id, ON DELETE CASCADE)",
+        "orderIndex": "Int (Default: 0)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(eventId, speakerId) UNIQUE", "(eventId, orderIndex)"],
+      "note": "Many-to-many junction. Bir konuşmacı birden fazla etkinliğe katılabilir."
+    },
+    "Session": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "eventId": "UUID (Foreign Key → Event.id, ON DELETE CASCADE, Index)",
+        "roomId": "UUID (Nullable, Foreign Key → Room.id)",
+        "title": "String",
+        "description": "Text (Nullable)",
+        "sessionType": "Enum (talk, workshop, panel, keynote, networking, break, other)",
+        "startAt": "DateTime",
+        "endAt": "DateTime",
+        "capacity": "Int (Nullable, oturum kontenjan sınırı)",
+        "registeredCount": "Int (Default: 0, denormalize)",
+        "isRecorded": "Boolean (Default: false)",
+        "recordingUrl": "String (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(eventId, startAt)", "roomId", "sessionType", "(roomId, startAt, endAt)"],
+      "note": "Zaman çakışması validasyonu: aynı room'da (startAt, endAt) örtüşmesi kontrolü. API seviyesinde enforce edilir."
+    },
+    "SessionSpeaker": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sessionId": "UUID (Foreign Key → Session.id, ON DELETE CASCADE)",
+        "speakerId": "UUID (Foreign Key → Speaker.id, ON DELETE CASCADE)",
+        "isModerator": "Boolean (Default: false, panel oturumları için moderatör)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(sessionId, speakerId) UNIQUE"],
+      "note": "Bir oturumda birden fazla konuşmacı olabilir (panel). Bir konuşmacı aynı anda iki oturumda olamaz (API validasyonu)."
+    },
+    "Sponsor": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (Şirket/Sponsor adı)",
+        "logoUrl": "String (Nullable)",
+        "website": "String (Nullable)",
+        "level": "Enum (platinum, gold, silver, bronze, media_partner, other)",
+        "description": "Text (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["level", "isActive"],
+      "note": "Sponsorlar etkinlikten bağımsız kaydedilir, EventSponsor junction ile etkinliğe bağlanır."
+    },
+    "EventSponsor": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "eventId": "UUID (Foreign Key → Event.id, ON DELETE CASCADE)",
+        "sponsorId": "UUID (Foreign Key → Sponsor.id, ON DELETE CASCADE)",
+        "orderIndex": "Int (Default: 0, seviyeye göre sıralama)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(eventId, sponsorId) UNIQUE", "(eventId, orderIndex)"],
+      "note": "Sponsor seviyesine göre etkinlik sayfasında farklı konumlandırma."
+    },
+    "TicketType": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "eventId": "UUID (Foreign Key → Event.id, ON DELETE CASCADE, Index)",
+        "name": "String (örn: 'Erken Kayıt', 'Standart Bilet', 'VIP')",
+        "description": "Text (Nullable)",
+        "price": "Decimal (15, 2)",
+        "maxQuantity": "Int (Stok adedi, NULL = limitsiz)",
+        "soldCount": "Int (Default: 0, denormalize)",
+        "isRefundable": "Boolean (Default: true)",
+        "isGroupTicket": "Boolean (Default: false)",
+        "groupSize": "Int (Nullable, isGroupTicket=true ise zorunlu)",
+        "saleStartAt": "DateTime (Nullable, Early Bird başlangıcı)",
+        "saleEndAt": "DateTime (Nullable, Early Bird bitişi / son satış tarihi)",
+        "isSoldOut": "Boolean (Default: false)",
+        "isActive": "Boolean (Default: true)",
+        "sortOrder": "Int (Default: 0, fiyata göre artan)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(eventId, isActive)", "(eventId, sortOrder)", "isSoldOut"],
+      "note": "price = 0 ise ücretsiz bilet. soldCount her booking'de transactional olarak güncellenir. maxQuantity dolduğunda isSoldOut = true."
+    },
+    "PromoCode": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "eventId": "UUID (Foreign Key → Event.id, ON DELETE CASCADE, Index)",
+        "code": "String (Promosyon kodu, büyük harf)",
+        "discountType": "Enum (percentage, fixed)",
+        "discountValue": "Decimal (15, 2) (percentage: 20 = %20, fixed: 50 = 50 TL)",
+        "maxUses": "Int (Nullable, NULL = limitsiz)",
+        "usedCount": "Int (Default: 0, denormalize)",
+        "expiresAt": "DateTime (Nullable)",
+        "applicableTicketTypeIds": "JSONB (Nullable, hangi bilet tiplerinde geçerli, NULL = tüm tipler)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(eventId, code) UNIQUE", "isActive", "expiresAt"],
+      "note": "Promosyon kodu booking sırasında uygulanır. maxUses dolduğunda veya expiresAt geçtiğinde geçersiz olur. Kullanım başına bir defa."
+    },
+    "Booking": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "eventId": "UUID (Foreign Key → Event.id, Index)",
+        "promoCodeId": "UUID (Nullable, Foreign Key → PromoCode.id)",
+        "transactionId": "String (Unique, ödeme sağlayıcı transaction ID'si)",
+        "subtotal": "Decimal (15, 2) (İndirim öncesi toplam)",
+        "discountAmount": "Decimal (15, 2) (Default: 0)",
+        "totalAmount": "Decimal (15, 2) (Ödenen toplam tutar)",
+        "currency": "String (Default: 'TRY')",
+        "status": "Enum (pending, confirmed, cancelled, partially_refunded, refunded)",
+        "cancelledAt": "DateTime (Nullable)",
+        "cancellationReason": "String (Nullable)",
+        "refundAmount": "Decimal (15, 2) (Nullable)",
+        "refundedAt": "DateTime (Nullable)",
+        "paymentMethod": "String (kredi_karti, banka_transferi, havale)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "eventId", "transactionId", "status", "(eventId, status)", "createdAt DESC"],
+      "note": "Booking oluşturma transactional: 1) Stok kontrolü (SELECT...FOR UPDATE), 2) Ödeme provizyonu, 3) Booking + Ticket kayıtları, 4) Stock güncelleme. cancelled durumunda refundPolicy'ye göre iade hesaplanır."
+    },
+    "Ticket": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "bookingId": "UUID (Foreign Key → Booking.id, ON DELETE CASCADE, Index)",
+        "ticketTypeId": "UUID (Foreign Key → TicketType.id)",
+        "attendeeName": "String (Katılımcı adı)",
+        "attendeeEmail": "String (Katılımcı e-postası)",
+        "qrCodeHash": "String (Unique, JWS imzalı QR kod verisi)",
+        "status": "Enum (issued, scanned, voided, transferred)",
+        "previousOwnerId": "UUID (Nullable, Foreign Key → User.id, transfer durumunda eski sahibi)",
+        "scannedAt": "DateTime (Nullable, check-in zamanı)",
+        "voidedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["bookingId", "ticketTypeId", "qrCodeHash", "status", "attendeeEmail"],
+      "note": "CRITICAL: qrCodeHash JWS (HMAC-SHA256) ile imzalanır. Check-in sırasında doğrulanır. Transfer: attendeeName/Email güncellenir, yeni qrCodeHash oluşturulur, previousOwnerId set edilir."
+    },
+    "TicketTransfer": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ticketId": "UUID (Foreign Key → Ticket.id, Index)",
+        "fromUserId": "UUID (Foreign Key → User.id, transfer eden)",
+        "fromEmail": "String",
+        "toEmail": "String (Alıcı e-posta adresi)",
+        "transferToken": "String (Unique, 48 saat geçerli, tek kullanımlık)",
+        "message": "Text (Nullable, gönderenin mesajı)",
+        "status": "Enum (pending, accepted, rejected, cancelled)",
+        "acceptedByUserId": "UUID (Nullable, Foreign Key → User.id)",
+        "expiresAt": "DateTime (48 saat)",
+        "completedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["ticketId", "transferToken", "status", "toEmail", "expiresAt"],
+      "note": "Transfer token 48 saat geçerli. Kabul: ticket güncellenir, yeni QR kod. Red/cancel: ticket eski sahibinde kalır."
+    },
+    "Waitlist": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ticketTypeId": "UUID (Foreign Key → TicketType.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "status": "Enum (pending, notified, purchased, expired)",
+        "notifiedAt": "DateTime (Nullable, bildirim gönderilme zamanı)",
+        "expiresAt": "DateTime (Nullable, 24 saatlik satın alma süresi)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(ticketTypeId, userId) UNIQUE", "(ticketTypeId, status)", "(ticketTypeId, createdAt)"],
+      "note": "FIFO sırasıyla bildirim. notified olduktan sonra 24 saat satın alma süresi. Stok açıldığında cron job ile kontrol edilir."
+    },
+    "CheckIn": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ticketId": "UUID (Foreign Key → Ticket.id, Index)",
+        "eventId": "UUID (Foreign Key → Event.id, Index)",
+        "checkedInBy": "UUID (Foreign Key → User.id, staff/cihaz kullanıcısı)",
+        "deviceId": "String (Check-in cihazı ID'si)",
+        "checkinTime": "DateTime (Default: NOW())",
+        "source": "Enum (app, web, onsite_device)",
+        "notes": "Text (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["ticketId UNIQUE", "eventId", "checkedInBy", "checkinTime", "deviceId"],
+      "note": "ticketId UNIQUE index ile idempotent check-in. Aynı biletle ikinci denemede constraint violation → 409 Conflict."
+    },
+    "SessionCheckIn": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ticketId": "UUID (Foreign Key → Ticket.id)",
+        "sessionId": "UUID (Foreign Key → Session.id, Index)",
+        "checkedInBy": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(ticketId, sessionId) UNIQUE", "sessionId"],
+      "note": "Opsiyonel oturum bazında check-in. Katılım takibi için kullanılır."
+    },
+    "Survey": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "eventId": "UUID (Foreign Key → Event.id, ON DELETE CASCADE, Index)",
+        "title": "String",
+        "description": "Text (Nullable)",
+        "questions": "JSONB ([{ id, type: 'rating'|'text'|'multiple_choice'|'checkbox', text, options?: string[], required: boolean }])",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["eventId", "isActive"],
+      "note": "Etkinlik başına bir anket. questions JSONB ile esnek soru yapısı. Etkinlik bitiminden 2 saat sonra katılımcılara gönderilir."
+    },
+    "SurveyResponse": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "surveyId": "UUID (Foreign Key → Survey.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "answers": "JSONB ({ questionId: answer })",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(surveyId, userId) UNIQUE", "surveyId"],
+      "note": "Her kullanıcı bir ankete bir kez yanıt verebilir."
+    },
+    "SessionQuestion": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sessionId": "UUID (Foreign Key → Session.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "question": "Text",
+        "voteCount": "Int (Default: 0, denormalize)",
+        "status": "Enum (pending, approved, answered, rejected)",
+        "answerText": "Text (Nullable, konuşmacı cevabı)",
+        "answeredAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(sessionId, voteCount DESC)", "(sessionId, status)", "userId"],
+      "note": "Canlı soru-cevap özelliği. Katılımcılar soru sorar ve oy verir. Konuşmacı/organizer soruları yanıtlar."
+    },
+    "SessionQuestionVote": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "questionId": "UUID (Foreign Key → SessionQuestion.id, ON DELETE CASCADE)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(questionId, userId) UNIQUE"],
+      "note": "Kullanıcı başına soru başına bir oy."
+    },
+    "UserSessionFavorite": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "sessionId": "UUID (Foreign Key → Session.id, ON DELETE CASCADE)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, sessionId) UNIQUE", "userId"],
+      "note": "Kişiselleştirilmiş ajanda. Favori oturum başlangıcına 15dk kala bildirim gönderilir."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (booking_confirmed, event_reminder, session_reminder, ticket_transfer, waitlist_notification, survey_invite, event_cancelled)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'event', 'booking', 'ticket', 'session')",
+        "entityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)"],
+      "note": "Otomatik tetikleyiciler: booking onayı, etkinlik/oturum hatırlatması, transfer, bekleme listesi, anket daveti."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "action": "String (örn: 'event.publish', 'booking.cancel', 'ticket.transfer', 'checkin.scan')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "details": "JSONB (Nullable)",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(entityType, entityId)", "userId", "action", "createdAt DESC"],
+      "note": "Kritik işlemler loglanır: check-in, booking iptal/iade, transfer, etkinlik yayınlama/iptal."
+    }
+  }
+}

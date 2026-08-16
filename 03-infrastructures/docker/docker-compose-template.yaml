@@ -1,0 +1,158 @@
+# =============================================================================
+# DOCKER-COMPOSE TEMPLATE (Blueprint-as-Code)
+# =============================================================================
+# Bu dosya AI tarafından proje konfigürasyonuna göre doldurulacak bir şablondur.
+# {PLACEHOLDER} şeklindeki tüm değerler AI tarafından değiştirilmelidir.
+#
+# KULLANIM: AI, projenin stack tanımına göre:
+#   1. Hangi servislerin dahil edileceğini belirler
+#   2. PLACEHOLDER'ları gerçek değerlerle değiştirir
+#   3. Kullanılmayan servis bloklarını siler
+# =============================================================================
+
+version: "3.8"
+
+services:
+  # ===========================================================================
+  # FRONTEND SERVISI (Static Export ise Nginx, SSR ise Node.js runtime)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: {PROJECT_NAME}-frontend
+    restart: unless-stopped
+    ports:
+      - "{FRONTEND_PORT}:{FRONTEND_INTERNAL_PORT}"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://backend:{BACKEND_PORT}
+    networks:
+      - app_network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:{FRONTEND_INTERNAL_PORT}/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+  # ===========================================================================
+  # BACKEND SERVISI (.NET Web API veya Node.js Express)
+  # ===========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: {PROJECT_NAME}-backend
+    restart: unless-stopped
+    ports:
+      - "{BACKEND_PORT}:{BACKEND_INTERNAL_PORT}"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:{BACKEND_INTERNAL_PORT}
+      - ConnectionStrings__DefaultConnection=Server=db;Database={DB_NAME};User Id={DB_USER};Password={DB_PASSWORD};TrustServerCertificate=true;
+    env_file:
+      - .env.production
+    networks:
+      - app_network
+      - db_network
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{BACKEND_INTERNAL_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 512M
+
+  # ===========================================================================
+  # VERITABANI SERVISI (Opsiyonel — backend gerektirmeyen projelerde KALDIR)
+  # ===========================================================================
+  db:
+    image: {DB_IMAGE}:{DB_VERSION}
+    container_name: {PROJECT_NAME}-db
+    restart: unless-stopped
+    ports:
+      - "{DB_PORT}:{DB_INTERNAL_PORT}"
+    environment:
+      - {DB_ENV_USER}=${DB_USER}
+      - {DB_ENV_PASSWORD}=${DB_PASSWORD}
+      - {DB_ENV_DATABASE}=${DB_NAME}
+    volumes:
+      - db_data:{DB_VOLUME_PATH}
+    networks:
+      - db_network
+    healthcheck:
+      test: {DB_HEALTHCHECK}
+      interval: 30s
+      timeout: 15s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 1G
+
+  # ===========================================================================
+  # REDIS SERVISI (Opsiyonel — cache/queue gerektiren projelerde AKTIF)
+  # ===========================================================================
+  # redis:
+  #   image: redis:7.2-alpine
+  #   container_name: {PROJECT_NAME}-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - db_network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.50'
+  #         memory: 256M
+
+networks:
+  app_network:
+    driver: bridge
+  db_network:
+    driver: bridge
+    internal: true  # DB ağı dış dünyaya kapalı, sadece backend erişebilir
+
+volumes:
+  db_data:
+    name: {PROJECT_NAME}_db_data
+  # redis_data:
+  #   name: {PROJECT_NAME}_redis_data

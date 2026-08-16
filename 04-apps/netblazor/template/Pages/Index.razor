@@ -1,0 +1,83 @@
+<!-- PURPOSE OF THIS FILE: Ana sayfa — {{ProjectName}} uygulamasının landing page'i. Domain entity'leri listeler. -->
+@page "/"
+@inject I{{ModelName}}Service {{ModelName}}Service
+
+<PageTitle>{{ProjectName}} | Ana Sayfa</PageTitle>
+
+<div class="container-page py-8">
+    <!-- Hero -->
+    <section class="mb-12 text-center">
+        <h1 class="text-4xl font-bold tracking-tight text-gray-900">
+            {{HumanReadableName}}
+        </h1>
+        <p class="mt-4 text-lg text-gray-600">
+            {{Description}}
+        </p>
+    </section>
+
+    <!-- {{ModelName}} Listesi -->
+    <section>
+        <h2 class="mb-6 text-2xl font-semibold text-gray-800">
+            {{ModelName}} Listesi
+        </h2>
+
+        @if (_items is null)
+        {
+            <div class="flex justify-center py-12">
+                <p class="text-gray-500">Yükleniyor...</p>
+            </div>
+        }
+        else if (_error is not null)
+        {
+            <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+                <p>@_error</p>
+                <button class="btn-secondary mt-2" @onclick="LoadItemsAsync">Tekrar Dene</button>
+            </div>
+        }
+        else if (!_items.Any())
+        {
+            <div class="rounded-lg border border-dashed border-gray-300 p-12 text-center">
+                <p class="text-gray-500">Henüz {{modelName}} kaydı bulunmuyor.</p>
+                <a href="/{{model_names}}/create" class="btn-primary mt-4 inline-block">İlk {{ModelName}} Ekle</a>
+            </div>
+        }
+        else
+        {
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach (var item in _items)
+                {
+                    <div class="card">
+                        <h3 class="text-lg font-semibold text-gray-900">@item.Name</h3>
+                        <p class="mt-2 text-sm text-gray-600">@item.Description</p>
+                        <a href="/{{model_names}}/@item.Id" class="mt-4 inline-block text-sm text-blue-600 hover:underline">
+                            Detay →
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private List<{{ModelName}}Dto>? _items;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadItemsAsync();
+    }
+
+    private async Task LoadItemsAsync()
+    {
+        _error = null;
+        try
+        {
+            _items = await {{ModelName}}Service.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Veri yüklenirken hata oluştu: {ex.Message}";
+        }
+    }
+}

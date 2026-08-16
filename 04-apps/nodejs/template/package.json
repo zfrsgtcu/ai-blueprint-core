@@ -1,0 +1,20 @@
+<!-- PURPOSE OF THIS FILE: Proje bağımlılıkları ve script'ler — sadece jsonwebtoken dış bağımlılık -->
+{
+  "name": "{{project-name}}",
+  "version": "1.0.0",
+  "private": true,
+  "description": "{{Description}}",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

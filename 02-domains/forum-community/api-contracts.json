@@ -1,0 +1,1665 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Forum Community Platform — Production-grade with full request/response schemas, query parameters, auth headers, and status codes.",
+    "base_url": "https://api.forum.example.com/api/v1",
+    "error_format": {
+      "shape": "{ status: number, code: string, message: string, details?: any }",
+      "example": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Validation failed for the request body.",
+        "details": [
+          { "field": "title", "constraint": "required", "message": "Başlık zorunludur / Title is required." },
+          { "field": "content", "constraint": "minLength", "message": "İçerik en az 10 karakter olmalıdır / Content must be at least 10 characters." }
+        ]
+      }
+    },
+    "rate_limiting": {
+      "public": "500 requests/min per IP",
+      "auth": "100 requests/min per user",
+      "mod": "200 requests/min per moderator",
+      "admin": "200 requests/min per admin"
+    },
+    "auth_header": "Authorization: Bearer <jwt_token>",
+    "pagination": {
+      "default_page": 1,
+      "default_limit": 20,
+      "max_limit": 100,
+      "response_wrapper": {
+        "data": "Array of items",
+        "pagination": {
+          "page": 1,
+          "limit": 20,
+          "total": 142,
+          "totalPages": 8,
+          "hasNext": true,
+          "hasPrev": false
+        }
+      }
+    }
+  },
+
+  "endpoints": {
+
+    "public": {
+
+      "GET /api/v1/categories": {
+        "description": "Tüm kategorileri thread ve post sayılarıyla birlikte listeler / List all categories with thread and post counts.",
+        "auth": "none",
+        "queryParameters": {
+          "page": { "type": "integer", "default": 1, "example": "?page=1", "description": "Sayfa numarası / Page number." },
+          "limit": { "type": "integer", "default": 20, "max": 100, "example": "?limit=50", "description": "Sayfa başına kayıt / Items per page." },
+          "sort": { "type": "string", "enum": ["name", "threadCount", "sortOrder", "createdAt"], "default": "sortOrder", "example": "?sort=threadCount", "description": "Sıralama alanı / Sort field." },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "asc", "example": "?order=desc", "description": "Sıralama yönü / Sort direction." },
+          "parentId": { "type": "string (UUID)", "example": "?parentId=550e8400-e29b-41d4-a716-446655440000", "description": "Üst kategoriye göre filtrele (null = ana kategoriler) / Filter by parent category (null = root categories)." },
+          "isPrivate": { "type": "boolean", "example": "?isPrivate=false", "description": "Gizlilik durumuna göre filtrele / Filter by privacy status." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)", "example": "550e8400-e29b-41d4-a716-446655440000" },
+                  "name": { "type": "string", "example": "Genel Tartışmalar" },
+                  "slug": { "type": "string", "example": "genel-tartismalar" },
+                  "description": { "type": "string | null", "example": "Forum ile ilgili genel konuların tartışıldığı kategori." },
+                  "parentId": { "type": "string (UUID) | null", "example": null },
+                  "sortOrder": { "type": "integer", "example": 1 },
+                  "threadCount": { "type": "integer", "example": 342 },
+                  "postCount": { "type": "integer", "example": 5891 },
+                  "isPrivate": { "type": "boolean", "example": false },
+                  "createdAt": { "type": "string (ISO 8601)", "example": "2025-01-15T10:30:00.000Z" },
+                  "children": {
+                    "type": "array | null",
+                    "example": null,
+                    "description": "Alt kategoriler (sadece parentId=null filtresinde dolu gelir) / Child categories (populated only when filtering by parentId=null)."
+                  }
+                }
+              }
+            },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success — kategoriler listesi döner.",
+          "400": "Geçersiz sorgu parametresi / Invalid query parameter.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/categories?page=1&limit=20&sort=sortOrder&order=asc&parentId=null&isPrivate=false"
+      },
+
+      "GET /api/v1/categories/{slug}": {
+        "description": "Slug ile kategori detayını getirir / Get category details by slug.",
+        "auth": "none",
+        "pathParameters": {
+          "slug": { "type": "string", "example": "genel-tartismalar", "description": "Kategori slug'ı / Category slug." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)", "example": "550e8400-e29b-41d4-a716-446655440000" },
+            "name": { "type": "string", "example": "Genel Tartışmalar" },
+            "slug": { "type": "string", "example": "genel-tartismalar" },
+            "description": { "type": "string | null", "example": "Forum ile ilgili genel konuların tartışıldığı kategori." },
+            "parentId": { "type": "string (UUID) | null", "example": null },
+            "sortOrder": { "type": "integer", "example": 1 },
+            "threadCount": { "type": "integer", "example": 342 },
+            "postCount": { "type": "integer", "example": 5891 },
+            "isPrivate": { "type": "boolean", "example": false },
+            "allowedRoles": { "type": "array of string", "example": [], "description": "Erişim izni olan roller (sadece isPrivate=true ise) / Roles allowed access (only when isPrivate=true)." },
+            "createdAt": { "type": "string (ISO 8601)", "example": "2025-01-15T10:30:00.000Z" },
+            "parent": {
+              "type": "object | null",
+              "properties": {
+                "id": { "type": "string (UUID)" },
+                "name": { "type": "string" },
+                "slug": { "type": "string" }
+              },
+              "example": null,
+              "description": "Üst kategori özet bilgisi / Parent category summary."
+            },
+            "moderators": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "username": { "type": "string" },
+                  "displayName": { "type": "string" },
+                  "avatarUrl": { "type": "string | null" }
+                }
+              },
+              "example": [],
+              "description": "Kategori moderatörleri / Category moderators."
+            }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "404": "Kategori bulunamadı / Category not found.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/threads": {
+        "description": "Thread'leri filtreleme ve sıralama ile listeler / List threads with filtering and sorting.",
+        "auth": "none",
+        "queryParameters": {
+          "page": { "type": "integer", "default": 1, "example": "?page=1" },
+          "limit": { "type": "integer", "default": 20, "max": 100, "example": "?limit=20" },
+          "sort": { "type": "string", "enum": ["createdAt", "lastReplyAt", "replyCount", "voteScore", "viewCount"], "default": "lastReplyAt", "example": "?sort=createdAt", "description": "Sıralama alanı / Sort field." },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "?order=asc" },
+          "categoryId": { "type": "string (UUID)", "example": "?categoryId=550e8400-e29b-41d4-a716-446655440000", "description": "Kategoriye göre filtrele / Filter by category." },
+          "tag": { "type": "string", "example": "?tag=javascript", "description": "Etiket slug'ına göre filtrele / Filter by tag slug." },
+          "status": { "type": "string", "enum": ["open", "closed", "archived", "pinned", "hidden"], "example": "?status=open", "description": "Thread durumuna göre filtrele / Filter by thread status." },
+          "type": { "type": "string", "enum": ["discussion", "question", "poll", "announcement"], "example": "?type=question", "description": "Thread tipine göre filtrele / Filter by thread type." },
+          "isSolved": { "type": "boolean", "example": "?isSolved=false", "description": "Çözüm durumuna göre filtrele (Q&A) / Filter by solved status." },
+          "authorId": { "type": "string (UUID)", "example": "?authorId=660e8400-e29b-41d4-a716-446655440001", "description": "Yazara göre filtrele / Filter by author." },
+          "flair": { "type": "string", "example": "?flair=SOLVED", "description": "Flair'e göre filtrele / Filter by flair." },
+          "search": { "type": "string", "example": "?search=react+hooks", "description": "Başlıkta arama / Search in title." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002" },
+                  "categoryId": { "type": "string (UUID)", "example": "550e8400-e29b-41d4-a716-446655440000" },
+                  "category": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } },
+                  "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string", "example": "ahmet42" }, "displayName": { "type": "string", "example": "Ahmet Yılmaz" }, "avatarUrl": { "type": "string | null" }, "rank": { "type": "string", "example": "veteran" } } },
+                  "title": { "type": "string", "example": "React'te useEffect hook'u nasıl optimize edilir?" },
+                  "slug": { "type": "string", "example": "reactte-useeffect-hooku-nasil-optimize-edilir" },
+                  "content": { "type": "string", "example": "Merhaba arkadaşlar, useEffect hook'unun gereksiz render'lara sebep olduğunu fark ettim..." },
+                  "contentHtml": { "type": "string", "example": "<p>Merhaba arkadaşlar, <code>useEffect</code> hook'unun gereksiz render'lara sebep olduğunu fark ettim...</p>" },
+                  "type": { "type": "string", "enum": ["discussion", "question", "poll", "announcement"], "example": "question" },
+                  "status": { "type": "string", "enum": ["open", "closed", "archived", "pinned", "hidden"], "example": "open" },
+                  "isSolved": { "type": "boolean", "example": false },
+                  "isLocked": { "type": "boolean", "example": false },
+                  "flair": { "type": "string | null", "example": null },
+                  "viewCount": { "type": "integer", "example": 1250 },
+                  "replyCount": { "type": "integer", "example": 14 },
+                  "voteScore": { "type": "integer", "example": 23 },
+                  "tags": {
+                    "type": "array",
+                    "items": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } },
+                    "example": [{ "id": "uuid", "name": "React", "slug": "react" }, { "id": "uuid", "name": "JavaScript", "slug": "javascript" }]
+                  },
+                  "lastReplyAt": { "type": "string (ISO 8601) | null", "example": "2026-07-19T15:45:00.000Z" },
+                  "lastReplyBy": { "type": "object | null", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+                  "createdAt": { "type": "string (ISO 8601)", "example": "2026-07-18T09:20:00.000Z" },
+                  "updatedAt": { "type": "string (ISO 8601)", "example": "2026-07-19T15:45:00.000Z" }
+                }
+              }
+            },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "400": "Geçersiz filtre parametresi / Invalid filter parameter.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/threads?page=1&limit=20&sort=lastReplyAt&order=desc&categoryId=550e8400-e29b-41d4-a716-446655440000&type=question&isSolved=false"
+      },
+
+      "GET /api/v1/threads/{id}": {
+        "description": "Thread detayını sayfalandırılmış cevaplarla birlikte getirir / Get thread detail with paginated replies.",
+        "auth": "none",
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002", "description": "Thread ID." }
+        },
+        "queryParameters": {
+          "replyPage": { "type": "integer", "default": 1, "example": "?replyPage=1", "description": "Cevaplar için sayfa numarası / Page number for replies." },
+          "replyLimit": { "type": "integer", "default": 20, "max": 100, "example": "?replyLimit=50", "description": "Cevaplar için sayfa başına kayıt / Replies per page." },
+          "replySort": { "type": "string", "enum": ["createdAt", "voteScore"], "default": "createdAt", "example": "?replySort=voteScore", "description": "Cevap sıralama / Reply sort field." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002" },
+            "categoryId": { "type": "string (UUID)" },
+            "category": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } },
+            "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" }, "avatarUrl": { "type": "string | null" }, "rank": { "type": "string" }, "karma": { "type": "integer" }, "postCount": { "type": "integer" }, "signature": { "type": "string | null" } } },
+            "title": { "type": "string", "example": "React'te useEffect hook'u nasıl optimize edilir?" },
+            "slug": { "type": "string" },
+            "content": { "type": "string" },
+            "contentHtml": { "type": "string" },
+            "type": { "type": "string", "enum": ["discussion", "question", "poll", "announcement"] },
+            "status": { "type": "string", "enum": ["open", "closed", "archived", "pinned", "hidden"] },
+            "isSolved": { "type": "boolean" },
+            "acceptedReplyId": { "type": "string (UUID) | null" },
+            "isLocked": { "type": "boolean" },
+            "lockedReason": { "type": "string | null" },
+            "flair": { "type": "string | null" },
+            "viewCount": { "type": "integer" },
+            "replyCount": { "type": "integer" },
+            "voteScore": { "type": "integer" },
+            "tags": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } } },
+            "lastReplyAt": { "type": "string (ISO 8601) | null" },
+            "lastReplyBy": { "type": "object | null", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } },
+            "createdAt": { "type": "string (ISO 8601)" },
+            "updatedAt": { "type": "string (ISO 8601)" },
+            "userVote": { "type": "string | null", "enum": ["upvote", "downvote", null], "description": "Oturum açmış kullanıcının oyu (anonim kullanıcıda null) / Current user's vote (null for anonymous)." },
+            "isWatching": { "type": "boolean", "description": "Oturum açmış kullanıcı takip ediyor mu (anonim kullanıcıda false) / Whether current user is watching (false for anonymous)." },
+            "replies": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string (UUID)" },
+                      "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" }, "avatarUrl": { "type": "string | null" }, "rank": { "type": "string" }, "karma": { "type": "integer" }, "signature": { "type": "string | null" } } },
+                      "parentReplyId": { "type": "string (UUID) | null", "description": "Üst cevap ID'si (iç içe cevaplar için) / Parent reply ID for nested replies." },
+                      "depth": { "type": "integer", "example": 1 },
+                      "content": { "type": "string" },
+                      "contentHtml": { "type": "string" },
+                      "voteScore": { "type": "integer" },
+                      "isEdited": { "type": "boolean" },
+                      "lastEditedAt": { "type": "string (ISO 8601) | null" },
+                      "status": { "type": "string", "enum": ["published", "hidden", "deleted"] },
+                      "createdAt": { "type": "string (ISO 8601)" },
+                      "updatedAt": { "type": "string (ISO 8601)" },
+                      "userVote": { "type": "string | null", "enum": ["upvote", "downvote", null] },
+                      "isAccepted": { "type": "boolean", "description": "Kabul edilmiş cevap mı / Whether this reply is the accepted answer." }
+                    }
+                  }
+                },
+                "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+              }
+            }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "404": "Thread bulunamadı / Thread not found.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/threads/{id}/related": {
+        "description": "Benzer/ilgili thread'leri getirir / Get related or similar threads based on tags and category.",
+        "auth": "none",
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002", "description": "Thread ID." }
+        },
+        "queryParameters": {
+          "limit": { "type": "integer", "default": 5, "max": 20, "example": "?limit=10", "description": "Dönecek maksimum thread sayısı / Max number of related threads." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "title": { "type": "string" },
+                  "slug": { "type": "string" },
+                  "category": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } },
+                  "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+                  "replyCount": { "type": "integer" },
+                  "voteScore": { "type": "integer" },
+                  "createdAt": { "type": "string (ISO 8601)" },
+                  "relevanceScore": { "type": "number", "example": 0.87, "description": "Benzerlik skoru (0-1) / Relevance score." }
+                }
+              }
+            }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "404": "Thread bulunamadı / Thread not found.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/users/{username}": {
+        "description": "Kullanıcının herkese açık profilini getirir / View public user profile.",
+        "auth": "none",
+        "pathParameters": {
+          "username": { "type": "string", "example": "ahmet42", "description": "Kullanıcı adı / Username." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "username": { "type": "string", "example": "ahmet42" },
+            "displayName": { "type": "string", "example": "Ahmet Yılmaz" },
+            "role": { "type": "string", "enum": ["admin", "global_mod", "category_mod", "trusted_member", "member", "restricted"] },
+            "bio": { "type": "string | null", "example": "Frontend geliştirici, React ve TypeScript tutkunu." },
+            "avatarUrl": { "type": "string | null", "example": "https://cdn.forum.example.com/avatars/ahmet42.jpg" },
+            "coverUrl": { "type": "string | null" },
+            "signature": { "type": "string | null" },
+            "website": { "type": "string | null", "example": "https://ahmetyilmaz.dev" },
+            "location": { "type": "string | null", "example": "İstanbul, Türkiye" },
+            "karma": { "type": "integer", "example": 1542 },
+            "rank": { "type": "string", "enum": ["new_member", "regular", "veteran", "elder", "legend"], "example": "veteran" },
+            "postCount": { "type": "integer", "example": 487 },
+            "threadCount": { "type": "integer", "example": 52 },
+            "lastActiveAt": { "type": "string (ISO 8601) | null", "example": "2026-07-20T08:15:00.000Z" },
+            "createdAt": { "type": "string (ISO 8601)", "example": "2024-03-10T14:30:00.000Z" },
+            "badges": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "name": { "type": "string" },
+                  "slug": { "type": "string" },
+                  "iconUrl": { "type": "string" },
+                  "category": { "type": "string", "enum": ["participation", "quality", "moderation", "special"] },
+                  "awardedAt": { "type": "string (ISO 8601)" }
+                }
+              }
+            },
+            "recentThreads": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "title": { "type": "string" },
+                  "slug": { "type": "string" },
+                  "category": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } },
+                  "replyCount": { "type": "integer" },
+                  "voteScore": { "type": "integer" },
+                  "createdAt": { "type": "string (ISO 8601)" }
+                }
+              },
+              "description": "Son 10 thread / Last 10 threads."
+            }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "404": "Kullanıcı bulunamadı / User not found.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/search": {
+        "description": "Thread ve gönderilerde tam metin araması yapar / Full-text search across threads and posts.",
+        "auth": "none",
+        "queryParameters": {
+          "q": { "type": "string", "required": true, "minLength": 2, "example": "?q=react+performance", "description": "Arama terimi / Search query." },
+          "type": { "type": "string", "enum": ["threads", "replies", "users", "all"], "default": "all", "example": "?type=threads", "description": "Arama kapsamı / Search scope." },
+          "categoryId": { "type": "string (UUID)", "example": "?categoryId=uuid", "description": "Kategoriye göre daralt / Narrow by category." },
+          "tag": { "type": "string", "example": "?tag=react", "description": "Etikete göre daralt / Narrow by tag." },
+          "page": { "type": "integer", "default": 1, "example": "?page=1" },
+          "limit": { "type": "integer", "default": 20, "max": 50, "example": "?limit=20" },
+          "sort": { "type": "string", "enum": ["relevance", "createdAt", "voteScore"], "default": "relevance", "example": "?sort=relevance" }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "query": { "type": "string", "example": "react performance" },
+            "type": { "type": "string", "example": "all" },
+            "took": { "type": "integer", "example": 45, "description": "Arama süresi (ms) / Search duration in ms." },
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "resultType": { "type": "string", "enum": ["thread", "reply", "user"], "example": "thread" },
+                  "thread": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string (UUID)" },
+                      "title": { "type": "string" },
+                      "slug": { "type": "string" },
+                      "contentHighlight": { "type": "string", "description": "İçerikten vurgulanmış snippet / Highlighted snippet from content." },
+                      "category": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } },
+                      "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+                      "replyCount": { "type": "integer" },
+                      "voteScore": { "type": "integer" },
+                      "createdAt": { "type": "string (ISO 8601)" },
+                      "score": { "type": "number", "example": 12.45 }
+                    }
+                  },
+                  "reply": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string (UUID)" },
+                      "contentHighlight": { "type": "string" },
+                      "threadId": { "type": "string (UUID)" },
+                      "threadTitle": { "type": "string" },
+                      "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+                      "createdAt": { "type": "string (ISO 8601)" },
+                      "score": { "type": "number" }
+                    }
+                  },
+                  "user": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string (UUID)" },
+                      "username": { "type": "string" },
+                      "displayName": { "type": "string" },
+                      "avatarUrl": { "type": "string | null" },
+                      "bio": { "type": "string | null" },
+                      "rank": { "type": "string" },
+                      "score": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "400": "Geçersiz arama parametresi (q en az 2 karakter olmalı) / Invalid search parameter (q must be at least 2 characters).",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/search?q=react+performance&type=all&page=1&limit=20&sort=relevance"
+      },
+
+      "GET /api/v1/tags": {
+        "description": "Mevcut etiketleri listeler / List available tags.",
+        "auth": "none",
+        "queryParameters": {
+          "page": { "type": "integer", "default": 1, "example": "?page=1" },
+          "limit": { "type": "integer", "default": 50, "max": 200, "example": "?limit=100" },
+          "sort": { "type": "string", "enum": ["name", "threadCount", "createdAt"], "default": "threadCount", "example": "?sort=name", "description": "Sıralama alanı / Sort field." },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "?order=asc" },
+          "search": { "type": "string", "example": "?search=react", "description": "Etiket adında arama / Search in tag name." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "name": { "type": "string", "example": "React" },
+                  "slug": { "type": "string", "example": "react" },
+                  "description": { "type": "string | null", "example": "React.js kütüphanesi ile ilgili konular" },
+                  "threadCount": { "type": "integer", "example": 2341 },
+                  "createdAt": { "type": "string (ISO 8601)" }
+                }
+              }
+            },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      }
+
+    },
+
+    "auth": {
+
+      "POST /api/v1/threads": {
+        "description": "Yeni bir thread oluşturur / Create a new thread.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "requestBody": {
+          "type": "object",
+          "required": ["categoryId", "title", "content", "type"],
+          "properties": {
+            "categoryId": { "type": "string (UUID)", "example": "550e8400-e29b-41d4-a716-446655440000", "description": "Kategori ID'si / Category ID." },
+            "title": { "type": "string", "minLength": 5, "maxLength": 200, "example": "React'te useEffect hook'u nasıl optimize edilir?", "description": "Thread başlığı / Thread title." },
+            "content": { "type": "string (Markdown)", "minLength": 10, "maxLength": 50000, "example": "Merhaba arkadaşlar, useEffect hook'unun gereksiz render'lara sebep olduğunu fark ettim...", "description": "Thread içeriği (Markdown) / Thread content (Markdown)." },
+            "type": { "type": "string", "enum": ["discussion", "question", "poll"], "example": "question", "description": "Thread tipi / Thread type." },
+            "tags": { "type": "array of string (UUID)", "maxItems": 5, "example": ["uuid-tag-react", "uuid-tag-javascript"], "description": "Etiket ID'leri (en fazla 5) / Tag IDs (max 5)." },
+            "flair": { "type": "string | null", "maxLength": 30, "example": null, "description": "Flair etiketi (örn: SOLVED, NSFW, SPOILER) / Flair label." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "categoryId": { "type": "string (UUID)" },
+            "category": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } },
+            "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+            "title": { "type": "string" },
+            "slug": { "type": "string" },
+            "content": { "type": "string" },
+            "contentHtml": { "type": "string" },
+            "type": { "type": "string" },
+            "status": { "type": "string", "example": "open" },
+            "isSolved": { "type": "boolean", "example": false },
+            "isLocked": { "type": "boolean", "example": false },
+            "flair": { "type": "string | null" },
+            "tags": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } } },
+            "viewCount": { "type": "integer", "example": 0 },
+            "replyCount": { "type": "integer", "example": 0 },
+            "voteScore": { "type": "integer", "example": 0 },
+            "createdAt": { "type": "string (ISO 8601)" },
+            "updatedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "201": "Thread başarıyla oluşturuldu / Thread created successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Kısıtlı kullanıcı veya banlı / Restricted user or banned.",
+          "404": "Kategori bulunamadı / Category not found.",
+          "422": "Doğrulama hatası / Validation error.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "PUT /api/v1/threads/{id}": {
+        "description": "Thread'i düzenler (sahibi veya mod) / Edit thread (owner or moderator).",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002", "description": "Thread ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string", "minLength": 5, "maxLength": 200, "example": "React'te useEffect hook optimizasyonu [Güncel]", "description": "Thread başlığı / Thread title." },
+            "content": { "type": "string (Markdown)", "minLength": 10, "maxLength": 50000, "example": "Güncellenmiş içerik...", "description": "Thread içeriği (Markdown) / Thread content (Markdown)." },
+            "categoryId": { "type": "string (UUID)", "example": "550e8400-e29b-41d4-a716-446655440000", "description": "Taşınacak kategori ID'si / Target category ID." },
+            "type": { "type": "string", "enum": ["discussion", "question", "poll", "announcement"], "example": "discussion", "description": "Thread tipi / Thread type." },
+            "tags": { "type": "array of string (UUID)", "maxItems": 5, "example": ["uuid-tag-react", "uuid-tag-typescript"], "description": "Etiket ID'leri (en fazla 5) / Tag IDs (max 5)." },
+            "flair": { "type": "string | null", "maxLength": 30, "example": "SOLVED", "description": "Flair etiketi / Flair label." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "categoryId": { "type": "string (UUID)" },
+            "category": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } },
+            "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+            "title": { "type": "string" },
+            "slug": { "type": "string" },
+            "content": { "type": "string" },
+            "contentHtml": { "type": "string" },
+            "type": { "type": "string" },
+            "status": { "type": "string" },
+            "isSolved": { "type": "boolean" },
+            "isLocked": { "type": "boolean" },
+            "flair": { "type": "string | null" },
+            "tags": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" } } } },
+            "viewCount": { "type": "integer" },
+            "replyCount": { "type": "integer" },
+            "voteScore": { "type": "integer" },
+            "createdAt": { "type": "string (ISO 8601)" },
+            "updatedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "200": "Thread başarıyla güncellendi / Thread updated successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (sahip veya mod değil) / Forbidden (not owner or mod).",
+          "404": "Thread bulunamadı / Thread not found.",
+          "422": "Doğrulama hatası / Validation error.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "DELETE /api/v1/threads/{id}": {
+        "description": "Thread'i siler (sahibi veya mod) / Delete thread (owner or moderator).",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002", "description": "Thread ID." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean", "example": true },
+            "message": { "type": "string", "example": "Thread başarıyla silindi / Thread deleted successfully." }
+          }
+        },
+        "statusCodes": {
+          "200": "Thread başarıyla silindi / Thread deleted successfully.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (sahip veya mod değil) / Forbidden (not owner or mod).",
+          "404": "Thread bulunamadı / Thread not found.",
+          "409": "Thread kilitli veya arşivlenmiş / Thread is locked or archived.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/threads/{id}/replies": {
+        "description": "Thread'e cevap gönderir / Post a reply to a thread.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002", "description": "Thread ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["content"],
+          "properties": {
+            "content": { "type": "string (Markdown)", "minLength": 2, "maxLength": 20000, "example": "useEffect'in dependency array'ini doğru kullanmak çok önemli...", "description": "Cevap içeriği (Markdown) / Reply content (Markdown)." },
+            "parentReplyId": { "type": "string (UUID) | null", "example": null, "description": "Üst cevap ID'si (iç içe cevaplar için, max 5 seviye) / Parent reply ID for nested replies (max 5 levels)." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "threadId": { "type": "string (UUID)" },
+            "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" }, "avatarUrl": { "type": "string | null" }, "rank": { "type": "string" } } },
+            "parentReplyId": { "type": "string (UUID) | null" },
+            "depth": { "type": "integer", "example": 0 },
+            "content": { "type": "string" },
+            "contentHtml": { "type": "string" },
+            "voteScore": { "type": "integer", "example": 0 },
+            "isEdited": { "type": "boolean", "example": false },
+            "status": { "type": "string", "example": "published" },
+            "createdAt": { "type": "string (ISO 8601)" },
+            "updatedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "201": "Cevap başarıyla oluşturuldu / Reply created successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Kısıtlı kullanıcı veya banlı / Restricted user or banned.",
+          "404": "Thread bulunamadı / Thread not found.",
+          "409": "Thread kilitli veya arşivlenmiş, cevap gönderilemez / Thread is locked or archived, cannot reply.",
+          "422": "Doğrulama hatası (örn: max iç içe seviye aşıldı) / Validation error (e.g. max nesting depth exceeded).",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "PUT /api/v1/replies/{id}": {
+        "description": "Cevabı düzenler / Edit a reply.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "880e8400-e29b-41d4-a716-446655440003", "description": "Reply ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["content"],
+          "properties": {
+            "content": { "type": "string (Markdown)", "minLength": 2, "maxLength": 20000, "example": "Güncellenmiş cevap içeriği...", "description": "Cevap içeriği (Markdown) / Reply content (Markdown)." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "threadId": { "type": "string (UUID)" },
+            "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+            "parentReplyId": { "type": "string (UUID) | null" },
+            "depth": { "type": "integer" },
+            "content": { "type": "string" },
+            "contentHtml": { "type": "string" },
+            "voteScore": { "type": "integer" },
+            "isEdited": { "type": "boolean" },
+            "editGraceExpired": { "type": "boolean", "description": "5 dakikalık düzenleme süresi doldu mu / Whether the 5-min edit grace period has expired." },
+            "lastEditedAt": { "type": "string (ISO 8601)" },
+            "status": { "type": "string" },
+            "createdAt": { "type": "string (ISO 8601)" },
+            "updatedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "200": "Cevap başarıyla güncellendi / Reply updated successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (sahip değil) / Forbidden (not owner).",
+          "404": "Cevap bulunamadı / Reply not found.",
+          "422": "Doğrulama hatası / Validation error.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "DELETE /api/v1/replies/{id}": {
+        "description": "Cevabı siler / Delete a reply.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "880e8400-e29b-41d4-a716-446655440003", "description": "Reply ID." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean", "example": true },
+            "message": { "type": "string", "example": "Cevap başarıyla silindi / Reply deleted successfully." }
+          }
+        },
+        "statusCodes": {
+          "200": "Cevap başarıyla silindi / Reply deleted successfully.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (sahip veya mod değil) / Forbidden (not owner or mod).",
+          "404": "Cevap bulunamadı / Reply not found.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/threads/{id}/vote": {
+        "description": "Thread'e oy verir (upvote/downvote). Tekrar çağırma oyu geri alır veya değiştirir / Upvote or downvote a thread. Calling again removes or toggles the vote.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002", "description": "Thread ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["direction"],
+          "properties": {
+            "direction": { "type": "string", "enum": ["upvote", "downvote"], "example": "upvote", "description": "Oy yönü / Vote direction." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "voteScore": { "type": "integer", "example": 24, "description": "Güncel oy skoru / Current vote score." },
+            "userVote": { "type": "string | null", "enum": ["upvote", "downvote", null], "example": "upvote", "description": "Kullanıcının güncel oy durumu (null = oy geri alındı) / User's current vote status (null = vote removed)." }
+          }
+        },
+        "statusCodes": {
+          "200": "Oy başarıyla işlendi / Vote processed successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Kısıtlı veya banlı kullanıcı / Restricted or banned user.",
+          "404": "Thread bulunamadı / Thread not found.",
+          "422": "Kendi thread'ine oy verilemez / Cannot vote on own thread.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/replies/{id}/vote": {
+        "description": "Cevaba oy verir (upvote/downvote). Tekrar çağırma oyu geri alır veya değiştirir / Upvote or downvote a reply. Calling again removes or toggles the vote.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "880e8400-e29b-41d4-a716-446655440003", "description": "Reply ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["direction"],
+          "properties": {
+            "direction": { "type": "string", "enum": ["upvote", "downvote"], "example": "upvote", "description": "Oy yönü / Vote direction." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "voteScore": { "type": "integer", "example": 5, "description": "Güncel oy skoru / Current vote score." },
+            "userVote": { "type": "string | null", "enum": ["upvote", "downvote", null], "example": "upvote", "description": "Kullanıcının güncel oy durumu / User's current vote status." }
+          }
+        },
+        "statusCodes": {
+          "200": "Oy başarıyla işlendi / Vote processed successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Kısıtlı veya banlı kullanıcı / Restricted or banned user.",
+          "404": "Cevap bulunamadı / Reply not found.",
+          "422": "Kendi cevabına oy verilemez / Cannot vote on own reply.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/threads/{id}/watch": {
+        "description": "Thread'i takip et veya takibi bırak (toggle) / Watch or unwatch a thread (toggle).",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002", "description": "Thread ID." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "watching": { "type": "boolean", "example": true, "description": "Takip durumu / Watch status." },
+            "message": { "type": "string", "example": "Thread takip ediliyor / Thread is now being watched." }
+          }
+        },
+        "statusCodes": {
+          "200": "Takip durumu güncellendi / Watch status updated.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "404": "Thread bulunamadı / Thread not found.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/categories/{id}/watch": {
+        "description": "Kategoriyi takip et veya takibi bırak (toggle) / Watch or unwatch a category (toggle).",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "550e8400-e29b-41d4-a716-446655440000", "description": "Category ID." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "watching": { "type": "boolean", "example": true, "description": "Takip durumu / Watch status." },
+            "message": { "type": "string", "example": "Kategori takip ediliyor / Category is now being watched." }
+          }
+        },
+        "statusCodes": {
+          "200": "Takip durumu güncellendi / Watch status updated.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "404": "Kategori bulunamadı / Category not found.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      }
+
+    },
+
+    "moderation": {
+
+      "POST /api/v1/mod/threads/{id}/status": {
+        "description": "Thread durumunu değiştirir (kilitle, sabitle, arşivle, gizle) / Change thread status (lock, pin, archive, hide).",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "770e8400-e29b-41d4-a716-446655440002", "description": "Thread ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string", "enum": ["open", "closed", "archived", "pinned", "hidden"], "example": "pinned", "description": "Yeni durum / New status." },
+            "lockedReason": { "type": "string | null", "maxLength": 500, "example": "Kurallara aykırı tartışma nedeniyle kilitlendi / Locked due to rule-violating discussion.", "description": "Kilitleme sebebi (sadece status=closed iken) / Reason for locking (only when status=closed)." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "title": { "type": "string" },
+            "slug": { "type": "string" },
+            "status": { "type": "string", "example": "pinned" },
+            "isLocked": { "type": "boolean" },
+            "lockedReason": { "type": "string | null" },
+            "updatedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "200": "Thread durumu güncellendi / Thread status updated.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (moderatör değil) / Forbidden (not a moderator).",
+          "404": "Thread bulunamadı / Thread not found.",
+          "422": "Geçersiz durum geçişi / Invalid status transition.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/mod/reports": {
+        "description": "Bir gönderiyi, kullanıcıyı veya cevabı şikayet eder / Report a post, user, or reply.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "requestBody": {
+          "type": "object",
+          "required": ["targetType", "targetId", "reason"],
+          "properties": {
+            "targetType": { "type": "string", "enum": ["thread", "reply", "user"], "example": "reply", "description": "Şikayet edilen içerik tipi / Type of content being reported." },
+            "targetId": { "type": "string (UUID)", "example": "880e8400-e29b-41d4-a716-446655440003", "description": "Şikayet edilen içerik ID'si / ID of content being reported." },
+            "reason": { "type": "string", "enum": ["spam", "harassment", "nsfw", "hate_speech", "misinformation", "self_harm", "other"], "example": "spam", "description": "Şikayet sebebi / Report reason." },
+            "description": { "type": "string | null", "maxLength": 1000, "example": "Bu cevap tamamen spam içerikli / This reply is purely spam.", "description": "Şikayet açıklaması / Report description." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "reporterId": { "type": "string (UUID)" },
+            "targetType": { "type": "string" },
+            "targetId": { "type": "string (UUID)" },
+            "reason": { "type": "string" },
+            "description": { "type": "string | null" },
+            "status": { "type": "string", "example": "pending" },
+            "createdAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "201": "Şikayet başarıyla oluşturuldu / Report created successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "404": "Şikayet edilen içerik bulunamadı / Reported content not found.",
+          "409": "Bu içerik için zaten bekleyen bir şikayetiniz var / You already have a pending report for this content.",
+          "422": "Doğrulama hatası / Validation error.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/mod/reports": {
+        "description": "Şikayetleri listeler (moderasyon kuyruğu) / List reports (moderation queue).",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod"],
+        "queryParameters": {
+          "page": { "type": "integer", "default": 1, "example": "?page=1" },
+          "limit": { "type": "integer", "default": 20, "max": 100, "example": "?limit=20" },
+          "status": { "type": "string", "enum": ["pending", "reviewed", "resolved", "dismissed"], "example": "?status=pending", "description": "Duruma göre filtrele / Filter by status." },
+          "reason": { "type": "string", "enum": ["spam", "harassment", "nsfw", "hate_speech", "misinformation", "self_harm", "other"], "example": "?reason=spam", "description": "Sebebe göre filtrele / Filter by reason." },
+          "targetType": { "type": "string", "enum": ["thread", "reply", "user"], "example": "?targetType=reply", "description": "İçerik tipine göre filtrele / Filter by target type." },
+          "sort": { "type": "string", "enum": ["createdAt", "status"], "default": "createdAt", "example": "?sort=createdAt" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "?order=asc" }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "reporter": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+                  "targetType": { "type": "string" },
+                  "targetId": { "type": "string (UUID)" },
+                  "targetPreview": {
+                    "type": "object",
+                    "description": "Şikayet edilen içeriğin önizlemesi / Preview of reported content.",
+                    "properties": {
+                      "title": { "type": "string | null", "description": "Thread ise başlık / Title if thread." },
+                      "contentSnippet": { "type": "string", "description": "İçerikten ilk 200 karakter / First 200 chars of content." },
+                      "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } }
+                    }
+                  },
+                  "reason": { "type": "string" },
+                  "description": { "type": "string | null" },
+                  "status": { "type": "string" },
+                  "resolvedBy": { "type": "object | null", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } },
+                  "resolutionNote": { "type": "string | null" },
+                  "createdAt": { "type": "string (ISO 8601)" },
+                  "resolvedAt": { "type": "string (ISO 8601) | null" }
+                }
+              }
+            },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (moderatör değil) / Forbidden (not a moderator).",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/mod/reports?page=1&limit=20&status=pending&sort=createdAt&order=desc"
+      },
+
+      "PUT /api/v1/mod/reports/{id}": {
+        "description": "Şikayeti çözümler veya reddeder / Resolve or dismiss a report.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "990e8400-e29b-41d4-a716-446655440004", "description": "Report ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string", "enum": ["resolved", "dismissed"], "example": "resolved", "description": "Yeni durum / New status." },
+            "resolutionNote": { "type": "string | null", "maxLength": 1000, "example": "Kullanıcıya uyarı gönderildi, içerik kaldırıldı / User warned, content removed.", "description": "Çözüm notu / Resolution note." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "status": { "type": "string", "example": "resolved" },
+            "resolvedBy": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } },
+            "resolutionNote": { "type": "string | null" },
+            "resolvedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "200": "Şikayet başarıyla güncellendi / Report updated successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (moderatör değil) / Forbidden (not a moderator).",
+          "404": "Şikayet bulunamadı / Report not found.",
+          "409": "Şikayet zaten çözümlenmiş veya reddedilmiş / Report already resolved or dismissed.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/mod/users/{id}/ban": {
+        "description": "Kullanıcıyı banlar (geçici/kalıcı) / Ban a user (temporary or permanent).",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "660e8400-e29b-41d4-a716-446655440001", "description": "User ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["type", "reason"],
+          "properties": {
+            "type": { "type": "string", "enum": ["temporary", "permanent", "shadow"], "example": "temporary", "description": "Ban tipi / Ban type." },
+            "reason": { "type": "string", "minLength": 5, "maxLength": 1000, "example": "Tekrarlayan spam içerik paylaşımı / Repeated spam content posting.", "description": "Ban sebebi / Ban reason." },
+            "expiresAt": { "type": "string (ISO 8601) | null", "example": "2026-08-03T00:00:00.000Z", "description": "Bitiş tarihi (sadece type=temporary ise zorunlu) / Expiry date (required only when type=temporary)." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "user": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" } } },
+            "bannedBy": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } },
+            "type": { "type": "string" },
+            "reason": { "type": "string" },
+            "expiresAt": { "type": "string (ISO 8601) | null" },
+            "isActive": { "type": "boolean", "example": true },
+            "createdAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "201": "Kullanıcı başarıyla banlandı / User banned successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin veya global_mod değil) / Forbidden (not admin or global_mod).",
+          "404": "Kullanıcı bulunamadı / User not found.",
+          "409": "Kullanıcı zaten banlı / User is already banned.",
+          "422": "Doğrulama hatası (örn: temporary tipinde expiresAt zorunlu) / Validation error (e.g. expiresAt required for temporary type).",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/mod/users/{id}/unban": {
+        "description": "Kullanıcının banını kaldırır / Unban a user.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "660e8400-e29b-41d4-a716-446655440001", "description": "User ID." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean", "example": true },
+            "message": { "type": "string", "example": "Kullanıcı banı kaldırıldı / User has been unbanned." },
+            "user": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } }
+          }
+        },
+        "statusCodes": {
+          "200": "Ban başarıyla kaldırıldı / Ban removed successfully.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin veya global_mod değil) / Forbidden (not admin or global_mod).",
+          "404": "Kullanıcı bulunamadı veya aktif banı yok / User not found or no active ban.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/mod/queue": {
+        "description": "Onay bekleyen gönderileri listeler / List pending approval queue items.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod"],
+        "queryParameters": {
+          "page": { "type": "integer", "default": 1, "example": "?page=1" },
+          "limit": { "type": "integer", "default": 20, "max": 100, "example": "?limit=20" },
+          "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "default": "pending", "example": "?status=pending", "description": "Duruma göre filtrele / Filter by status." },
+          "targetType": { "type": "string", "enum": ["thread", "reply"], "example": "?targetType=thread", "description": "İçerik tipine göre filtrele / Filter by target type." },
+          "sort": { "type": "string", "enum": ["createdAt"], "default": "createdAt", "example": "?sort=createdAt" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "asc", "example": "?order=asc" }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "targetType": { "type": "string", "enum": ["thread", "reply"] },
+                  "targetId": { "type": "string (UUID)" },
+                  "targetPreview": {
+                    "type": "object",
+                    "properties": {
+                      "title": { "type": "string | null", "description": "Thread ise başlık / Title if thread." },
+                      "contentSnippet": { "type": "string", "description": "İçerikten ilk 300 karakter / First 300 chars of content." }
+                    }
+                  },
+                  "author": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+                  "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+                  "autoFlagged": { "type": "boolean", "description": "Otomatik olarak işaretlendi mi (aşırı link, şüpheli kelime) / Whether auto-flagged (excessive links, flagged keywords)." },
+                  "reviewedBy": { "type": "object | null", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } },
+                  "reviewedAt": { "type": "string (ISO 8601) | null" },
+                  "createdAt": { "type": "string (ISO 8601)" }
+                }
+              }
+            },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (moderatör değil) / Forbidden (not a moderator).",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/mod/queue?page=1&limit=20&status=pending&targetType=thread&sort=createdAt&order=asc"
+      },
+
+      "PUT /api/v1/mod/queue/{id}": {
+        "description": "Onay kuyruğundaki gönderiyi onaylar veya reddeder / Approve or reject a pending post in the moderation queue.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "aa0e8400-e29b-41d4-a716-446655440005", "description": "Moderation queue item ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string", "enum": ["approved", "rejected"], "example": "approved", "description": "Onay durumu / Approval status." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "targetType": { "type": "string" },
+            "targetId": { "type": "string (UUID)" },
+            "status": { "type": "string", "example": "approved" },
+            "reviewedBy": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } },
+            "reviewedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "200": "Kuyruk öğesi başarıyla güncellendi / Queue item updated successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (moderatör değil) / Forbidden (not a moderator).",
+          "404": "Kuyruk öğesi bulunamadı / Queue item not found.",
+          "409": "Kuyruk öğesi zaten işlenmiş / Queue item already processed.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/mod/audit-log": {
+        "description": "Moderasyon işlem geçmişini listeler / List moderation action history.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod"],
+        "queryParameters": {
+          "page": { "type": "integer", "default": 1, "example": "?page=1" },
+          "limit": { "type": "integer", "default": 50, "max": 200, "example": "?limit=50" },
+          "action": { "type": "string", "enum": ["thread_locked", "thread_unlocked", "thread_pinned", "thread_unpinned", "thread_hidden", "thread_restored", "reply_hidden", "reply_restored", "user_banned", "user_unbanned", "report_resolved", "report_dismissed", "queue_approved", "queue_rejected", "user_role_changed", "category_created", "category_updated", "category_deleted"], "example": "?action=user_banned", "description": "İşlem tipine göre filtrele / Filter by action type." },
+          "moderatorId": { "type": "string (UUID)", "example": "?moderatorId=uuid", "description": "Moderatöre göre filtrele / Filter by moderator." },
+          "dateFrom": { "type": "string (ISO 8601)", "example": "?dateFrom=2026-07-01T00:00:00.000Z", "description": "Başlangıç tarihi / Start date." },
+          "dateTo": { "type": "string (ISO 8601)", "example": "?dateTo=2026-07-31T23:59:59.000Z", "description": "Bitiş tarihi / End date." },
+          "sort": { "type": "string", "enum": ["createdAt"], "default": "createdAt" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "moderator": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" } } },
+                  "action": { "type": "string" },
+                  "targetType": { "type": "string", "enum": ["thread", "reply", "user", "category", "report"] },
+                  "targetId": { "type": "string (UUID) | null" },
+                  "details": { "type": "object", "description": "İşleme özel metadata / Action-specific metadata.", "example": { "oldStatus": "open", "newStatus": "pinned", "reason": "Önemli duyuru" } },
+                  "ipAddress": { "type": "string | null", "example": "192.168.1.100" },
+                  "createdAt": { "type": "string (ISO 8601)" }
+                }
+              }
+            },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (moderatör değil) / Forbidden (not a moderator).",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/mod/audit-log?page=1&limit=50&action=user_banned&dateFrom=2026-07-01T00:00:00.000Z&sort=createdAt&order=desc"
+      }
+
+    },
+
+    "admin": {
+
+      "POST /api/v1/admin/categories": {
+        "description": "Yeni kategori oluşturur / Create a new category.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin"],
+        "requestBody": {
+          "type": "object",
+          "required": ["name", "slug"],
+          "properties": {
+            "name": { "type": "string", "minLength": 2, "maxLength": 100, "example": "Yazılım Mimarisi", "description": "Kategori adı / Category name." },
+            "slug": { "type": "string", "minLength": 2, "maxLength": 100, "pattern": "^[a-z0-9-]+$", "example": "yazilim-mimarisi", "description": "Kategori slug'ı (URL dostu) / Category slug (URL-friendly)." },
+            "description": { "type": "string | null", "maxLength": 500, "example": "Yazılım mimarisi, tasarım desenleri ve sistem tasarımı tartışmaları.", "description": "Kategori açıklaması / Category description." },
+            "parentId": { "type": "string (UUID) | null", "example": null, "description": "Üst kategori ID'si / Parent category ID." },
+            "sortOrder": { "type": "integer", "default": 0, "example": 5, "description": "Sıralama önceliği / Sort order." },
+            "isPrivate": { "type": "boolean", "default": false, "example": false, "description": "Özel kategori mi / Is this a private category." },
+            "allowedRoles": { "type": "array of string", "items": { "enum": ["admin", "global_mod", "category_mod", "trusted_member", "member", "restricted"] }, "example": ["trusted_member"], "description": "Erişim izni olan roller (sadece isPrivate=true iken) / Roles allowed access (only when isPrivate=true)." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "name": { "type": "string" },
+            "slug": { "type": "string" },
+            "description": { "type": "string | null" },
+            "parentId": { "type": "string (UUID) | null" },
+            "sortOrder": { "type": "integer" },
+            "threadCount": { "type": "integer", "example": 0 },
+            "postCount": { "type": "integer", "example": 0 },
+            "isPrivate": { "type": "boolean" },
+            "allowedRoles": { "type": "array of string" },
+            "createdAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "201": "Kategori başarıyla oluşturuldu / Category created successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin değil) / Forbidden (not admin).",
+          "409": "Bu slug zaten kullanımda / This slug is already in use.",
+          "422": "Doğrulama hatası / Validation error.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "PUT /api/v1/admin/categories/{id}": {
+        "description": "Kategori ayarlarını günceller / Update category settings.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "550e8400-e29b-41d4-a716-446655440000", "description": "Category ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "minLength": 2, "maxLength": 100, "example": "Yazılım Mimarisi (Güncel)", "description": "Kategori adı / Category name." },
+            "slug": { "type": "string", "minLength": 2, "maxLength": 100, "pattern": "^[a-z0-9-]+$", "example": "yazilim-mimarisi-v2", "description": "Kategori slug'ı / Category slug." },
+            "description": { "type": "string | null", "maxLength": 500, "example": "Güncellenmiş açıklama...", "description": "Kategori açıklaması / Category description." },
+            "parentId": { "type": "string (UUID) | null", "example": "uuid-parent-category", "description": "Üst kategori ID'si / Parent category ID." },
+            "sortOrder": { "type": "integer", "example": 10, "description": "Sıralama önceliği / Sort order." },
+            "isPrivate": { "type": "boolean", "example": true, "description": "Özel kategori mi / Is this a private category." },
+            "allowedRoles": { "type": "array of string", "items": { "enum": ["admin", "global_mod", "category_mod", "trusted_member", "member", "restricted"] }, "example": ["admin", "global_mod"], "description": "Erişim izni olan roller / Roles allowed access." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "name": { "type": "string" },
+            "slug": { "type": "string" },
+            "description": { "type": "string | null" },
+            "parentId": { "type": "string (UUID) | null" },
+            "sortOrder": { "type": "integer" },
+            "threadCount": { "type": "integer" },
+            "postCount": { "type": "integer" },
+            "isPrivate": { "type": "boolean" },
+            "allowedRoles": { "type": "array of string" },
+            "createdAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "200": "Kategori başarıyla güncellendi / Category updated successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin değil) / Forbidden (not admin).",
+          "404": "Kategori bulunamadı / Category not found.",
+          "409": "Bu slug zaten kullanımda / This slug is already in use.",
+          "422": "Doğrulama hatası / Validation error.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "DELETE /api/v1/admin/categories/{id}": {
+        "description": "Kategoriyi siler / Delete a category.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "550e8400-e29b-41d4-a716-446655440000", "description": "Category ID." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean", "example": true },
+            "message": { "type": "string", "example": "Kategori başarıyla silindi / Category deleted successfully." }
+          }
+        },
+        "statusCodes": {
+          "200": "Kategori başarıyla silindi / Category deleted successfully.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin değil) / Forbidden (not admin).",
+          "404": "Kategori bulunamadı / Category not found.",
+          "409": "Kategori içinde thread'ler var, önce taşıyın / Category has threads, move them first.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/admin/users": {
+        "description": "Kullanıcı yönetim listesi (tüm kullanıcı detaylarıyla) / User management list with full user details.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin"],
+        "queryParameters": {
+          "page": { "type": "integer", "default": 1, "example": "?page=1" },
+          "limit": { "type": "integer", "default": 50, "max": 200, "example": "?limit=50" },
+          "role": { "type": "string", "enum": ["admin", "global_mod", "category_mod", "trusted_member", "member", "restricted"], "example": "?role=member", "description": "Role göre filtrele / Filter by role." },
+          "isBanned": { "type": "boolean", "example": "?isBanned=true", "description": "Ban durumuna göre filtrele / Filter by ban status." },
+          "rank": { "type": "string", "enum": ["new_member", "regular", "veteran", "elder", "legend"], "example": "?rank=veteran", "description": "Rütbeye göre filtrele / Filter by rank." },
+          "search": { "type": "string", "example": "?search=ahmet", "description": "Kullanıcı adı, email veya displayName'te arama / Search in username, email, or displayName." },
+          "sort": { "type": "string", "enum": ["username", "createdAt", "karma", "postCount", "lastActiveAt"], "default": "createdAt", "example": "?sort=karma" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc", "example": "?order=asc" }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "username": { "type": "string" },
+                  "displayName": { "type": "string" },
+                  "email": { "type": "string", "example": "ahmet@example.com", "description": "Email (sadece admin görür) / Email (visible only to admin)." },
+                  "emailVerified": { "type": "boolean" },
+                  "role": { "type": "string" },
+                  "rank": { "type": "string" },
+                  "karma": { "type": "integer" },
+                  "postCount": { "type": "integer" },
+                  "threadCount": { "type": "integer" },
+                  "isBanned": { "type": "boolean" },
+                  "isShadowBanned": { "type": "boolean" },
+                  "lastActiveAt": { "type": "string (ISO 8601) | null" },
+                  "createdAt": { "type": "string (ISO 8601)" },
+                  "avatarUrl": { "type": "string | null" }
+                }
+              }
+            },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin değil) / Forbidden (not admin).",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/admin/users?page=1&limit=50&role=member&isBanned=false&sort=createdAt&order=desc"
+      },
+
+      "PUT /api/v1/admin/users/{id}/role": {
+        "description": "Kullanıcı rolünü değiştirir / Change user role.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "660e8400-e29b-41d4-a716-446655440001", "description": "User ID." }
+        },
+        "requestBody": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "type": "string", "enum": ["admin", "global_mod", "category_mod", "trusted_member", "member", "restricted"], "example": "global_mod", "description": "Yeni rol / New role." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "username": { "type": "string" },
+            "displayName": { "type": "string" },
+            "role": { "type": "string", "example": "global_mod" },
+            "previousRole": { "type": "string", "example": "member", "description": "Önceki rol / Previous role." },
+            "updatedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "200": "Rol başarıyla güncellendi / Role updated successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin değil) / Forbidden (not admin).",
+          "404": "Kullanıcı bulunamadı / User not found.",
+          "422": "Kendine rol atayamazsın veya son admin'in rolünü değiştiremezsin / Cannot change own role or the last admin's role.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/admin/site-settings": {
+        "description": "Forum yapılandırmasını günceller / Update forum configuration settings.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin"],
+        "requestBody": {
+          "type": "object",
+          "required": ["key", "value"],
+          "properties": {
+            "key": { "type": "string", "minLength": 1, "maxLength": 100, "example": "site.title", "description": "Ayar anahtarı / Setting key." },
+            "value": { "type": "any (JSON)", "example": { "tr": "Forum Topluluğu", "en": "Forum Community" }, "description": "Ayar değeri (JSON) / Setting value (JSON)." }
+          }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "key": { "type": "string" },
+            "value": { "type": "any (JSON)" },
+            "updatedBy": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" } } },
+            "updatedAt": { "type": "string (ISO 8601)" }
+          }
+        },
+        "statusCodes": {
+          "200": "Ayar başarıyla güncellendi / Setting updated successfully.",
+          "400": "Geçersiz istek gövdesi / Invalid request body.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin değil) / Forbidden (not admin).",
+          "422": "Doğrulama hatası / Validation error.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "GET /api/v1/admin/stats": {
+        "description": "Platform analitik paneli verilerini getirir / Get platform analytics dashboard data.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin"],
+        "queryParameters": {
+          "period": { "type": "string", "enum": ["day", "week", "month", "year", "all"], "default": "month", "example": "?period=month", "description": "İstatistik dönemi / Statistics period." },
+          "dateFrom": { "type": "string (ISO 8601)", "example": "?dateFrom=2026-06-01T00:00:00.000Z", "description": "Özel başlangıç tarihi (period'u override eder) / Custom start date (overrides period)." },
+          "dateTo": { "type": "string (ISO 8601)", "example": "?dateTo=2026-07-01T00:00:00.000Z", "description": "Özel bitiş tarihi / Custom end date." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "period": { "type": "string", "example": "month" },
+            "overview": {
+              "type": "object",
+              "properties": {
+                "totalUsers": { "type": "integer", "example": 12450 },
+                "totalThreads": { "type": "integer", "example": 34210 },
+                "totalReplies": { "type": "integer", "example": 189500 },
+                "totalCategories": { "type": "integer", "example": 28 },
+                "activeUsers": { "type": "integer", "example": 3200, "description": "Seçili dönemde aktif kullanıcı / Active users in selected period." },
+                "newUsers": { "type": "integer", "example": 450, "description": "Seçili dönemde yeni kullanıcı / New users in selected period." },
+                "newThreads": { "type": "integer", "example": 1200 },
+                "newReplies": { "type": "integer", "example": 8500 },
+                "reportsPending": { "type": "integer", "example": 23 },
+                "queuePending": { "type": "integer", "example": 8 }
+              }
+            },
+            "trends": {
+              "type": "object",
+              "properties": {
+                "userGrowth": {
+                  "type": "array",
+                  "items": { "type": "object", "properties": { "date": { "type": "string (date)" }, "count": { "type": "integer" } } },
+                  "description": "Kullanıcı büyüme trendi (günlük) / User growth trend (daily)."
+                },
+                "threadActivity": {
+                  "type": "array",
+                  "items": { "type": "object", "properties": { "date": { "type": "string (date)" }, "threads": { "type": "integer" }, "replies": { "type": "integer" } } },
+                  "description": "Thread ve cevap aktivite trendi (günlük) / Thread and reply activity trend (daily)."
+                },
+                "topCategories": {
+                  "type": "array",
+                  "items": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" }, "threadCount": { "type": "integer" }, "postCount": { "type": "integer" } } },
+                  "description": "En aktif kategoriler (ilk 10) / Top categories (top 10)."
+                },
+                "topTags": {
+                  "type": "array",
+                  "items": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "name": { "type": "string" }, "slug": { "type": "string" }, "threadCount": { "type": "integer" } } },
+                  "description": "En popüler etiketler (ilk 10) / Top tags (top 10)."
+                }
+              }
+            },
+            "moderation": {
+              "type": "object",
+              "properties": {
+                "totalReports": { "type": "integer", "example": 1250 },
+                "reportsByReason": { "type": "object", "properties": { "spam": { "type": "integer" }, "harassment": { "type": "integer" }, "nsfw": { "type": "integer" }, "hate_speech": { "type": "integer" }, "misinformation": { "type": "integer" }, "self_harm": { "type": "integer" }, "other": { "type": "integer" } } },
+                "totalBans": { "type": "integer", "example": 89 },
+                "activeBus": { "type": "integer", "example": 12 },
+                "avgResolutionTime": { "type": "integer", "example": 145, "description": "Ortalama şikayet çözüm süresi (dakika) / Average report resolution time (minutes)." }
+              }
+            }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Yetkisiz (admin değil) / Forbidden (not admin).",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/admin/stats?period=month"
+      }
+
+    },
+
+    "notifications": {
+
+      "GET /api/v1/notifications": {
+        "description": "Kullanıcının bildirimlerini listeler / List user notifications.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "queryParameters": {
+          "page": { "type": "integer", "default": 1, "example": "?page=1" },
+          "limit": { "type": "integer", "default": 20, "max": 100, "example": "?limit=20" },
+          "isRead": { "type": "boolean", "example": "?isRead=false", "description": "Okunma durumuna göre filtrele / Filter by read status." },
+          "type": { "type": "string", "enum": ["reply", "mention", "upvote", "accepted_answer", "thread_watch_update", "category_watch_update", "moderator_action", "new_follower", "badge_earned"], "example": "?type=reply", "description": "Bildirim tipine göre filtrele / Filter by notification type." },
+          "sort": { "type": "string", "enum": ["createdAt"], "default": "createdAt" },
+          "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string (UUID)" },
+                  "type": { "type": "string", "enum": ["reply", "mention", "upvote", "accepted_answer", "thread_watch_update", "category_watch_update", "moderator_action", "new_follower", "badge_earned"], "example": "reply" },
+                  "actor": { "type": "object", "properties": { "id": { "type": "string (UUID)" }, "username": { "type": "string" }, "displayName": { "type": "string" }, "avatarUrl": { "type": "string | null" } } },
+                  "targetType": { "type": "string", "enum": ["thread", "reply", "category", "user", "badge"] },
+                  "targetId": { "type": "string (UUID) | null" },
+                  "content": { "type": "string", "example": "Ahmet Yılmaz \"React'te useEffect hook optimizasyonu\" başlığına cevap verdi.", "description": "Bildirim önizleme metni / Notification preview text." },
+                  "isRead": { "type": "boolean", "example": false },
+                  "readAt": { "type": "string (ISO 8601) | null" },
+                  "createdAt": { "type": "string (ISO 8601)" }
+                }
+              }
+            },
+            "unreadCount": { "type": "integer", "example": 12, "description": "Okunmamış toplam bildirim sayısı / Total unread notification count." },
+            "pagination": { "$ref": "#/_meta/pagination/response_wrapper" }
+          }
+        },
+        "statusCodes": {
+          "200": "Başarılı / Success.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        },
+        "example": "GET /api/v1/notifications?page=1&limit=20&isRead=false&sort=createdAt&order=desc"
+      },
+
+      "PATCH /api/v1/notifications/{id}": {
+        "description": "Bildirimi okundu olarak işaretler / Mark a notification as read.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "pathParameters": {
+          "id": { "type": "string (UUID)", "example": "bb0e8400-e29b-41d4-a716-446655440006", "description": "Notification ID." }
+        },
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string (UUID)" },
+            "isRead": { "type": "boolean", "example": true },
+            "readAt": { "type": "string (ISO 8601)", "example": "2026-07-20T10:30:00.000Z" }
+          }
+        },
+        "statusCodes": {
+          "200": "Bildirim okundu olarak işaretlendi / Notification marked as read.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "403": "Başka kullanıcının bildirimi / Notification belongs to another user.",
+          "404": "Bildirim bulunamadı / Notification not found.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      },
+
+      "POST /api/v1/notifications/read-all": {
+        "description": "Tüm bildirimleri okundu olarak işaretler / Mark all notifications as read.",
+        "auth": "required (Bearer token)",
+        "authRoles": ["admin", "global_mod", "category_mod", "trusted_member", "member"],
+        "responseBody": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean", "example": true },
+            "count": { "type": "integer", "example": 12, "description": "Okundu olarak işaretlenen bildirim sayısı / Number of notifications marked as read." },
+            "message": { "type": "string", "example": "12 bildirim okundu olarak işaretlendi / 12 notifications marked as read." }
+          }
+        },
+        "statusCodes": {
+          "200": "Tüm bildirimler okundu olarak işaretlendi / All notifications marked as read.",
+          "401": "Kimlik doğrulama gerekli / Authentication required.",
+          "429": "Rate limit aşıldı / Rate limit exceeded.",
+          "500": "Sunucu hatası / Internal server error."
+        }
+      }
+
+    }
+  }
+}

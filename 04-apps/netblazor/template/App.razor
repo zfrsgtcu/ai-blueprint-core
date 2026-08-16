@@ -1,0 +1,26 @@
+<!-- PURPOSE OF THIS FILE: Blazor WebAssembly root component — Router, layout, navigation yönetimi. -->
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized>
+                <RedirectToLogin />
+            </NotAuthorized>
+            <Authorizing>
+                <div class="flex h-screen items-center justify-center">
+                    <p class="text-gray-500">Yükleniyor...</p>
+                </div>
+            </Authorizing>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Sayfa Bulunamadı</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <div class="flex h-screen flex-col items-center justify-center">
+                <h1 class="text-4xl font-bold text-gray-800">404</h1>
+                <p class="mt-2 text-gray-600">Üzgünüz, aradığınız sayfa bulunamadı.</p>
+                <a href="/" class="mt-4 text-blue-600 hover:underline">Ana Sayfaya Dön</a>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>

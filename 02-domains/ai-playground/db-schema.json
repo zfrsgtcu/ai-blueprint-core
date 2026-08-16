@@ -1,0 +1,291 @@
+{
+  "_meta": {
+    "description": "AI Playground veritabanı şeması. Kullanıcı, sohbet oturumu, mesaj, workflow, MCP bağlantısı, model yapılandırması, prompt şablonu, API anahtarı, kullanım logu, kota ve denetim modellerini içerir. Yüksek token hacmi için optimize edilmiştir."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "displayName": "String",
+        "avatarUrl": "String (Nullable)",
+        "role": "Enum (user, admin)",
+        "plan": "Enum (free, pro, enterprise) (Default: free)",
+        "isVerified": "Boolean (Default: false)",
+        "isActive": "Boolean (Default: true)",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "role", "plan"],
+      "note": "plan alanı kota limitlerini belirler. Admin kullanıcılar tüm oturumları ve workflow'ları görüntüleyebilir."
+    },
+    "ApiKey": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, ON DELETE CASCADE, Index)",
+        "name": "String (Anahtar için etiket adı)",
+        "keyHash": "String (Unique, SHA-256 hash)",
+        "keyPrefix": "String (İlk 8 karakter, UI'da gösterim için)",
+        "scopes": "JSONB (örn: ['chat', 'workflow', 'mcp'])",
+        "lastUsedAt": "DateTime (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "keyHash", "isActive"],
+      "note": "Kullanıcı başına maksimum 5 aktif API anahtarı. keyPrefix UI'da 'sk-abc123...' formatında gösterilir. Tam anahtar sadece oluşturma anında döndürülür."
+    },
+    "ModelConfig": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "provider": "Enum (anthropic, openai, google, ollama, custom)",
+        "modelName": "String (örn: 'claude-sonnet-5', 'gpt-4o')",
+        "displayName": "String (UI'da gösterilecek ad)",
+        "contextWindow": "Int (Maksimum token sayısı)",
+        "maxOutputTokens": "Int",
+        "costPer1kInput": "Decimal (10, 6) (USD)",
+        "costPer1kOutput": "Decimal (10, 6) (USD)",
+        "capabilities": "JSONB (['chat', 'code', 'vision', 'function_calling', 'streaming'])",
+        "fallbackModelId": "UUID (Nullable, Foreign Key → ModelConfig.id)",
+        "endpointUrl": "String (Nullable, custom provider için)",
+        "rateLimitPerMin": "Int (Default: 30)",
+        "isActive": "Boolean (Default: true)",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["provider", "isActive", "sortOrder"],
+      "note": "Model değişiklikleri mevcut oturumları etkilemez. fallbackModelId ile yedekleme zinciri kurulur."
+    },
+    "ChatSession": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "modelConfigId": "UUID (Foreign Key → ModelConfig.id)",
+        "title": "String (İlk mesajdan otomatik oluşturulur, max 200 karakter)",
+        "systemPrompt": "Text (Nullable, max 8000 karakter)",
+        "contextWindow": "Int (Default: modelin maksimum değeri)",
+        "temperature": "Decimal (3, 2) (Default: 0.70)",
+        "topP": "Decimal (3, 2) (Default: 1.00)",
+        "status": "Enum (active, archived, deleted) (Default: active)",
+        "totalInputTokens": "Int (Default: 0, denormalize)",
+        "totalOutputTokens": "Int (Default: 0, denormalize)",
+        "totalCost": "Decimal (12, 6) (Default: 0, denormalize)",
+        "messageCount": "Int (Default: 0, denormalize)",
+        "lastMessageAt": "DateTime (Nullable)",
+        "archivedAt": "DateTime (Nullable)",
+        "deletedAt": "DateTime (Nullable, 30 gün sonra kalıcı silinir)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "status", "lastMessageAt DESC", "(userId, status)", "deletedAt"],
+      "note": "Aktif oturum sayısı free: 3, pro: sınırsız. archived: 30 gün içinde geri yüklenebilir. deleted: 30 gün sonra cron job ile kalıcı silinir. systemPrompt belirlendikten sonra değiştirilemez."
+    },
+    "Message": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sessionId": "UUID (Foreign Key → ChatSession.id, ON DELETE CASCADE, Index)",
+        "parentMessageId": "UUID (Nullable, Foreign Key → Message.id, dallanma için)",
+        "role": "Enum (user, assistant, system, tool)",
+        "content": "Text (Ham mesaj içeriği)",
+        "contentHtml": "Text (Nullable, Markdown→HTML dönüşümü, cache amaçlı)",
+        "inputTokens": "Int (Default: 0)",
+        "outputTokens": "Int (Default: 0)",
+        "cost": "Decimal (12, 6) (Default: 0)",
+        "modelName": "String (Mesajın oluşturulduğu model)",
+        "temperature": "Decimal (3, 2) (Nullable, override değeri)",
+        "topP": "Decimal (3, 2) (Nullable, override değeri)",
+        "maxTokens": "Int (Nullable, override değeri)",
+        "contextDiscarded": "Boolean (Default: false, bağlam penceresi dolduğunda)",
+        "errorMessage": "Text (Nullable, hata durumunda)",
+        "toolCalls": "JSONB (Nullable, MCP araç çağrıları)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(sessionId, createdAt)", "parentMessageId", "role", "contextDiscarded"],
+      "note": "parentMessageId ile branching desteklenir. Kullanıcı geçmişe dönüp düzenlediğinde yeni bir dal oluşur. contextDiscarded=true mesajlar UI'da gösterilmez ama veri bütünlüğü için saklanır."
+    },
+    "SessionShare": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sessionId": "UUID (Foreign Key → ChatSession.id, ON DELETE CASCADE, Index)",
+        "sharedByUserId": "UUID (Foreign Key → User.id)",
+        "shareToken": "String (Unique, 32 karakter güvenli rastgele)",
+        "permission": "Enum (view, edit)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["shareToken", "sessionId", "isActive"],
+      "note": "view: sadece okuma, edit: ortak düzenleme. Token iptal edilebilir."
+    },
+    "WorkflowConfig": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "name": "String (max 200 karakter)",
+        "description": "Text (Nullable)",
+        "category": "String (Nullable, kullanıcı tanımlı kategori)",
+        "tags": "JSONB (Nullable, string dizisi)",
+        "steps": "JSONB (Workflow adım tanımları, max 500 KB)",
+        "variables": "JSONB (Nullable, varsayılan değişken değerleri)",
+        "onError": "Enum (stop, skip, retry) (Default: stop)",
+        "maxRetries": "Int (Default: 3, max: 5)",
+        "timeoutMinutes": "Int (Default: 30, max: 60)",
+        "visibility": "Enum (private, published) (Default: private)",
+        "forkCount": "Int (Default: 0, denormalize)",
+        "runCount": "Int (Default: 0, denormalize)",
+        "lastRunAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "visibility", "category", "updatedAt DESC"],
+      "note": "steps JSONB içinde her adım: { id, type, config, nextStep?, nextSteps?: [], parallel?: boolean }. visibility=published ise toplulukta listelenir."
+    },
+    "WorkflowRun": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "workflowId": "UUID (Foreign Key → WorkflowConfig.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "inputData": "JSONB (Nullable, başlangıç input'u)",
+        "status": "Enum (pending, running, completed, failed, cancelled)",
+        "stepStatus": "JSONB (Her adımın durumu: { stepId: { status, startedAt?, completedAt?, error?, output? } })",
+        "startedAt": "DateTime (Nullable)",
+        "completedAt": "DateTime (Nullable)",
+        "totalDurationMs": "Int (Nullable)",
+        "totalCost": "Decimal (12, 6) (Default: 0)",
+        "errorMessage": "Text (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["workflowId", "userId", "status", "startedAt DESC"],
+      "note": "Adım durumları gerçek zamanlı güncellenir. SSE üzerinden client'a progress bildirimi yapılır."
+    },
+    "MCPConnection": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "name": "String (Bağlantı için etiket adı)",
+        "transport": "Enum (stdio, sse)",
+        "command": "String (Nullable, stdio için komut yolu)",
+        "args": "JSONB (Nullable, stdio için argüman dizisi)",
+        "url": "String (Nullable, sse için HTTPS URL)",
+        "authConfig": "JSONB (Nullable, şifrelenmiş kimlik bilgileri)",
+        "headers": "JSONB (Nullable, özel HTTP header'ları)",
+        "status": "Enum (connected, disconnected, error) (Default: disconnected)",
+        "lastConnectedAt": "DateTime (Nullable)",
+        "errorMessage": "Text (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "transport", "status", "isActive"],
+      "note": "authConfig AES-256-GCM ile şifrelenir. url için SSRF koruması: sadece HTTPS, internal IP engeli. stdio komutları whitelist kontrolünden geçer."
+    },
+    "MCPTool": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "connectionId": "UUID (Foreign Key → MCPConnection.id, ON DELETE CASCADE, Index)",
+        "toolName": "String (MCP aracının adı)",
+        "description": "Text (Nullable)",
+        "inputSchema": "JSONB (Aracın JSON Schema formatında parametre tanımı)",
+        "isActive": "Boolean (Default: true)",
+        "cacheValidUntil": "DateTime (Nullable, TTL: 5 dakika)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(connectionId, toolName) UNIQUE", "isActive"],
+      "note": "Araç listesi her 5 dakikada bir yenilenir. cacheValidUntil sonrası MCP sunucusundan tekrar keşif yapılır."
+    },
+    "PromptTemplate": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "name": "String (max 200 karakter)",
+        "description": "Text (Nullable)",
+        "content": "Text (Prompt şablonu, değişkenler: {{variable_name}})",
+        "variables": "JSONB (Nullable, değişken tanımları ve varsayılan değerler)",
+        "visibility": "Enum (private, global) (Default: private)",
+        "useCount": "Int (Default: 0, denormalize)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "visibility", "useCount DESC"],
+      "note": "visibility=global olanlar admin onayı gerektirir ve tüm kullanıcılara açıktır. max içerik: 8000 karakter."
+    },
+    "SessionAttachment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sessionId": "UUID (Foreign Key → ChatSession.id, ON DELETE CASCADE, Index)",
+        "messageId": "UUID (Nullable, Foreign Key → Message.id)",
+        "fileName": "String",
+        "fileSize": "Int (Byte)",
+        "mimeType": "String",
+        "storageKey": "String (S3 object key)",
+        "extractedText": "Text (Nullable, PDF/txt dosyalardan çıkarılan metin)",
+        "expiresAt": "DateTime (24 saat sonra)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["sessionId", "messageId", "expiresAt"],
+      "note": "Dosyalar 24 saat sonra cron job ile otomatik silinir. Görseller base64 encode edilip vision modellere gönderilir. PDF/txt içerik extraction yapılır."
+    },
+    "UsageLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "sessionId": "UUID (Nullable, Foreign Key → ChatSession.id)",
+        "modelConfigId": "UUID (Nullable, Foreign Key → ModelConfig.id)",
+        "inputTokens": "Int",
+        "outputTokens": "Int",
+        "cost": "Decimal (12, 6)",
+        "period": "Date (Günlük toplama için)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, period)", "sessionId", "modelConfigId", "period"],
+      "note": "Her mesaj gönderiminde bir log kaydı oluşturulur. Günlük ve aylık raporlamalar bu tablo üzerinden yapılır."
+    },
+    "BillingQuota": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, UNIQUE, Index)",
+        "monthlyTokenLimit": "Int (Aylık token kotası)",
+        "monthlyTokenUsed": "Int (Default: 0, bu ay kullanılan token)",
+        "dailyTokenLimit": "Int (Nullable, günlük ek limit)",
+        "resetDate": "Date (Kota sıfırlanma tarihi, ayın ilk günü)",
+        "overageEnabled": "Boolean (Default: false, kota aşımı ek ödemeye izin verir mi)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "resetDate"],
+      "note": "Free: 10.000 token/gün, Pro: 1.000.000 token/ay, Enterprise: özel. Her ayın 1'inde monthlyTokenUsed sıfırlanır. Kota aşımında 429 döner."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (quota_80, quota_100, workflow_completed, workflow_failed, mcp_disconnected, model_deprecated, share_received)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'session', 'workflow', 'mcp_connection')",
+        "entityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)"],
+      "note": "Gerçek zamanlı bildirimler WebSocket üzerinden gönderilir. Kritik bildirimler (kota aşımı) e-posta ile de iletilir."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "action": "String (örn: 'session.create', 'session.delete', 'message.send', 'workflow.execute', 'mcp.connect', 'apikey.create', 'user.role_change')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "details": "JSONB (Nullable, işlem metadata'sı)",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "action", "(entityType, entityId)", "createdAt DESC"],
+      "note": "90 gün saklanır, eski kayıtlar cron job ile silinir. Mesaj içerikleri loglanmaz. Hassas veri içermez."
+    }
+  }
+}

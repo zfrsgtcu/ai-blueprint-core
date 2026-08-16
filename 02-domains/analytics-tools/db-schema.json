@@ -1,0 +1,261 @@
+{
+  "_meta": {
+    "description": "Analitik Araçları veritabanı şeması. Proje, oturum, olay, metrik anlık görüntüsü, dashboard widget'ı, funnel, uyarı ve denetim modellerini içerir. Yüksek hacimli zaman serisi verileri için partition ve BRIN indeks optimizasyonları önerilir."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "displayName": "String",
+        "plan": "Enum (free, pro, enterprise) (Default: free)",
+        "monthlyEventQuota": "Int (Default: 10000)",
+        "monthlyEventUsed": "Int (Default: 0)",
+        "isActive": "Boolean (Default: true)",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "plan"],
+      "note": "plan alanı kota limitlerini belirler. monthlyEventUsed her ayın 1'inde sıfırlanır."
+    },
+    "ApiKey": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, ON DELETE CASCADE, Index)",
+        "name": "String",
+        "keyHash": "String (Unique)",
+        "keyPrefix": "String (İlk 8 karakter)",
+        "scopes": "JSONB (Default: ['read'])",
+        "lastUsedAt": "DateTime (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "keyHash", "isActive"],
+      "note": "API anahtarları hem collect endpoint'i (tracking key) hem de dashboard API erişimi için kullanılabilir."
+    },
+    "Project": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index)",
+        "name": "String",
+        "domain": "String (İzin verilen origin, wildcard destekler: *.example.com)",
+        "trackingId": "String (Unique, Index, tracking script'te kullanılan kimlik)",
+        "allowedDomains": "JSONB (CORS için izin verilen domain listesi)",
+        "settings": "JSONB ({ samplingRate (0-1), retentionDays (30-365), enableCookieless, anonymizeIp, sessionTimeoutMinutes })",
+        "eventCount": "Int (Default: 0, denormalize, toplam olay sayısı)",
+        "sessionCount": "Int (Default: 0, denormalize, toplam oturum sayısı)",
+        "lastEventAt": "DateTime (Nullable, son olayın alındığı zaman)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["trackingId", "ownerId", "isActive", "domain"],
+      "note": "trackingId 32 karakter güvenli rastgele string. allowedDomains: ['example.com', '*.staging.example.com']. settings.samplingRate: 0 = örnekleme yok, 1 = tüm olaylar."
+    },
+    "ProjectMember": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE)",
+        "userId": "UUID (Foreign Key → User.id, ON DELETE CASCADE)",
+        "role": "Enum (editor, viewer)",
+        "invitedAt": "DateTime",
+        "acceptedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(projectId, userId) UNIQUE", "projectId", "userId"],
+      "note": "owner yetkisi Project.ownerId üzerinden. editor: dashboard düzenleyebilir. viewer: salt okuma."
+    },
+    "Session": {
+      "fields": {
+        "id": "String (Primary Key, hash(ip+userAgent+date) veya UUID)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "userId": "String (Nullable, harici kullanıcı ID'si, cross-device tracking)",
+        "browser": "String (Nullable, User-Agent'tan parse edilmiş)",
+        "os": "String (Nullable)",
+        "device": "Enum (desktop, mobile, tablet, unknown)",
+        "country": "String (Nullable, IP'den çözümlenmiş, anonimleştirilmiş)",
+        "city": "String (Nullable)",
+        "referrer": "String (Nullable, temizlenmiş referrer URL)",
+        "utmSource": "String (Nullable)",
+        "utmMedium": "String (Nullable)",
+        "utmCampaign": "String (Nullable)",
+        "entryUrl": "String (İlk sayfa URL'i)",
+        "exitUrl": "String (Nullable, son sayfa URL'i)",
+        "eventCount": "Int (Default: 0, denormalize)",
+        "startTime": "DateTime",
+        "endTime": "DateTime (Nullable)",
+        "durationSeconds": "Int (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(projectId, startTime)", "userId", "country", "device", "(projectId, startTime DESC)"],
+      "note": "id üretimi: crypto.createHash('sha256').update(ip+userAgent+date).digest('hex').slice(0,16). IP anonimleştirilir (son oktet sıfırlanır). Oturum timeout: 30 dakika idle → yeni oturum."
+    },
+    "Event": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "sessionId": "String (Foreign Key → Session.id, Index)",
+        "userId": "String (Nullable)",
+        "name": "String (Olay adı, max 128 karakter, Index)",
+        "url": "String (Olayın gerçekleştiği sayfa URL'i)",
+        "referrer": "String (Nullable)",
+        "properties": "JSONB (Nullable, özel olay verileri, max 5 KB)",
+        "duration": "Int (Nullable, sayfada geçirilen süre ms)",
+        "timestamp": "DateTime (Index)",
+        "ingestedAt": "DateTime (Default: NOW(), sunucuya geliş zamanı)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(projectId, timestamp DESC)", "(projectId, name, timestamp)", "sessionId", "name", "ingestedAt"],
+      "note": "CRITICAL: Yüksek hacimli üretim ortamında timestamp'e göre günlük partition önerilir. BRIN indeks timestamp için. name örnekleri: pageview, button_click, form_submit, purchase, signup, custom_event."
+    },
+    "MetricSnapshot": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "metricType": "Enum (pageview, unique_visitor, session_count, bounce_rate, avg_duration, event_count, conversion_rate)",
+        "eventName": "String (Nullable, özel olay metrikleri için)",
+        "granularity": "Enum (hourly, daily, monthly)",
+        "periodStart": "DateTime (Dönem başlangıcı)",
+        "value": "Decimal (15, 2) (Metrik değeri)",
+        "dimension": "String (Nullable, 'country:TR', 'device:mobile', 'browser:Chrome')",
+        "dimensionValue": "String (Nullable, boyut değeri)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(projectId, granularity, periodStart)", "(projectId, metricType, periodStart)", "granularity"],
+      "note": "Saatlik cron job ile ham Event tablosundan toplulaştırılır. hourly snapshot'lar gün sonunda daily'e, ay sonunda monthly'ye rollup edilir."
+    },
+    "DashboardWidget": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "type": "Enum (line_chart, bar_chart, pie_chart, metric_card, funnel, heatmap, table)",
+        "title": "String (max 100 karakter)",
+        "metrics": "JSONB ([{ metricType, eventName?, label, color?, aggregation: 'sum'|'avg'|'count'|'unique' }], max 5)",
+        "dimensions": "JSONB (Nullable, ['country', 'device', 'browser'])",
+        "layoutConfig": "JSONB ({ x, y, w, h, minW?, minH? })",
+        "filters": "JSONB (Nullable, [{ field, operator, value }])",
+        "timeRange": "JSONB (Nullable, { preset: '24h'|'7d'|'30d'|'custom', from?, to? })",
+        "refreshInterval": "Int (Nullable, saniye, otomatik yenileme)",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(projectId, sortOrder)", "type"],
+      "note": "layoutConfig: react-grid-layout formatında. refreshInterval: 0 veya null = manuel yenileme, min 30s. metrics dizisi max 5 eleman."
+    },
+    "FunnelConfig": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "name": "String (max 200 karakter)",
+        "steps": "JSONB ([{ order, eventName, label }], max 10 adım)",
+        "windowDays": "Int (Default: 30, funnel tamamlama penceresi)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["projectId", "isActive"],
+      "note": "Funnel analizi: her adımı tamamlayan kullanıcı sayısı ve dönüşüm oranı hesaplanır. Adımlar sıralıdır, kullanıcı adım 2'ye geçmeden adım 1'i tamamlamalı."
+    },
+    "FunnelResult": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "funnelId": "UUID (Foreign Key → FunnelConfig.id, ON DELETE CASCADE, Index)",
+        "periodStart": "Date",
+        "periodEnd": "Date",
+        "results": "JSONB ({ steps: [{ order, entered, completed, conversionRate, dropOff }], totalEntered, totalCompleted, overallRate, avgCompletionTimeMs })",
+        "calculatedAt": "DateTime",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(funnelId, periodStart)", "calculatedAt"],
+      "note": "Günlük cron job ile hesaplanır. Son 30 günlük veri üzerinden funnel analizi yapılır."
+    },
+    "AlertConfig": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "name": "String",
+        "metricType": "Enum (pageview, unique_visitor, session_count, event_count, bounce_rate)",
+        "eventName": "String (Nullable, event_count tipi için)",
+        "condition": "Enum (gt, lt, pct_change_up, pct_change_down)",
+        "threshold": "Decimal (15, 2)",
+        "period": "Enum (1h, 6h, 24h, 7d)",
+        "channels": "JSONB (['email', 'in_app', 'webhook'])",
+        "webhookUrl": "String (Nullable)",
+        "cooldownMinutes": "Int (Default: 60, aynı uyarının tekrar tetiklenmeme süresi)",
+        "lastTriggeredAt": "DateTime (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["projectId", "userId", "isActive"],
+      "note": "Saatlik cron job ile kontrol edilir. pct_change: önceki periyoda göre yüzde değişim. cooldown: aynı alert cooldownMinutes içinde tekrar tetiklenmez."
+    },
+    "AlertLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "alertId": "UUID (Foreign Key → AlertConfig.id, ON DELETE CASCADE, Index)",
+        "projectId": "UUID (Foreign Key → Project.id)",
+        "triggeredValue": "Decimal (15, 2)",
+        "condition": "String",
+        "threshold": "Decimal (15, 2)",
+        "channelsSent": "JSONB (Hangi kanallara gönderildiği)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["alertId", "projectId", "createdAt DESC"],
+      "note": "Her alert tetiklenmesinde bir log kaydı oluşturulur. Son 30 günlük loglar UI'da gösterilir."
+    },
+    "ExportJob": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "type": "Enum (csv_events, csv_report, dashboard_png, scheduled_report)",
+        "filters": "JSONB (Nullable, ihracat filtreleri)",
+        "status": "Enum (pending, processing, completed, failed)",
+        "fileUrl": "String (Nullable, pre-signed download URL)",
+        "fileSize": "Int (Nullable, byte)",
+        "errorMessage": "Text (Nullable)",
+        "schedule": "JSONB (Nullable, { frequency: 'weekly'|'monthly', dayOfWeek?, dayOfMonth?, emailTo: [] })",
+        "completedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["projectId", "userId", "status", "createdAt DESC"],
+      "note": "Async işlenir. Tamamlandığında kullanıcıya e-posta/in-app bildirim gönderilir. fileUrl 24 saat geçerli pre-signed URL."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (quota_warning, quota_exceeded, alert_triggered, export_completed, export_failed, project_invitation)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'project', 'alert', 'export')",
+        "entityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)"],
+      "note": "In-app bildirimler. Kritik olanlar e-posta ile de gönderilir."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "projectId": "UUID (Nullable, Foreign Key → Project.id)",
+        "action": "String (örn: 'project.create', 'project.delete', 'sampling_rate.change', 'data.delete', 'member.invite', 'export.request')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "details": "JSONB (Nullable)",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["projectId", "userId", "action", "createdAt DESC"],
+      "note": "90 gün saklanır. Kritik işlemler: veri silme, örnekleme değişikliği, üye yönetimi."
+    }
+  }
+}

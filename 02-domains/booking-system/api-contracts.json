@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Rezervasyon Sistemi API Sözleşmeleri. Public kaynak ve müsaitlik keşfi, auth rezervasyon ve bekleme listesi, webhook ödeme entegrasyonu, admin yönetim.",
+    "error_format": "{ status: number, code: string, message: string, details?: any }",
+    "rate_limiting": "Public: 500/dk | Auth: 100/dk | Webhook: 1000/dk | Admin: 50/dk",
+    "global_rules": {
+      "pagination": "Tüm liste endpoint'leri ?page=&limit= (default 20, max 100) destekler.",
+      "timezone": "Tüm tarih/saat değerleri ISO 8601 UTC formatında döndürülür ve kabul edilir.",
+      "idempotency": "POST /api/bookings Idempotency-Key header'ı gerektirir. Aynı key ile tekrar denemede 409 Conflict döner.",
+      "availability_cache": "Müsaitlik sorguları 30 saniye cache'lenir. Rezervasyon oluşturulduğunda cache invalidate edilir."
+    }
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/resources": "Rezerve edilebilir kaynak listesi. Filtreler: ?type=room|desk|equipment|service, ?location, ?capacity, ?search, ?isActive=true.",
+      "GET /api/resources/{id}": "Kaynak detayı (açıklama, görseller, özellikler, kurallar ile).",
+      "GET /api/resources/{id}/availability": "Kaynağın belirli tarih aralığındaki müsaitlik durumu. Query: ?date, ?dateFrom, ?dateTo. Response: { slots: [{ start, end, isAvailable, reason? }], timezone }.",
+      "GET /api/resources/{id}/upcoming": "Kaynağın yaklaşan rezervasyonları (public anonim görünüm, detaysız). Query: ?days=7."
+    },
+    "auth": {
+      "POST /api/auth/register": "Kullanıcı kaydı. Body: { email, password, firstName, lastName }.",
+      "POST /api/auth/login": "Giriş. Body: { email, password }. JWT token çifti döndürür.",
+      "POST /api/auth/refresh": "Token yenileme.",
+      "POST /api/auth/logout": "Çıkış.",
+      "GET /api/auth/me": "Kullanıcı profili.",
+      "PUT /api/auth/me": "Profil güncelleme.",
+      "POST /api/bookings": "Rezervasyon oluşturur. Body: { resourceId, startAt, endAt, title?, description?, attendees?: [{ name, email }], recurrence?: { frequency: 'daily'|'weekly'|'biweekly'|'monthly', until?: date, count?: number } }. Idempotency-Key zorunlu. Çakışma kontrolü yapılır, çakışma varsa 409 döner. Concurrency: pessimistic lock.",
+      "GET /api/bookings/me": "Kullanıcının rezervasyonları. Filtreler: ?status=upcoming|past|cancelled|all, ?resourceId.",
+      "GET /api/bookings/{id}": "Rezervasyon detayı (kaynak bilgisi, katılımcılar, recurrence ile).",
+      "PATCH /api/bookings/{id}": "Rezervasyon günceller. Body: { title?, description?, attendees? }. Tarih değişikliği için reschedule endpoint'i kullanılır.",
+      "PATCH /api/bookings/{id}/reschedule": "Rezervasyon tarihini değiştirir. Body: { startAt, endAt }. Yeni zaman çakışma kontrolü yapılır, çakışma varsa 409.",
+      "DELETE /api/bookings/{id}": "Rezervasyonu iptal eder. Body: { reason? }. İptal penceresi kontrolü: geçmiş rezervasyonlar iptal edilemez.",
+      "GET /api/bookings/{id}/ical": "Rezervasyon için .ics takvim dosyası indirir.",
+      "POST /api/waitlist": "Bekleme listesine katılır. Body: { resourceId, startAt, endAt }. Boşluk açıldığında sırayla bildirim gönderilir.",
+      "GET /api/waitlist/me": "Kullanıcının bekleme listesi kayıtları (aktif/geçmiş).",
+      "DELETE /api/waitlist/{id}": "Bekleme listesinden çıkar.",
+      "GET /api/my/notifications": "Bildirim listesi.",
+      "PATCH /api/notifications/{id}/read": "Bildirimi okundu işaretler."
+    },
+    "webhooks": {
+      "POST /api/webhooks/payment": "Ödeme sağlayıcı webhook'u. İmza doğrulaması yapılır. Event tipleri: payment.succeeded → rezervasyon confirmed, payment.failed → rezervasyon cancelled, refund.processed → rezervasyon iptal."
+    },
+    "admin": {
+      "GET /api/admin/resources": "Kaynak listesi (yönetim).",
+      "POST /api/admin/resources": "Kaynak ekler. Body: { name, type, location?, capacity?, description?, imageUrls?: [], attributes?: {}, isActive?, rules?: {}, minDuration?, maxDuration?, bufferMinutes? }.",
+      "PUT /api/admin/resources/{id}": "Kaynak günceller.",
+      "DELETE /api/admin/resources/{id}": "Kaynağı deaktive eder.",
+      "POST /api/admin/resources/{id}/block-time": "Zaman bloklar (bakım/tatil). Body: { startAt, endAt, reason?, isRecurring?: boolean, recurrenceRule?: string }.",
+      "DELETE /api/admin/blocked-times/{id}": "Zaman bloğunu kaldırır.",
+      "GET /api/admin/bookings": "Tüm rezervasyonlar. Filtreler: ?resourceId, ?userId, ?status, ?dateFrom, ?dateTo. Sayfalı.",
+      "PATCH /api/admin/bookings/{id}/status": "Rezervasyon durumunu değiştirir. Body: { status, reason? }.",
+      "GET /api/admin/metrics": "Dashboard metrikleri: günlük/haftalık rezervasyon sayısı, kaynak doluluk oranı, en popüler kaynaklar, iptal oranı, gelir. Query: ?dateFrom, ?dateTo.",
+      "GET /api/admin/export/bookings": "Rezervasyonları CSV/Excel dışa aktarır. Query: ?dateFrom, ?dateTo, ?resourceId.",
+      "GET /api/admin/schedules": "Kaynak çalışma saatleri yönetimi.",
+      "POST /api/admin/schedules": "Çalışma saati ekler. Body: { resourceId, dayOfWeek, startTime, endTime, isActive }.",
+      "GET /api/admin/audit-logs": "Denetim günlüğü."
+    }
+  }
+}

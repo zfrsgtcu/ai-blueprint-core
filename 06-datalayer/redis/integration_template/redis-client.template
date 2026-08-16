@@ -1,0 +1,119 @@
+<!-- PURPOSE OF THIS FILE: Redis istemci konfigürasyonu şablonu — AI tarafından projeye enjekte edilir -->
+/* ═══════════════════════════════════════════════════════════════════
+   Redis İstemci Konfigürasyonu
+   Seçenek: .NET (IDistributedCache) / Node.js (ioredis)
+   ═══════════════════════════════════════════════════════════════════ */
+
+// ============================================================
+// Seçenek A: .NET (StackExchange.Redis)
+// Dosya: Program.cs içine enjekte edilir
+// ============================================================
+#if NET
+var redisConnection = builder.Configuration.GetConnectionString("Redis")
+    ?? Environment.GetEnvironmentVariable("REDIS_URL")
+    ?? "localhost:6379,password={{REDIS_PASSWORD}}";
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnection;
+    options.InstanceName = "{{project-name}}_";
+});
+#endif
+
+// ============================================================
+// Seçenek B: Node.js ioredis (ÖNERİLEN)
+// Dosya: src/config/redis.js
+// ============================================================
+#if NODE
+const Redis = require('ioredis');
+
+let redis = null;
+
+function getRedis() {
+  if (!redis) {
+    redis = new Redis(
+      process.env.REDIS_URL || 'redis://default:{{REDIS_PASSWORD}}@{{REDIS_HOST}}:{{REDIS_PORT}}',
+      {
+        maxRetriesPerRequest: 3,
+        retryStrategy(times) {
+          if (times > 3) {
+            console.warn('Redis bağlantısı 3 denemede kurulamadı, cache devre dışı');
+            return null;
+          }
+          return Math.min(times * 200, 2000);
+        },
+        lazyConnect: true,
+        enableReadyCheck: true,
+        connectTimeout: 5000,
+      }
+    );
+
+    redis.on('connect', () => console.log('Redis bağlantısı başarılı'));
+    redis.on('error', (err) => console.warn('Redis hatası (cache devre dışı):', err.message));
+  }
+  return redis;
+}
+
+/**
+ * Cache aside pattern — önce cache, miss ise fetch + cache yaz.
+ * @param {string} key
+ * @param {number} ttlSeconds
+ * @param {Function} fetchFn — cache miss durumunda çağrılır
+ * @returns {Promise<any>}
+ */
+async function getCachedOrFetch(key, ttlSeconds, fetchFn) {
+  try {
+    const r = getRedis();
+    if (r.status !== 'ready') throw new Error('Redis bağlı değil');
+
+    const cached = await r.get(key);
+    if (cached) {
+      console.debug(`Cache HIT: ${key}`);
+      return JSON.parse(cached);
+    }
+
+    console.debug(`Cache MISS: ${key}`);
+    const data = await fetchFn();
+    if (data !== null && data !== undefined) {
+      await r.setex(key, ttlSeconds, JSON.stringify(data));
+    }
+    return data;
+  } catch (err) {
+    console.warn(`Redis devre dışı, doğrudan fetch: ${key}`);
+    return fetchFn();
+  }
+}
+
+/**
+ * Cache invalidation — bir key'i veya pattern'i sil.
+ * @param {string} pattern — örn: 'product:*'
+ */
+async function invalidateCache(pattern) {
+  try {
+    const r = getRedis();
+    if (r.status !== 'ready') return;
+
+    if (pattern.includes('*')) {
+      const keys = await r.keys(pattern); // Dikkat: SCAN daha güvenli
+      if (keys.length > 0) await r.del(...keys);
+    } else {
+      await r.del(pattern);
+    }
+  } catch {
+    // Sessizce başarısız — cache invalidation best-effort
+  }
+}
+
+module.exports = { getRedis, getCachedOrFetch, invalidateCache };
+#endif
+
+/* ═══════════════════════════════════════════════════════════════════
+   .env formatı:
+   REDIS_URL=redis://default:{{REDIS_PASSWORD}}@{{REDIS_HOST}}:{{REDIS_PORT}}
+
+   Varsayılan TTL değerleri:
+   - Ürün listesi: 300s (5 dk)
+   - Ürün detay: 600s (10 dk)
+   - Kategori ağacı: 3600s (1 saat)
+   - Oturum: 86400s (24 saat)
+   ═══════════════════════════════════════════════════════════════════ */

@@ -1,0 +1,80 @@
+{
+  "_meta": {
+    "description": "Projelerde kullanılacak kesinleştirilmiş versiyon kilitleri. AI ajanları package.json veya .csproj oluştururken sadece bu versiyonları kullanmak zorundadır.",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-19"
+  },
+  "infrastructures": {
+    "astrojs": "^4.5.0",
+    "nextjs": "^14.2.0",
+    "nuxtjs": "^3.12.0",
+    "react": "^18.3.0",
+    "vue": "^3.5.0",
+    "svelte": "^4.2.0",
+    "nodejs": "^20.0.0",
+    "static-site": "latest"
+  },
+  "dotnet_ecosystem": {
+    "target_framework": "net8.0",
+    "netwebapi": "8.0.0",
+    "netblazor": "8.0.0",
+    "netmaui": "8.0.0",
+    "Microsoft.EntityFrameworkCore": "8.0.0",
+    "Microsoft.EntityFrameworkCore.SqlServer": "8.0.0",
+    "Npgsql.EntityFrameworkCore.PostgreSQL": "8.0.0"
+  },
+  "languages_and_preprocessors": {
+    "typescript": "^5.5.0",
+    "sass": "^1.77.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0"
+  },
+  "state_management": {
+    "zustand": "^4.5.2",
+    "pinia": "^2.1.7",
+    "@reduxjs/toolkit": "^2.2.3"
+  },
+  "frameworks_and_ui": {
+    "tailwindcss": "^3.4.3",
+    "gsap": "^3.12.5",
+    "@gsap/react": "^2.1.0",
+    "swiper": "^11.1.0",
+    "@iconify/react": "^5.0.0",
+    "@iconify/vue": "^4.1.0",
+    "@fancyapps/ui": "^5.0.3",
+    "framer-motion": "^11.2.0",
+    "three": "^0.165.0"
+  },
+  "databases_and_backend_tools": {
+    "mssql": "^10.0.0",
+    "pg": "^8.12.0",
+    "mongoose": "^8.5.0",
+    "prisma": "^5.14.0",
+    "redis": "^4.6.10",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5"
+  },
+  "testing_and_tooling": {
+    "vitest": "^1.6.0",
+    "jest": "^29.7.0",
+    "@playwright/test": "^1.44.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5"
+  },
+  "modules_and_integrations": {
+    "@astrojs/tailwind": "^5.1.0",
+    "@astrojs/react": "^3.1.0",
+    "@astrojs/vue": "^4.2.0",
+    "@astrojs/svelte": "^5.4.0",
+    "@astrojs/sitemap": "^3.1.5",
+    "@nuxtjs/tailwindcss": "^6.12.0",
+    "@nuxtjs/google-fonts": "^3.2.0",
+    "nuxt-icon": "^3.3.0",
+    "@nuxt/image": "^1.7.0",
+    "next/font": "Built-in for Next.js 14+",
+    "next/image": "Built-in for Next.js 14+",
+    "@react-three/fiber": "^8.16.0",
+    "@react-three/drei": "^9.105.0"
+  }
+}

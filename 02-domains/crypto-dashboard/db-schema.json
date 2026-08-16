@@ -1,0 +1,240 @@
+{
+  "_meta": {
+    "description": "Kripto Portföy Dashboard veritabanı şeması. Kullanıcı, borsa hesabı, işlem, portföy snapshot, alert, watchlist, fiyat önbelleği ve vergi raporu modellerini içerir."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "firstName": "String",
+        "lastName": "String",
+        "avatar": "String (Nullable)",
+        "role": "Enum (user, admin)",
+        "baseCurrency": "String (Default: 'USD', tercih edilen fiat para birimi)",
+        "isVerified": "Boolean (Default: false)",
+        "totpSecret": "String (Nullable, 2FA TOTP secret'ı — encrypted at rest)",
+        "is2faEnabled": "Boolean (Default: false)",
+        "notificationPreferences": "JSONB (Default: { alerts: { in_app: true, email: false, push: false }, reports: { email: false }, news: { email: false } })",
+        "dashboardConfig": "JSONB (Nullable, widget düzeni: [{ type: 'portfolio_summary'|'price_table'|'pie_chart'|'performance_chart'|'alert_list'|'trade_history', position: { x, y, w, h } }])",
+        "taxCountry": "String (Nullable, vergi raporlaması için ülke kodu: 'TR', 'US', 'DE')",
+        "taxRate": "Decimal (5, 2) (Nullable, kullanıcının beyan ettiği vergi oranı)",
+        "lastLoginAt": "DateTime (Nullable)",
+        "deletedAt": "DateTime (Nullable, soft delete)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "role", "deletedAt"],
+      "note": "notificationPreferences: kanal bazında bildirim tercihlerini JSONB olarak tutar. dashboardConfig: kullanıcının özelleştirilmiş widget düzenini saklar."
+    },
+    "ExchangeAccount": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, ON DELETE CASCADE, Index)",
+        "exchangeName": "String (Enum değerleri: binance, coinbase, kraken, bybit, kucoin, bitfinex, okx, gate_io)",
+        "label": "String (Nullable, kullanıcı tanımlı etiket: 'Ana Hesap', 'Trading Bot')",
+        "apiKey": "String (AES-256-GCM ile şifrelenmiş, NEVER in logs)",
+        "apiSecret": "String (AES-256-GCM ile şifrelenmiş, NEVER in logs)",
+        "passphrase": "String (Nullable, AES-256-GCM, Coinbase/KuCoin için ek passphrase)",
+        "permissions": "JSONB (Nullable, borsa API izinleri: { read: true, trade: false, withdraw: false })",
+        "status": "Enum (active, invalid, expired, revoked)",
+        "lastSyncAt": "DateTime (Nullable, son başarılı senkronizasyon zamanı)",
+        "syncError": "Text (Nullable, son senkronizasyon hata mesajı)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(userId, exchangeName) UNIQUE", "status", "lastSyncAt"],
+      "note": "CRITICAL: apiKey ve apiSecret NEVER loglanır veya düz metin olarak saklanır. Şifreleme ENCRYPTION_KEY ortam değişkeni ile yapılır. Borsa senkronizasyonu saatlik cron job ile otomatik yapılır."
+    },
+    "ExchangeHealth": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "exchangeName": "String (Unique, binance|coinbase|kraken|bybit|kucoin|bitfinex|okx|gate_io)",
+        "isOnline": "Boolean (Default: true)",
+        "latencyMs": "Int (Nullable, son ping yanıt süresi)",
+        "lastCheckedAt": "DateTime (Nullable)",
+        "errorMessage": "Text (Nullable, son hata mesajı)",
+        "consecutiveErrors": "Int (Default: 0, art arda hata sayısı — circuit breaker)",
+        "isCircuitBreakerOpen": "Boolean (Default: false, 5 hata sonrası 5 dakikalık devre kesici)",
+        "circuitBreakerResetAt": "DateTime (Nullable, devre kesici kapanma zamanı)",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["exchangeName", "isOnline", "lastCheckedAt"],
+      "note": "Her 30 saniyede bir güncellenir. Circuit breaker: consecutiveErrors >= 5 → isCircuitBreakerOpen = true → 5 dakika boyunca istek gönderilmez."
+    },
+    "Transaction": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "exchangeAccountId": "UUID (Nullable, Foreign Key → ExchangeAccount.id, borsadan senkronize edilmişse)",
+        "symbol": "String (örn: 'BTC', 'ETH', 'SOL')",
+        "type": "Enum (buy, sell, transfer_in, transfer_out, staking_reward, airdrop, fee)",
+        "amount": "Decimal (30, 18) (Kripto miktarı, yüksek hassasiyet)",
+        "price": "Decimal (30, 18) (Birim fiyat, fiat cinsinden)",
+        "totalValue": "Decimal (20, 2) (amount * price, fiat cinsinden toplam)",
+        "fee": "Decimal (20, 8) (Nullable, işlem ücreti)",
+        "feeCurrency": "String (Nullable, ücretin kesildiği para birimi)",
+        "source": "Enum (manual, binance, coinbase, kraken, bybit, kucoin, bitfinex, okx, gate_io, csv_import)",
+        "externalId": "String (Nullable, borsadaki işlem ID'si — idempotency için)",
+        "notes": "Text (Nullable, kullanıcı notları)",
+        "isHidden": "Boolean (Default: false, source != manual işlemler silinemez, sadece gizlenir)",
+        "transactionDate": "DateTime (İşlemin gerçekleştiği tarih, kullanıcı girişi veya borsa timestamp'i)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(userId, transactionDate DESC)", "(userId, symbol)", "source", "externalId", "(userId, exchangeAccountId)"],
+      "note": "externalId + source UNIQUE constraint ile aynı borsa işleminin mükerrer kaydı önlenir. amount ve price Decimal(30,18) — yüksek arzlı token'lar için geniş hassasiyet. isHidden: borsadan senkronize işlemler silinemez, sadece gizlenir."
+    },
+    "PortfolioSnapshot": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "totalValue": "Decimal (20, 2) (Toplam portföy değeri, fiat cinsinden)",
+        "changePercent24h": "Decimal (10, 4) (Nullable, 24 saatlik % değişim)",
+        "breakdown": "JSONB (Varlık bazında döküm: [{ symbol, amount, priceInFiat, totalValue, allocationPercent }])",
+        "fiatBreakdown": "JSONB (Nullable, fiat bakiye dökümü: [{ currency, amount }])",
+        "baseCurrency": "String (Default: 'USD', snapshot alındığı andaki baz para birimi)",
+        "snapshotDate": "Date (Hangi güne ait snapshot — 00:00 UTC)",
+        "isCompressed": "Boolean (Default: false, 2 yıldan eski snapshot'lar aylık sıkıştırılır)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, snapshotDate DESC) UNIQUE", "(userId, snapshotDate)", "isCompressed"],
+      "note": "Her gün 00:00 UTC'de cron job ile otomatik alınır. (userId, snapshotDate) UNIQUE: günde 1 snapshot. 2 yıldan eski kayıtlar aylık olarak sıkıştırılır (ayın sadece son günü saklanır, önceki günler silinir). P&L hesaplaması için baz alınır."
+    },
+    "FiatBalance": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "exchangeAccountId": "UUID (Nullable, Foreign Key → ExchangeAccount.id, borsadan senkronize edilmişse)",
+        "currency": "String (USD, EUR, TRY, GBP, JPY)",
+        "amount": "Decimal (20, 2)",
+        "source": "Enum (manual, binance, coinbase, kraken, bybit, kucoin, bitfinex, okx, gate_io)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(userId, currency) UNIQUE", "exchangeAccountId"],
+      "note": "Kullanıcı başına her para birimi için tek kayıt. Manuel girilebilir veya borsa senkronizasyonu ile güncellenir. Toplam portföy değerine dahil edilir."
+    },
+    "AlertRule": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "symbol": "String (Takip edilecek kripto sembolü)",
+        "condition": "Enum (price_above, price_below, change_24h_above, change_24h_below, volume_above)",
+        "targetPrice": "Decimal (20, 8) (Hedef fiyat veya yüzde değeri)",
+        "notificationChannels": "JSONB (Default: ['in_app'], ['in_app', 'email', 'push'] kombinasyonları)",
+        "isActive": "Boolean (Default: true)",
+        "isRecurring": "Boolean (Default: false, false = tek seferlik tetiklenir ve kapanır, true = sürekli aktif, min 15dk arayla bildirim)",
+        "triggeredAt": "DateTime (Nullable, son tetiklenme zamanı)",
+        "triggerCount": "Int (Default: 0, toplam tetiklenme sayısı)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(userId, isActive)", "(symbol, condition)", "(userId, symbol)"],
+      "note": "Her fiyat güncellemesinde (WebSocket veya polling) aktif alert kuralları kontrol edilir. isRecurring=true ise minimum 15 dakika arayla tekrar tetiklenir. triggerCount ile tetiklenme sayısı takip edilir."
+    },
+    "AlertNotification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "alertRuleId": "UUID (Foreign Key → AlertRule.id, ON DELETE SET NULL, Index)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "symbol": "String",
+        "condition": "String (Tetiklenen koşul tipi)",
+        "targetPrice": "Decimal (20, 8)",
+        "actualPrice": "Decimal (20, 8) (Tetikleme anındaki gerçek fiyat)",
+        "deliveredVia": "JSONB (Hangi kanallardan teslim edildi: ['in_app', 'email'])",
+        "isRead": "Boolean (Default: false, in-app notification okundu mu)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, createdAt DESC)", "(userId, isRead)", "alertRuleId"],
+      "note": "Alert tetiklendiğinde bu tabloya kayıt düşülür. Kullanıcı alert geçmişini görüntüleyebilir. alertRuleId: alert kuralı silinse bile geçmiş korunur (ON DELETE SET NULL)."
+    },
+    "Watchlist": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "symbol": "String (örn: 'BTC', 'ETH', 'SOL')",
+        "sortOrder": "Int (Default: 0, kullanıcı sıralaması)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, symbol) UNIQUE", "(userId, sortOrder)"],
+      "note": "Kullanıcı başına maksimum 50 sembol. Watchlist'teki semboller için WebSocket canlı verisi aktif olur. sortOrder drag-and-drop ile güncellenir."
+    },
+    "PriceCache": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "symbol": "String (Unique, kripto sembolü)",
+        "name": "String (Tam isim: 'Bitcoin', 'Ethereum')",
+        "currentPrice": "Decimal (20, 8) (Son bilinen fiyat, USD cinsinden)",
+        "change24h": "Decimal (10, 4) (Nullable, 24 saatlik % değişim)",
+        "change24hAbsolute": "Decimal (20, 8) (Nullable, 24 saatlik mutlak değişim)",
+        "high24h": "Decimal (20, 8) (Nullable)",
+        "low24h": "Decimal (20, 8) (Nullable)",
+        "volume24h": "Decimal (30, 2) (Nullable, 24 saatlik işlem hacmi)",
+        "marketCap": "Decimal (30, 2) (Nullable)",
+        "ath": "Decimal (20, 8) (Nullable, all-time high)",
+        "athDate": "DateTime (Nullable)",
+        "atl": "Decimal (20, 8) (Nullable, all-time low)",
+        "atlDate": "DateTime (Nullable)",
+        "rank": "Int (Nullable, market cap sıralaması)",
+        "imageUrl": "String (Nullable, coin logosu URL'i)",
+        "lastUpdatedAt": "DateTime (Son veri sağlayıcı güncelleme zamanı)",
+        "dataSource": "String (Veri kaynağı: 'coingecko', 'coinmarketcap', 'binance_ws', 'coinbase_ws')",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["symbol", "rank", "lastUpdatedAt"],
+      "note": "Fiyat önbelleği, WebSocket bağlantısı koptuğunda son bilinen fiyatı göstermek için kullanılır. Hem REST API (CoinGecko/CoinMarketCap) hem WebSocket ticker'larından güncellenir. marketCap ve volume gibi değerler WebSocket'ten gelmez, sadece REST API'den alınır."
+    },
+    "TaxReport": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "year": "Int (Mali yıl: 2023, 2024, ...)",
+        "calculationMethod": "Enum (FIFO, LIFO, HIFO)",
+        "taxRate": "Decimal (5, 2) (Rapor oluşturulurken kullanılan vergi oranı)",
+        "totalBuys": "Decimal (20, 2) (Toplam alım tutarı)",
+        "totalSells": "Decimal (20, 2) (Toplam satım tutarı)",
+        "realizedGainLoss": "Decimal (20, 2) (Gerçekleşen kar/zarar)",
+        "totalFees": "Decimal (20, 2) (Toplam işlem ücreti)",
+        "estimatedTaxLiability": "Decimal (20, 2) (Nullable, tahmini vergi yükümlülüğü)",
+        "holdingsSnapshot": "JSONB (Rapor anındaki varlık dökümü: [{ symbol, totalAmount, averageBuyPrice, currentValue, unrealizedPnl }])",
+        "transactionIds": "JSONB (Rapora dahil edilen Transaction ID'leri array)",
+        "status": "Enum (generating, completed, failed)",
+        "generationError": "Text (Nullable, oluşturma hatası mesajı)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, year) UNIQUE", "(userId, createdAt DESC)", "status"],
+      "note": "Her kullanıcı her yıl için 1 rapor oluşturabilir. Rapor PDF veya CSV olarak indirilebilir. Hesaplama metodu (FIFO/LIFO/HIFO) rapor oluşturma anında seçilir. Platform vergi danışmanlığı SAĞLAMAZ, sadece hesaplama aracıdır."
+    },
+    "UserSession": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "refreshToken": "String (Unique, hashed)",
+        "userAgent": "String (Nullable)",
+        "ipAddress": "String (Nullable)",
+        "expiresAt": "DateTime",
+        "revokedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["refreshToken", "userId", "expiresAt"],
+      "note": "JWT refresh token rotasyonu: her kullanımda yeni token verilir, eski token revokedAt ile işaretlenir. expiresAt: 7 gün. revokedAt != null ise token geçersiz."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id, işlemi yapan kullanıcı)",
+        "action": "String (örn: 'exchange.connect', 'exchange.delete', 'alert.create', 'report.generate', 'user.login', 'user.2fa_enable')",
+        "entityType": "String (İşlem yapılan entity: 'ExchangeAccount', 'AlertRule', 'TaxReport', 'User')",
+        "entityId": "UUID (Nullable)",
+        "details": "JSONB (Nullable, işlem detayları — HASSAS veriler maskelenir)",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, createdAt DESC)", "action", "entityType", "createdAt DESC"],
+      "note": "Hassas işlemler (API anahtar ekleme/silme, 2FA değişikliği, şifre değişikliği) mutlaka loglanır. details JSONB'de apiKey/apiSecret gibi hassas veriler maskelenir."
+    }
+  }
+}

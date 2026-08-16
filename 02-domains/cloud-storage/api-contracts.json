@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Bulut Depolama API Sözleşmeleri. Public paylaşımlı link erişimi, auth dosya/klasör yönetimi ve Direct-to-Cloud upload akışı.",
+    "error_format": "{ status: number, code: string, message: string, details?: any }",
+    "rate_limiting": "Public: 500/dk | Auth: 100/dk | Download: 50/dk/kullanıcı | Upload: 30/dk/kullanıcı",
+    "global_rules": {
+      "pagination": "Tüm liste endpoint'leri ?page=&limit= (default 20, max 100) destekler.",
+      "quota_check": "Tüm upload başlatma endpoint'leri kullanıcının depolama kotasını kontrol eder. Kota aşımında 413 Payload Too Large.",
+      "ownership": "Dosya ve klasör manipülasyonu yapan tüm endpoint'ler kimlik doğrulamalı kullanıcının sahibi veya düzenleme yetkisine sahip olduğunu doğrular.",
+      "pre_signed_urls": "Upload ve download işlemleri pre-signed URL'ler üzerinden yapılır. Upload URL'leri 15 dk, download URL'leri 5 dk geçerlidir.",
+      "conflict_resolution": "Aynı isimli dosya/klasör çakışmalarında 409 Conflict döner. ?overwrite=true ile üzerine yazma."
+    }
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/share/{token}": "Paylaşılan dosya/klasöre anonim erişim. Token geçerliyse ve şifre korumalı değilse/şifre doğruysa içeriğe erişim sağlar. Query: ?password= (şifre korumalı paylaşımlar için). Response: dosya ise download URL, klasör ise içerik listesi."
+    },
+    "auth": {
+      "POST /api/auth/register": "Kullanıcı kaydı. Body: { email, password, firstName, lastName }.",
+      "POST /api/auth/login": "Giriş. Body: { email, password }. JWT token çifti döndürür.",
+      "POST /api/auth/refresh": "Token yenileme.",
+      "POST /api/auth/logout": "Çıkış.",
+      "GET /api/auth/me": "Kullanıcı profili.",
+      "PUT /api/auth/me": "Profil güncelleme.",
+      "PUT /api/auth/password": "Şifre değiştirme.",
+      "GET /api/storage/usage": "Kullanıcının depolama kullanımı ve kotası. Response: { quota (byte), used (byte), available (byte), percentage, fileCount, folderCount }.",
+      "POST /api/storage/upload/presigned-url": "Standart dosya yükleme başlatır. Body: { fileName, fileSize, mimeType, folderId? }. Kota kontrolü yapar, pre-signed URL döndürür. Response: { uploadUrl, fileId, expiresIn }.",
+      "POST /api/storage/upload/multipart/initiate": "Büyük dosya (>100 MB) çok parçalı upload başlatır. Body: { fileName, fileSize, mimeType, folderId?, partSize? }. Response: { uploadId, parts: number }.",
+      "POST /api/storage/upload/multipart/part": "Çok parçalı upload için parça başına pre-signed URL. Body: { uploadId, partNumber }. Response: { uploadUrl, partNumber }.",
+      "POST /api/storage/upload/multipart/complete": "Çok parçalı upload'ı tamamlar. Body: { uploadId, parts: [{ partNumber, etag }] }. Parçaları birleştirir, DB kaydı oluşturur.",
+      "POST /api/storage/upload/complete": "Standart upload tamamlandı onayı. Body: { fileId, etag? }. Frontend upload başarılı sonrası DB kaydı oluşturur.",
+      "GET /api/storage/download/{fileId}": "Dosya indirme için kısa ömürlü pre-signed URL oluşturur. Query: ?disposition=inline|attachment. Rate limited: 50/dk/kullanıcı.",
+      "GET /api/folders": "Klasör içeriğini listeler. Query: ?parentId= (null=root), ?sort=name|date|size|type, ?order=asc|desc, ?type=all|files|folders.",
+      "POST /api/folders": "Yeni klasör oluşturur. Body: { name, parentId? (null=root) }.",
+      "PATCH /api/storage/items/{id}/rename": "Dosya veya klasörü yeniden adlandırır. Body: { newName }. Sadece DB kaydı güncellenir, cloud objesi değişmez.",
+      "POST /api/storage/move": "Dosya veya klasörü yeni konuma taşır. Body: { itemIds: [], destinationFolderId (null=root) }. Hedefte aynı isimli öğe varsa 409.",
+      "POST /api/storage/copy": "Dosya veya klasörü kopyalar. Body: { itemIds: [], destinationFolderId }. Cloud objesi de kopyalanır.",
+      "GET /api/files/{id}/versions": "Dosyanın tüm sürümlerini listeler (versionNumber DESC). Her sürüm: id, versionNumber, fileSize, createdAt.",
+      "POST /api/files/{id}/versions/{versionId}/restore": "Önceki bir sürümü en son sürüm olarak geri yükler. Yeni bir sürüm girişi oluşturur (önceki sürüm silinmez).",
+      "DELETE /api/storage/items": "Dosya veya klasörleri çöp kutusuna taşır (soft delete). Body: { fileIds?: [], folderIds?: [] }.",
+      "GET /api/trash": "Çöp kutusundaki öğeleri listeler. Her öğe için: id, name, type, originalPath, deletedAt, expiresAt (30 gün sonra otomatik kalıcı silinme).",
+      "POST /api/storage/restore": "Çöp kutusundaki öğeleri orijinal konumuna geri yükler. Body: { fileIds?: [], folderIds?: [] }. Orijinal konum yoksa root'a yüklenir.",
+      "DELETE /api/storage/items/permanent": "Öğeleri kalıcı olarak siler (hard delete). Cloud objeleri de silinir. Body: { fileIds?: [], folderIds?: [] }. Geri alınamaz!",
+      "POST /api/share": "Dosya veya klasör için paylaşım bağlantısı oluşturur. Body: { itemId, itemType: 'file'|'folder', accessType: 'view'|'download'|'edit', expiresAt?, password?, maxAccesses? }. Response: { shareId, token, url }.",
+      "GET /api/shares": "Kullanıcının oluşturduğu paylaşım bağlantılarını listeler.",
+      "PATCH /api/share/{id}": "Paylaşım ayarlarını günceller. Body: { accessType?, expiresAt?, password?, maxAccesses?, isActive? }.",
+      "DELETE /api/share/{id}": "Paylaşım bağlantısını iptal eder.",
+      "GET /api/search": "Dosya ve klasörlerde arama. Query: ?q, ?type=all|files|folders, ?folderId, ?mimeType.",
+      "GET /api/my/notifications": "Bildirim listesi (paylaşım davetleri, kota uyarıları).",
+      "PATCH /api/notifications/{id}/read": "Bildirimi okundu işaretler."
+    }
+  }
+}

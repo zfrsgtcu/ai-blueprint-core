@@ -1,0 +1,159 @@
+{
+  "_meta": {
+    "description": "Node.js + Express.js (TypeScript) stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Express/Fastify, JWT auth, MongoDB/Mongoose veya MSSQL/Prisma ile hafif ve hızlı backend.",
+    "stack": "node-express",
+    "display_name": "Node.js + Express",
+    "type": "backend_api",
+    "language": "TypeScript (Node.js 20+)",
+    "version": "node20",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "Express.js 4 + TypeScript",
+    "description": "Node.js 20 LTS üzerinde TypeScript ile yazılmış hafif REST API. Express.js routing, JWT authentication, MongoDB/Mongoose (belge tabanlı) veya MSSQL/Prisma (ilişkisel) veritabanı seçenekleri. Hızlı prototipleme ve serverless deployment için idealdir.",
+    "use_cases": [
+      "E-Ticaret backend",
+      "RESTful API",
+      "Mikroservis",
+      "BFF (Backend for Frontend)",
+      "Realtime API (Socket.io ile)",
+      "MVP / Prototip backend"
+    ],
+    "paired_frontend": "nextjs",
+    "not_suitable_for": [
+      "Yüksek CPU-bound işlemler (.NET daha uygun)",
+      "Kurumsal ERP (transaction complexity — .NET daha uygun)",
+      "WebSocket-heavy real-time (Fastify daha uygun)"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceApi" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "ecommerce-api" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Kurumsal e-ticaret API" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "database": [
+      { "key": "{{DB_TYPE}}", "description": "Veritabanı türü", "options": ["mongodb", "mssql", "postgresql"], "example": "mongodb" },
+      { "key": "{{CONNECTION_STRING}}", "description": "Veritabanı connection string", "example": "mongodb://localhost:27017/ecommerce" },
+      { "key": "{{DATABASE_URL}}", "description": "Prisma connection string (MSSQL/PostgreSQL için)", "example": "sqlserver://localhost:1433;database=ECommerceDb;..." }
+    ],
+    "auth": [
+      { "key": "{{JWT_SECRET}}", "description": "JWT signing secret (min 256-bit)", "example": "super-secret-key-change-in-production" },
+      { "key": "{{JWT_EXPIRES_IN}}", "description": "Access token süresi", "example": "15m" }
+    ],
+    "deployment": [
+      { "key": "{{PORT}}", "description": "Sunucu portu", "example": "3000" },
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "api.example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "Node.js Express projesinin zorunlu dizin yapısı",
+    "directories": {
+      "src/": "Kaynak kod",
+      "src/routes/": "Express route handler'ları",
+      "src/models/": "Veritabanı model tanımları (ORM/ODM)",
+      "src/middleware/": "Express middleware'leri (auth, validation, error)",
+      "src/services/": "İş mantığı servisleri",
+      "src/config/": "Konfigürasyon (database, auth, env)",
+      "src/types/": "TypeScript tip tanımları",
+      "prisma/": "Prisma schema ve migration'lar (MSSQL/PostgreSQL için)"
+    },
+    "files": {
+      "src/index.ts": "Uygulama giriş noktası — Express app, middleware kaydı",
+      "package.json": "Bağımlılıklar ve script'ler",
+      "tsconfig.json": "TypeScript konfigürasyonu",
+      ".env.example": "Ortam değişkenleri şablonu"
+    }
+  },
+
+  "entry_point": "src/index.ts",
+  "config_file": ".env / src/config/env.ts",
+
+  "dependencies": {
+    "core": [
+      { "package": "express", "version": "^4.19.0" },
+      { "package": "cors", "version": "^2.8.5" },
+      { "package": "helmet", "version": "^7.1.0" },
+      { "package": "dotenv", "version": "^16.4.0" }
+    ],
+    "auth": [
+      { "package": "jsonwebtoken", "version": "^9.0.2" },
+      { "package": "bcryptjs", "version": "^2.4.3" }
+    ],
+    "validation": [
+      { "package": "zod", "version": "^3.23.0" },
+      { "package": "zod-express-middleware", "version": "^1.4.0" }
+    ],
+    "database_mongodb": [
+      { "package": "mongoose", "version": "^8.4.0" }
+    ],
+    "database_prisma": [
+      { "package": "@prisma/client", "version": "^5.15.0" },
+      { "package": "prisma", "version": "^5.15.0" }
+    ],
+    "dev": [
+      { "package": "typescript", "version": "^5.5.0" },
+      { "package": "@types/express", "version": "^4.17.21" },
+      { "package": "@types/cors", "version": "^2.8.17" },
+      { "package": "@types/jsonwebtoken", "version": "^9.0.6" },
+      { "package": "@types/bcryptjs", "version": "^2.4.6" },
+      { "package": "@types/node", "version": "^20.0.0" },
+      { "package": "tsx", "version": "^4.15.0" },
+      { "package": "nodemon", "version": "^3.1.0" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "mvc_express": {
+      "description": "Models (veri) + Routes (controller) + Services (iş mantığı)",
+      "rule": "Route'lar sadece HTTP istek/yanıt yönetir, iş mantığı services'te"
+    },
+    "middleware_pipeline": {
+      "description": "Express middleware chain: cors → helmet → json → auth → routes → error handler",
+      "rule": "Her middleware tek sorumluluk prensibine uymalı"
+    },
+    "zod_validation": {
+      "description": "Request body/query/params Zod şemaları ile validate edilir",
+      "rule": "Her route için Zod schema tanımlanmalı, validasyon middleware'de"
+    },
+    "jwt_auth": {
+      "description": "JWT Bearer token HTTP-only cookie veya Authorization header",
+      "rule": "Auth middleware token doğrulaması yapar, req.user'a decode edilmiş payload ekler"
+    }
+  },
+
+  "deployment": {
+    "primary": "Vercel (serverless functions)",
+    "alternatives": ["Azure Container Apps", "Azure App Service"],
+    "build_command": "tsc && npx prisma generate",
+    "start_command": "node dist/index.js",
+    "health_check": "/health"
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Dizin yapısını olduğu gibi kopyala",
+      "Middleware (auth, error handler, validation) template'ini koru",
+      "src/config/ yapısını olduğu gibi koru",
+      "Core dependencies'i package.json'a ekle"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      ".env.example'ı production değerleriyle doldurmadan bırakma",
+      "JWT secret'ı varsayılan değerde bırakma"
+    ],
+    "customize_for_domain": [
+      "src/routes/ → domain entity'lerine göre route dosyaları oluştur",
+      "src/models/ → Mongoose schema veya Prisma model tanımlarını ekle",
+      "src/services/ → iş mantığı servislerini oluştur",
+      "src/types/ → domain entity tiplerini tanımla",
+      "prisma/schema.prisma → veritabanı şemasını tanımla (Prisma kullanılıyorsa)"
+    ]
+  }
+}

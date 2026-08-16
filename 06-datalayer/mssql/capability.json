@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "description": "MSSQL Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. Microsoft SQL Server, kurumsal .NET ekosistemi için birincil tercih.",
+    "resource_type": "data-layer",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "mssql",
+  "category": "data-layer",
+  "display_name": "Microsoft SQL Server",
+  "description": "Microsoft ekosistemi için kurumsal seviye ilişkisel veritabanı. EF Core first-class desteği, Azure SQL entegrasyonu, Always Encrypted, Row-Level Security, In-Memory OLTP.",
+
+  "installation_context": {
+    "netwebapi": {
+      "nuget": ["Microsoft.EntityFrameworkCore.SqlServer", "Microsoft.EntityFrameworkCore.Design"],
+      "connection_string_format": "Server={{DB_HOST}},{{DB_PORT}};Database={{DB_NAME}};User Id={{DB_USER}};Password={{DB_PASSWORD}};TrustServerCertificate=True;Encrypt=True",
+      "orm": "Entity Framework Core",
+      "entry_point": "Program.cs (builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(...)))"
+    },
+    "node-express": {
+      "npm": ["mssql"],
+      "npm_dev": ["@types/mssql"],
+      "connection_string_format": "Server={{DB_HOST}},{{DB_PORT}};Database={{DB_NAME}};User Id={{DB_USER}};Password={{DB_PASSWORD}};TrustServerCertificate=True;Encrypt=True",
+      "orm_options": ["Prisma (npm: prisma @prisma/client)", "Knex.js (npm: knex mssql)"],
+      "entry_point": "src/config/database.js"
+    }
+  },
+
+  "config_template": "integration_template/mssql-config.template",
+  "usage_pattern": "Repository Pattern ile tüm veritabanı erişimleri soyutlanır. EF Core DbContext DI container'a scoped olarak kaydedilir. Azure SQL kullanılıyorsa Managed Identity tercih edilir.",
+
+  "verification_steps": [
+    "Connection string environment variable / Key Vault'tan okunuyor mu?",
+    "EF Core migration'ları var mı?",
+    "Repository Pattern uygulanmış mı?",
+    "Azure SQL kullanılıyorsa Managed Identity aktif mi?",
+    "03-infrastructures'da docker-compose mssql servisi tanımlanmış mı?",
+    "Connection resiliency (EnableRetryOnFailure) yapılandırılmış mı?"
+  ],
+
+  "docker_compose_requirement": {
+    "service_name": "mssql",
+    "image": "mcr.microsoft.com/mssql/server:2022-latest",
+    "environment": ["ACCEPT_EULA=Y", "MSSQL_SA_PASSWORD={{DB_PASSWORD}}", "MSSQL_PID=Express"],
+    "volumes": ["mssql_data:/var/opt/mssql"],
+    "ports": ["{{DB_PORT}}:1433"]
+  }
+}

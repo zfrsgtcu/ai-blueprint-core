@@ -1,0 +1,312 @@
+{
+  "_meta": {
+    "description": "08-resources katmanı ana manifesti. Toolkit & Capability Repository — AI ajanlarının inşa sürecinde kullandığı Yetenek ve Kütüphane Kütüphanesi. 04-apps 'nasıl kod yazılacağını' söylerken, 08-resources bu kodun 'hangi malzemelerle donatılacağını' belirler. AI, proje tasarlarken burayı Architectural Decision Records (Mimari Karar Kayıtları) olarak kullanır.",
+    "layer": "08-resources",
+    "layer_name": "Toolkit & Capability Repository (Yetenek ve Kütüphane Kütüphanesi)",
+    "approach": "Capability Manifest + Implementation Patterns + Integration Templates",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "layer_description": {
+    "purpose": "Projelerin stack-agnostic ortak birikimi. AI ajanı, bir projeyi blueprint'ten gerçeğe dönüştürürken, projenin ihtiyaç duyduğu yan bileşenleri (veritabanı sürücüleri, UI kütüphaneleri, yardımcı araçlar) buradan çeker.",
+    "golden_rule": "AI buradaki kaynakları 'kod' olarak değil, 'Capability Manifest' (Yetenek Tanımı) olarak görür. Her kaynak için capability.json (AI'nın API'si), implementation_pattern.md (kodlama standartları), ve integration_template/ (hazır kod parçacıkları) okunur.",
+    "workflow": "Requirement Mapping → Resource Selection → Orchestration → Verification. AI, bir kaynağı projeye enjekte ederken bu 4 adımı takip eder.",
+    "categories": {
+      "data-layers": "Veritabanı bağlantıları, ORM/ODM sürücüleri, cache katmanları. PostgreSQL, MongoDB, Redis, SQLite, MSSQL.",
+      "ui-libs": "Frontend görsel kütüphaneleri: CSS framework'leri, animasyon, ikon setleri, grafik, slider/carousel.",
+      "utils": "Yardımcı servisler ve entegrasyonlar: WebSocket, JWT auth, e-posta, ödeme sistemleri."
+    }
+  },
+
+  "ai_workflow": {
+    "description": "AI ajanlarının 08-resources katmanını nasıl kullanacağını tanımlar. 06-compiler tarafından tetiklenen Resource Injection Workflow.",
+    "steps": [
+      {
+        "step": 1,
+        "action": "Requirement Mapping",
+        "detail": "00-registry'den gelen talep ve 02-domains business-logic.md analiz edilir. AI: 'Bu e-ticaret projesi için postgresql, redis ve stripe gerekli' sonucuna varır.",
+        "source": "00-registry/versions.json + 02-domains/{domain}/business-logic.md"
+      },
+      {
+        "step": 2,
+        "action": "Resource Selection",
+        "detail": "08-resources/{category}/{resource}/capability.json okunur. Her kaynağın installation_context, config_template, ve usage_pattern bilgileri alınır. AI, hangi paketlerin hangi versiyonla yükleneceğini versions.json ile çapraz kontrol eder.",
+        "source": "08-resources/{category}/{resource}/capability.json + 00-registry/versions.json"
+      },
+      {
+        "step": 3,
+        "action": "Pattern Application",
+        "detail": "implementation_pattern.md okunur ve ZORUNLU/YASAK/ÖNERİLEN kurallar 04-apps iskeletine uygulanır. AI, bağlantı kodunu Program.cs veya src/index.js içine doğru formatta yazar.",
+        "source": "08-resources/{category}/{resource}/implementation_pattern.md"
+      },
+      {
+        "step": 4,
+        "action": "Template Injection",
+        "detail": "integration_template/ altındaki hazır kod parçacıkları projeye enjekte edilir. {{Placeholder}}'lar domain logic ile eşleştirilir.",
+        "source": "08-resources/{category}/{resource}/integration_template/"
+      },
+      {
+        "step": 5,
+        "action": "Infrastructure Verification",
+        "detail": "Eklenen kaynağın 03-infrastructures'daki sistemle uyumluluğu kontrol edilir. Örn: docker-compose'da postgres imajı var mı? CI/CD pipeline'ı bu bağımlılığı destekliyor mu?",
+        "source": "03-infrastructures/{infrastructure}/manifest.json"
+      },
+      {
+        "step": 6,
+        "action": "Cross-Cutting Validation",
+        "detail": "AS-001 - AS-007 kuralları ve deal_breakers kontrolü yapılır. Hiçbir {{Placeholder}} bırakılmadığı, tüm versiyonların locked olduğu doğrulanır.",
+        "source": "04-apps/manifest.json → cross_cutting_rules + deal_breakers"
+      }
+    ]
+  },
+
+  "resources_registry": {
+    "data-layers": {
+      "description": "Veritabanı ve cache katmanı kaynakları",
+      "resources": {
+        "postgresql": {
+          "path": "./data-layers/postgresql/",
+          "display_name": "PostgreSQL",
+          "category": "data-layer",
+          "type": "Relational Database",
+          "supported_stacks": ["netwebapi", "node-express", "nodejs"],
+          "description": "ACID uyumlu, açık kaynak ilişkisel veritabanı. Kurumsal projeler için birincil tercih.",
+          "use_cases": ["E-Ticaret", "SaaS", "Kurumsal uygulamalar", "Finansal sistemler"]
+        },
+        "mongodb": {
+          "path": "./data-layers/mongodb/",
+          "display_name": "MongoDB",
+          "category": "data-layer",
+          "type": "Document Database",
+          "supported_stacks": ["node-express", "nodejs"],
+          "description": "JSON tabanlı belge veritabanı. Esnek şema, hızlı prototipleme, yatay ölçeklenebilirlik.",
+          "use_cases": ["Haber sitesi", "Blog", "IoT veri toplama", "Hızlı MVP"]
+        },
+        "redis": {
+          "path": "./data-layers/redis/",
+          "display_name": "Redis",
+          "category": "data-layer",
+          "type": "In-Memory Cache / Message Broker",
+          "supported_stacks": ["netwebapi", "node-express", "nodejs"],
+          "description": "In-memory veri yapısı deposu. Cache, session store, pub/sub, rate limiting, queue.",
+          "use_cases": ["Oturum yönetimi", "Rate limiting", "Önbellek", "Gerçek zamanlı sayaç"]
+        },
+        "sqlite": {
+          "path": "./data-layers/sqlite/",
+          "display_name": "SQLite",
+          "category": "data-layer",
+          "type": "Embedded Relational Database",
+          "supported_stacks": ["nodejs"],
+          "description": "Sunucusuz, sıfır konfigürasyonlu gömülü SQL veritabanı. Tek dosya, taşınabilir.",
+          "use_cases": ["Mobil uygulama", "Edge computing", "Gömülü sistem", "Test veritabanı"]
+        },
+        "mssql": {
+          "path": "./data-layers/mssql/",
+          "display_name": "Microsoft SQL Server",
+          "category": "data-layer",
+          "type": "Relational Database",
+          "supported_stacks": ["netwebapi", "netblazor"],
+          "description": "Microsoft ekosistemi için kurumsal seviye ilişkisel veritabanı. EF Core first-class desteği, Azure SQL entegrasyonu.",
+          "use_cases": ["Kurumsal .NET projeleri", "Azure-native uygulamalar", "Finansal sistemler", "Büyük ölçekli ERP"]
+        }
+      }
+    },
+    "ui-libs": {
+      "description": "Frontend görsel kütüphane ve framework kaynakları",
+      "resources": {
+        "tailwindcss": {
+          "path": "./ui-libs/tailwindcss/",
+          "display_name": "TailwindCSS",
+          "category": "ui-lib",
+          "type": "Utility-First CSS Framework",
+          "supported_stacks": ["astrojs", "nuxtjs", "nextjs", "vue", "react", "html"],
+          "description": "Utility-first CSS framework. Sıfır runtime, JIT compiler, responsive design system.",
+          "use_cases": ["Tüm frontend projeleri"]
+        },
+        "gsap": {
+          "path": "./ui-libs/gsap/",
+          "display_name": "GSAP (GreenSock Animation Platform)",
+          "category": "ui-lib",
+          "type": "Animation Library",
+          "supported_stacks": ["astrojs", "nuxtjs", "nextjs", "vue", "react", "html"],
+          "description": "Profesyonel seviye high-performance JavaScript animasyon kütüphanesi. ScrollTrigger, Flip, Observer eklentileri.",
+          "use_cases": ["Landing page animasyonları", "Scroll-tabanlı storytelling", "Mikro etkileşimler", "Sayfa geçişleri"]
+        },
+        "iconify": {
+          "path": "./ui-libs/iconify/",
+          "display_name": "Iconify",
+          "category": "ui-lib",
+          "type": "Icon Framework",
+          "supported_stacks": ["astrojs", "nuxtjs", "nextjs", "vue", "react", "html"],
+          "description": "200.000+ ikon, 150+ ikon seti, tek birleşik API. Material Design Icons, Heroicons, Phosphor, Lucide ve daha fazlası.",
+          "use_cases": ["Tüm UI projeleri", "Erişilebilir ikon kullanımı"]
+        },
+        "chartjs": {
+          "path": "./ui-libs/chartjs/",
+          "display_name": "Chart.js",
+          "category": "ui-lib",
+          "type": "Charting Library",
+          "supported_stacks": ["nuxtjs", "nextjs", "vue", "react", "html"],
+          "description": "Canvas tabanlı, responsive grafik kütüphanesi. Line, bar, pie, doughnut, radar, polar, bubble, scatter.",
+          "use_cases": ["Dashboard", "Veri görselleştirme", "Raporlama", "Analitik panel"]
+        },
+        "swiper": {
+          "path": "./ui-libs/swiper/",
+          "display_name": "Swiper.js",
+          "category": "ui-lib",
+          "type": "Carousel/Slider Library",
+          "supported_stacks": ["astrojs", "nuxtjs", "nextjs", "vue", "react", "html"],
+          "description": "Modern, touch-friendly, performanslı slider/carousel. Sanal kaydırma, lazy loading, erişilebilirlik.",
+          "use_cases": ["Hero slider", "Ürün galerisi", "Müşteri yorumları carousel", "Mobil onboarding"]
+        }
+      }
+    },
+    "utils": {
+      "description": "Yardımcı servis ve entegrasyon kaynakları",
+      "resources": {
+        "socketio": {
+          "path": "./utils/socketio/",
+          "display_name": "Socket.IO",
+          "category": "utility",
+          "type": "Real-time Communication",
+          "supported_stacks": ["netwebapi", "node-express", "nodejs"],
+          "description": "Gerçek zamanlı, iki yönlü, event-tabanlı iletişim. WebSocket fallback'li, oda/namespace desteği.",
+          "use_cases": ["Canlı sohbet", "Gerçek zamanlı bildirim", "Canlı dashboard", "Multiplayer oyun"]
+        },
+        "jwt": {
+          "path": "./utils/jwt/",
+          "display_name": "JSON Web Token",
+          "category": "utility",
+          "type": "Authentication Token",
+          "supported_stacks": ["netwebapi", "node-express", "nodejs", "nuxtjs", "nextjs", "vue", "react"],
+          "description": "JSON tabanlı güvenli token standardı. Access/refresh token pattern, claim-based authorization.",
+          "use_cases": ["Kimlik doğrulama", "API güvenliği", "Rol tabanlı yetkilendirme"]
+        },
+        "resend": {
+          "path": "./utils/resend/",
+          "display_name": "Resend",
+          "category": "utility",
+          "type": "Email Service",
+          "supported_stacks": ["netwebapi", "node-express", "nodejs", "nextjs", "nuxtjs"],
+          "description": "Modern API-first e-posta servisi. React Email entegrasyonu, template motoru, webhook tracking.",
+          "use_cases": ["İşlem e-postaları", "Hoş geldin e-postası", "Şifre sıfırlama", "Bülten"]
+        },
+        "stripe": {
+          "path": "./utils/stripe/",
+          "display_name": "Stripe",
+          "category": "utility",
+          "type": "Payment Processing",
+          "supported_stacks": ["netwebapi", "node-express", "nextjs", "nuxtjs"],
+          "description": "Dünya çapında online ödeme altyapısı. Checkout, Payment Intents, Webhooks, faturalandırma.",
+          "use_cases": ["E-Ticaret ödeme", "Abonelik yönetimi", "SaaS faturalandırma", "Tek seferlik ödeme"]
+        }
+      }
+    }
+  },
+
+  "capability_anatomy": {
+    "description": "Her bir kaynak klasöründe bulunması gereken 3 AI dokümanı",
+    "structure": {
+      "capability.json": {
+        "purpose": "AI ajanının bu kaynağa ait 'API'si. Kaynağın projeye nasıl entegre edileceğini, hangi paketlerin yükleneceğini ve hangi config'in kullanılacağını söyler.",
+        "fields": ["name", "category", "installation_context", "config_template", "usage_pattern", "verification_steps"]
+      },
+      "implementation_pattern.md": {
+        "purpose": "Ajanın bu kaynağı kullanırken uyması gereken Best Practice ve Güvenlik kuralları. ZORUNLU, YASAK, ÖNERİLEN severity sınıflandırması ile.",
+        "sections": ["Genel Prensipler", "Güvenlik Kuralları", "Kodlama Standartları", "Performans", "Yaygın Hatalar"]
+      },
+      "integration_template": {
+        "purpose": "Ajanın projeye enjekte edebileceği hazır kod parçacıkları. {{Placeholder}}'lar 02-domains entity'leri ile eşleştirilir.",
+        "convention": "Her dosya <!-- PURPOSE OF THIS FILE --> HTML yorumu ile başlar. {{Placeholder}} formatı kullanılır.",
+        "note": "AI, bu dosyaları OLDUĞU GİBİ KOPYALAMAZ — implementation_pattern.md'deki kurallara göre uyarlar ve genişletir."
+      }
+    }
+  },
+
+  "placeholder_conventions": {
+    "description": "08-resources katmanına özgü ek placeholder'lar",
+    "resource_specific": {
+      "{{DB_NAME}}": "Veritabanı adı (örn: ecommerce_db)",
+      "{{DB_USER}}": "Veritabanı kullanıcı adı",
+      "{{DB_PASSWORD}}": "Veritabanı şifresi (03-infrastructures/secrets referansı)",
+      "{{DB_HOST}}": "Veritabanı sunucu adresi (docker-compose service name veya IP)",
+      "{{DB_PORT}}": "Veritabanı port numarası",
+      "{{CONNECTION_STRING}}": "Tam bağlantı string'i",
+      "{{REDIS_URL}}": "Redis bağlantı URL'si",
+      "{{CACHE_TTL}}": "Önbellek süresi (saniye)",
+      "{{STRIPE_SECRET_KEY}}": "Stripe secret key (03-infrastructures/secrets referansı)",
+      "{{STRIPE_WEBHOOK_SECRET}}": "Stripe webhook signing secret",
+      "{{RESEND_API_KEY}}": "Resend API key (03-infrastructures/secrets referansı)",
+      "{{SOCKET_PORT}}": "Socket.IO sunucu portu",
+      "{{SOCKET_CORS_ORIGIN}}": "Socket.IO CORS origin (frontend URL)",
+      "{{ANIMATION_DURATION}}": "GSAP animasyon süresi (örn: 0.6)",
+      "{{CHART_COLORS}}": "Chart.js renk paleti (CSS custom properties referansı)"
+    }
+  },
+
+  "cross_cutting_rules": {
+    "description": "08-resources katmanında tüm kaynaklarda geçerli kesişen kurallar",
+    "rules": [
+      {
+        "id": "RS-001",
+        "rule": "Paket versiyonları 00-registry/versions.json'dan okunur",
+        "severity": "ZORUNLU",
+        "detail": "AI, capability.json'daki package adlarını görür, ancak versiyon numaralarını ASLA kendi başına atamaz. Versiyonlar 00-registry/versions.json'daki kilitli değerlerden alınır."
+      },
+      {
+        "id": "RS-002",
+        "rule": "Tüm bağlantı bilgileri 03-infrastructures/secrets üzerinden enjekte edilir",
+        "severity": "ZORUNLU",
+        "detail": "Veritabanı bağlantı string'leri, API key'ler, secret'lar ASLA kod içinde hardcoded olmaz. environment variable veya secret manager üzerinden okunur."
+      },
+      {
+        "id": "RS-003",
+        "rule": "Her entegrasyonun hata işleme stratejisi olmalıdır",
+        "severity": "ZORUNLU",
+        "detail": "Veritabanı bağlantı hatası, API timeout, cache miss gibi durumlar için graceful degradation (hizmetin kısmi çalışması) stratejisi uygulanır."
+      },
+      {
+        "id": "RS-004",
+        "rule": "Repository Pattern zorunluluğu (data-layer kaynakları için)",
+        "severity": "ZORUNLU",
+        "detail": "Tüm veritabanı erişimleri Repository Pattern üzerinden yapılır. Handler/Controller katmanı ASLA doğrudan veritabanı bağlantısı kullanmaz."
+      },
+      {
+        "id": "RS-005",
+        "rule": "UI kütüphaneleri erişilebilirlik standartlarına uygun olmalıdır",
+        "severity": "ZORUNLU",
+        "detail": "Animasyonlar prefers-reduced-motion'a saygılı olmalı, ikonlar aria-label içermeli, slider/carousel klavye ile gezilebilir olmalıdır."
+      },
+      {
+        "id": "RS-006",
+        "rule": "Integration template'ler başlangıç noktasıdır, bitiş noktası değildir",
+        "severity": "ÖNEMLİ",
+        "detail": "AI, template'leri implementation_pattern.md kurallarına göre özelleştirir, genişletir ve domain logic'e uyarlar."
+      },
+      {
+        "id": "RS-007",
+        "rule": "Her kaynak 03-infrastructures ile uyumlu olmalıdır",
+        "severity": "ZORUNLU",
+        "detail": "Eklenen her kaynak (örn: postgresql) için 03-infrastructures'da karşılık gelen bir servis tanımı (docker-compose service) bulunmalıdır."
+      }
+    ]
+  },
+
+  "deal_breakers": {
+    "description": "Bunlardan herhangi biri varsa, AI'nın entegrasyonu referans mimariye uygun DEĞİLDİR",
+    "rules": [
+      "1. ❌ capability.json okunmadan paket yüklenmiş",
+      "2. ❌ Versiyon numarası 00-registry/versions.json'dan farklı",
+      "3. ❌ Bağlantı bilgisi hardcoded yazılmış",
+      "4. ❌ Repository Pattern ihlal edilmiş (data-layer için)",
+      "5. ❌ implementation_pattern.md'deki ZORUNLU kurallardan biri çiğnenmiş",
+      "6. ❌ integration_template'te {{Placeholder}} bırakılmış",
+      "7. ❌ Erişilebilirlik ihlali (prefers-reduced-motion yok, aria-label eksik)",
+      "8. ❌ 03-infrastructures'da karşılık gelen servis tanımı eksik",
+      "9. ❌ Graceful degradation stratejisi yok (try-catch eksik, timeout yok)",
+      "10. ❌ Cross-cutting rules (RS-001 - RS-007) ihlal edilmiş"
+    ]
+  }
+}

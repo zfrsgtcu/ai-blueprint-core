@@ -1,0 +1,73 @@
+<!-- PURPOSE OF THIS FILE: SQLite bağlantı konfigürasyonu şablonu — AI tarafından projeye enjekte edilir -->
+/* ═══════════════════════════════════════════════════════════════════
+   SQLite Bağlantı Konfigürasyonu
+   Seçenek: Node.js (better-sqlite3) / .NET (EF Core)
+   Not: SQLite sunucusuzdur, connection string dosya yoludur.
+   ═══════════════════════════════════════════════════════════════════ */
+
+// ============================================================
+// Seçenek A: Node.js better-sqlite3 (ÖNERİLEN)
+// Dosya: src/config/database.js
+// ============================================================
+#if NODE
+const Database = require('better-sqlite3');
+const path = require('path');
+const fs = require('fs');
+
+const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const DB_PATH = path.join(DATA_DIR, '{{project-name}}.db');
+
+// Data dizini yoksa oluştur
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const db = new Database(DB_PATH);
+
+// Kritik pragma'lar — 🔴 ZORUNLU
+db.pragma('journal_mode = WAL');       // Concurrent okuma + yazma
+db.pragma('foreign_keys = ON');        // Foreign key desteği (varsayılan OFF!)
+db.pragma('busy_timeout = 5000');      // Kilitli DB'de 5sn bekle
+db.pragma('synchronous = NORMAL');     // WAL modunda güvenli, daha hızlı
+db.pragma('cache_size = -64000');      // 64MB page cache
+db.pragma('mmap_size = 268435456');    // 256MB memory-mapped I/O
+
+console.log(`SQLite bağlantısı başarılı: ${DB_PATH}`);
+
+// Graceful shutdown
+process.on('exit', () => db.close());
+process.on('SIGINT', () => { db.close(); process.exit(0); });
+
+module.exports = { db };
+#endif
+
+// ============================================================
+// Seçenek B: .NET EF Core
+// Dosya: Program.cs içine enjekte edilir
+// ============================================================
+#if NET
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Data Source=./data/{{project-name}}.db";
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlite(connectionString, sqliteOptions =>
+    {
+        sqliteOptions.CommandTimeout(30);
+    });
+});
+
+// DbContext OnConfiguring override (opsiyonel)
+// optionsBuilder.UseSqlite(connectionString);
+// connection.ExecuteSqlRaw("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
+#endif
+
+/* ═══════════════════════════════════════════════════════════════════
+   .gitignore eklenmesi gerekenler:
+   *.db
+   *.db-journal
+   *.db-wal
+   *.db-shm
+
+   Veritabanı dosyası: ./data/{{project-name}}.db
+   ═══════════════════════════════════════════════════════════════════ */

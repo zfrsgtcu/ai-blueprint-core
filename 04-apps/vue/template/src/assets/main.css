@@ -1,0 +1,4 @@
+<!-- PURPOSE OF THIS FILE: TailwindCSS direktifleri ve global stil import'u -->
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

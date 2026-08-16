@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Analitik Araçları API Sözleşmeleri. Public veri toplama (API key ile) ve gerçek zamanlı akış, auth dashboard ve widget yönetimi.",
+    "error_format": "{ status: number, code: string, message: string, details?: any }",
+    "rate_limiting": "Collect: 5000/dk/API-key | Realtime: bağlantı başına 1 SSE | Auth: 100/dk | Admin: 50/dk",
+    "global_rules": {
+      "pagination": "Tüm liste endpoint'leri ?page=&limit= (default 20, max 100) destekler.",
+      "api_key_auth": "Collect ve Realtime endpoint'leri X-API-Key header'ı ile proje bazında yetkilendirilir.",
+      "time_range": "Tüm metrik endpoint'leri ?from=&to= (ISO 8601) parametrelerini destekler. Varsayılan: son 24 saat.",
+      "aggregation": "Metrik endpoint'leri ?interval=1m|5m|15m|1h|1d parametresi ile veri toplulaştırma aralığını belirler."
+    }
+  },
+  "endpoints": {
+    "public": {
+      "POST /api/collect": "Yüksek hacimli veri toplama endpoint'i. Body: { trackingId, events: [{ name, properties?: {}, timestamp?, userId? }] }. Event başına max 10 KB. Hatalı event'ler atlanır, başarılı olanlar işlenir (partial success). Response: 202 Accepted { accepted: number, rejected: number, errors?: [] }. Auth: X-Tracking-Key header zorunlu.",
+      "GET /api/realtime": "Gerçek zamanlı metrik akışı (SSE). Query: ?projectId, ?metrics=active_users,page_views,custom_events. Auth: X-API-Key header veya ?token= query param. Event tipleri: metric_update, alert, connected, heartbeat."
+    },
+    "auth": {
+      "POST /api/projects": "Yeni analitik projesi oluşturur. Body: { name, domain?, description? }. Response: { id, name, apiKey, createdAt }.",
+      "GET /api/projects": "Kullanıcının projelerini listeler. Query: ?search, ?sort=-updatedAt.",
+      "GET /api/projects/{id}": "Proje detayı: genel bilgiler, widget sayısı, event hacmi (bugün/ay), API key (maskeli).",
+      "PUT /api/projects/{id}": "Proje ayarlarını günceller. Body: { name?, domain?, description?, samplingRate?, retentionDays?, isActive? }.",
+      "DELETE /api/projects/{id}": "Projeyi ve tüm bağlı widget/metrik verilerini kalıcı olarak siler. Geri alınamaz.",
+      "POST /api/projects/{id}/regenerate-key": "API key yeniden oluşturur. Eski key hemen geçersiz olur.",
+      "POST /api/projects/{id}/widgets": "Yeni dashboard widget'ı oluşturur. Body: { title, type: 'line'|'bar'|'pie'|'counter'|'table'|'funnel'|'map', metric, dimensions?: [], filters?: {}, position?: { x, y, w, h } }.",
+      "GET /api/projects/{id}/widgets": "Projenin tüm widget'larını listeler. Dashboard düzen bilgisi dahil.",
+      "PUT /api/widgets/{id}": "Widget yapılandırmasını günceller. Body: { title?, type?, metric?, dimensions?, filters?, position?, config?: {} }.",
+      "DELETE /api/widgets/{id}": "Widget'ı siler.",
+      "GET /api/metrics/{widgetId}/overview": "Widget için özet metrik verisi: toplam, ortalama, değişim yüzdesi, sparkline. Query: ?from, ?to.",
+      "GET /api/metrics/{widgetId}/timeseries": "Widget için zaman serisi verisi. Query: ?from, ?to, ?interval. Response: { series: [{ timestamp, value }] }.",
+      "GET /api/metrics/{widgetId}/breakdown": "Widget için kırılım/dilimleme verisi. Query: ?from, ?to, ?dimension. Response: { breakdown: [{ key, value, percentage }] }.",
+      "GET /api/projects/{id}/events": "Ham event kayıtlarını listeler (son 7 gün). Query: ?eventName, ?from, ?to, ?userId. Max 1000 kayıt.",
+      "POST /api/projects/{id}/funnels": "Dönüşüm hunisi tanımlar. Body: { name, steps: [{ eventName, filter? }] }.",
+      "GET /api/projects/{id}/funnels": "Tanımlı dönüşüm hunilerini listeler.",
+      "GET /api/projects/{id}/funnels/{funnelId}": "Dönüşüm hunisi sonuçları. Query: ?from, ?to."
+    },
+    "admin": {
+      "GET /api/admin/stats": "Platform genel istatistikleri: toplam proje, event hacmi, aktif kullanıcı.",
+      "GET /api/admin/projects": "Tüm projeler (yönetim). Query: ?search, ?userId, ?status.",
+      "PUT /api/admin/projects/{id}/suspend": "Projeyi askıya alır (veri toplama durur).",
+      "PUT /api/admin/projects/{id}/unsuspend": "Proje askısını kaldırır.",
+      "GET /api/admin/audit-logs": "Denetim günlüğü."
+    }
+  }
+}

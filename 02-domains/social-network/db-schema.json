@@ -1,0 +1,324 @@
+{
+  "_meta": { "description": "Enterprise Social Network Schema (Users, Posts, Connections, Messages, Groups, Notifications)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "username": "String (Unique, @handle)",
+        "displayName": "String",
+        "bio": "Text",
+        "avatarUrl": "String",
+        "coverUrl": "String",
+        "pronouns": "String",
+        "location": "String",
+        "website": "String",
+        "accountType": "Enum (personal, creator, business)",
+        "isVerified": "Boolean",
+        "isPrivate": "Boolean",
+        "followerCount": "Int (Denormalized)",
+        "followingCount": "Int (Denormalized)",
+        "postCount": "Int (Denormalized)",
+        "settings": "JSON (Privacy, notification prefs, content prefs)",
+        "lastActiveAt": "DateTime",
+        "isActive": "Boolean",
+        "deactivatedAt": "DateTime",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["username", "email"]
+    },
+    "UserFollow": {
+      "fields": {
+        "id": "UUID",
+        "followerId": "UUID (FK User, who follows)",
+        "followingId": "UUID (FK User, being followed)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["followerId", "followingId (unique composite)"]
+    },
+    "FriendRequest": {
+      "fields": {
+        "id": "UUID",
+        "senderId": "UUID (FK User)",
+        "receiverId": "UUID (FK User)",
+        "status": "Enum (pending, accepted, rejected)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      }
+    },
+    "Post": {
+      "fields": {
+        "id": "UUID",
+        "authorId": "UUID (FK User)",
+        "content": "Text",
+        "contentType": "Enum (text, photo, video, link, poll, check_in, live)",
+        "mediaUrls": "JSON Array (Photo/video URLs)",
+        "linkPreview": "JSON (OG metadata for links)",
+        "pollId": "UUID (FK Poll, nullable)",
+        "location": "JSON (Place name, coordinates)",
+        "visibility": "Enum (public, followers, close_friends, private)",
+        "isScheduled": "Boolean",
+        "scheduledAt": "DateTime (Nullable)",
+        "likeCount": "Int (Denormalized)",
+        "commentCount": "Int (Denormalized)",
+        "shareCount": "Int (Denormalized)",
+        "saveCount": "Int (Denormalized)",
+        "hashtags": "String Array",
+        "mentions": "UUID Array (User IDs mentioned)",
+        "isEdited": "Boolean",
+        "isSensitive": "Boolean",
+        "isPinned": "Boolean",
+        "status": "Enum (published, deleted, reported)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["authorId", "createdAt", "visibility"]
+    },
+    "PostReaction": {
+      "fields": {
+        "id": "UUID",
+        "postId": "UUID (FK Post)",
+        "userId": "UUID (FK User)",
+        "type": "Enum (like, love, laugh, surprised, sad, angry)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["postId", "userId (unique composite)"]
+    },
+    "Comment": {
+      "fields": {
+        "id": "UUID",
+        "postId": "UUID (FK Post)",
+        "authorId": "UUID (FK User)",
+        "parentCommentId": "UUID (Self-referencing FK, nullable)",
+        "content": "Text",
+        "mediaUrl": "String (Optional image/gif)",
+        "likeCount": "Int",
+        "isEdited": "Boolean",
+        "status": "Enum (published, deleted, reported)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      }
+    },
+    "CommentLike": {
+      "fields": {
+        "id": "UUID",
+        "commentId": "UUID (FK Comment)",
+        "userId": "UUID (FK User)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Share": {
+      "fields": {
+        "id": "UUID",
+        "postId": "UUID (FK Post)",
+        "userId": "UUID (FK User)",
+        "quoteText": "Text (Optional, for quote shares)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Save": {
+      "fields": {
+        "id": "UUID",
+        "postId": "UUID (FK Post)",
+        "userId": "UUID (FK User)",
+        "collection": "String (Default: 'Saved', or custom collection name)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Story": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "mediaUrl": "String",
+        "mediaType": "Enum (image, video)",
+        "caption": "String",
+        "backgroundColor": "String (For text-only stories)",
+        "textColor": "String",
+        "fontType": "String",
+        "mentions": "UUID Array",
+        "links": "JSON Array ({ url, displayText })",
+        "viewCount": "Int",
+        "expiresAt": "DateTime (createdAt + 24h)",
+        "isHighlight": "Boolean",
+        "highlightName": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "expiresAt"]
+    },
+    "StoryView": {
+      "fields": {
+        "id": "UUID",
+        "storyId": "UUID (FK Story)",
+        "userId": "UUID (FK User)",
+        "viewedAt": "DateTime"
+      }
+    },
+    "Poll": {
+      "fields": {
+        "id": "UUID",
+        "postId": "UUID (FK Post, Unique)",
+        "question": "String",
+        "expiresAt": "DateTime (Nullable)"
+      },
+      "relations": {
+        "options": "One-to-Many with PollOption"
+      }
+    },
+    "PollOption": {
+      "fields": {
+        "id": "UUID",
+        "pollId": "UUID (FK Poll)",
+        "text": "String",
+        "voteCount": "Int"
+      }
+    },
+    "PollVote": {
+      "fields": {
+        "id": "UUID",
+        "pollOptionId": "UUID (FK PollOption)",
+        "userId": "UUID (FK User)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Chat": {
+      "fields": {
+        "id": "UUID",
+        "type": "Enum (direct, group)",
+        "name": "String (For group chats)",
+        "avatarUrl": "String (For group chats)",
+        "description": "String (For group chats)",
+        "lastMessageAt": "DateTime",
+        "isBroadcast": "Boolean",
+        "createdAt": "DateTime"
+      },
+      "relations": {
+        "participants": "One-to-Many with ChatParticipant",
+        "messages": "One-to-Many with Message"
+      }
+    },
+    "ChatParticipant": {
+      "fields": {
+        "id": "UUID",
+        "chatId": "UUID (FK Chat)",
+        "userId": "UUID (FK User)",
+        "role": "Enum (creator, admin, member)",
+        "lastReadAt": "DateTime",
+        "joinedAt": "DateTime"
+      }
+    },
+    "Message": {
+      "fields": {
+        "id": "UUID",
+        "chatId": "UUID (FK Chat)",
+        "senderId": "UUID (FK User)",
+        "type": "Enum (text, image, video, voice, gif, sticker, file)",
+        "content": "Text",
+        "mediaUrl": "String (Nullable)",
+        "replyToId": "UUID (Self-referencing FK, nullable)",
+        "status": "Enum (sending, sent, delivered, read, failed)",
+        "isEdited": "Boolean",
+        "isDeleted": "Boolean (Soft delete)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["chatId", "createdAt"]
+    },
+    "MessageReaction": {
+      "fields": {
+        "id": "UUID",
+        "messageId": "UUID (FK Message)",
+        "userId": "UUID (FK User)",
+        "emoji": "String",
+        "createdAt": "DateTime"
+      }
+    },
+    "Group": {
+      "fields": {
+        "id": "UUID",
+        "creatorId": "UUID (FK User)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text",
+        "avatarUrl": "String",
+        "coverUrl": "String",
+        "type": "Enum (public, private, secret)",
+        "memberCount": "Int",
+        "postCount": "Int",
+        "rules": "Text (Group rules pinned post)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      },
+      "relations": {
+        "members": "One-to-Many with GroupMember"
+      }
+    },
+    "GroupMember": {
+      "fields": {
+        "id": "UUID",
+        "groupId": "UUID (FK Group)",
+        "userId": "UUID (FK User)",
+        "role": "Enum (creator, admin, moderator, member)",
+        "status": "Enum (active, pending, banned)",
+        "joinedAt": "DateTime"
+      }
+    },
+    "Hashtag": {
+      "fields": {
+        "id": "UUID",
+        "tag": "String (Unique, lowercase)",
+        "postCount": "Int (Denormalized)",
+        "isTrending": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "type": "Enum (like, comment, mention, follow, friend_request, message, group_invite, story_reply, tagged, live_start)",
+        "actorId": "UUID (FK User, who triggered the notification)",
+        "targetType": "Enum (post, comment, story, user, group, message)",
+        "targetId": "UUID",
+        "content": "String (Preview text)",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "isRead", "createdAt"]
+    },
+    "Report": {
+      "fields": {
+        "id": "UUID",
+        "reporterId": "UUID (FK User)",
+        "targetType": "Enum (user, post, comment, message, group, story)",
+        "targetId": "UUID",
+        "reason": "Enum (spam, harassment, hate_speech, violence, nudity, misinformation, impersonation, other)",
+        "description": "Text",
+        "status": "Enum (pending, reviewed, resolved, dismissed)",
+        "resolvedBy": "UUID (FK User, admin)",
+        "createdAt": "DateTime",
+        "resolvedAt": "DateTime"
+      }
+    },
+    "Block": {
+      "fields": {
+        "id": "UUID",
+        "blockerId": "UUID (FK User)",
+        "blockedId": "UUID (FK User)",
+        "createdAt": "DateTime"
+      }
+    },
+    "ModerationAction": {
+      "fields": {
+        "id": "UUID",
+        "moderatorId": "UUID (FK User, admin)",
+        "action": "Enum (content_removed, account_suspended, account_banned, warning_issued)",
+        "targetType": "Enum (user, post, comment, group)",
+        "targetId": "UUID",
+        "reason": "Text",
+        "duration": "Int (Days, for temporary actions)",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

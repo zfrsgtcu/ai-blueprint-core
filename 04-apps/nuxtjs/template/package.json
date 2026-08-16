@@ -1,0 +1,23 @@
+{
+  "name": "{{project-name}}",
+  "version": "1.0.0",
+  "private": true,
+  "description": "{{Description}}",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "nuxt": "^3.12.0",
+    "vue": "^3.5.0",
+    "@pinia/nuxt": "^2.1.7"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.12.0",
+    "typescript": "^5.5.0",
+    "@types/node": "^20.0.0"
+  }
+}

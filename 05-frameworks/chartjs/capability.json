@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "description": "Chart.js Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. Canvas tabanlı, responsive, erişilebilir grafik kütüphanesi.",
+    "resource_type": "ui-lib",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "chartjs",
+  "category": "ui-lib",
+  "display_name": "Chart.js",
+  "description": "HTML5 Canvas tabanlı, responsive, animasyonlu grafik kütüphanesi. 8 grafik tipi: bar, line, pie, doughnut, radar, polarArea, bubble, scatter. Eklentilerle genişletilebilir. Tree-shakeable, TypeScript desteği, erişilebilirlik için canvas fallback.",
+
+  "installation_context": {
+    "react": {
+      "npm": ["chart.js react-chartjs-2"],
+      "usage": "import { Bar, Line, Pie } from 'react-chartjs-2'; — Chart.js bileşenleri register edilir",
+      "entry_point": "components/charts/{{ChartName}}.tsx"
+    },
+    "vue": {
+      "npm": ["chart.js vue-chartjs"],
+      "usage": "import { Bar, Line, Pie } from 'vue-chartjs';",
+      "entry_point": "components/charts/{{ChartName}}.vue"
+    },
+    "html": {
+      "cdn": "<script src=\"https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js\"></script>",
+      "canvas": "<canvas id=\"myChart\" aria-label=\"...\" role=\"img\"></canvas>"
+    }
+  },
+
+  "config_template": "integration_template/chartjs-setup.template",
+  "usage_pattern": "Grafik bileşenleri `chartData` ve `chartOptions` ile yapılandırılır. Canvas element'ine `aria-label` ve `role=\"img\"` eklenir. Renk paleti {{CHART_COLORS}} değişkeninden okunur. Responsive container içinde canvas otomatik boyutlanır.",
+
+  "verification_steps": [
+    "Chart.js + react-chartjs-2 (veya vue-chartjs) kurulu mu?",
+    "Chart.js bileşenleri (BarController, ArcElement vs.) register edilmiş mi?",
+    "Canvas'a aria-label ve role=\"img\" eklenmiş mi?",
+    "Erişilebilirlik: Görme engelliler için veri tablosu fallback var mı?",
+    "Renk paleti proje tasarım token'larıyla uyumlu mu?",
+    "Responsive container width/height doğru mu?",
+    "prefers-reduced-motion kontrolü var mı? (animation: false)"
+  ]
+}

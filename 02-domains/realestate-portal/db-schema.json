@@ -1,0 +1,200 @@
+{
+  "_meta": { "description": "Enterprise Real Estate Schema (Properties, Agents, Agencies, Viewings, Inquiries)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "role": "Enum (buyer, agent, agency_admin, admin)",
+        "isVerified": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "AgentProfile": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User, Unique)",
+        "agencyId": "UUID (FK Agency)",
+        "fullName": "String",
+        "photoUrl": "String",
+        "licenseNumber": "String",
+        "languages": "String Array",
+        "specialization": "String Array",
+        "experience": "Int (Years)",
+        "bio": "Text",
+        "phone": "String",
+        "recentSales": "Int",
+        "averageRating": "Decimal",
+        "isVerified": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Agency": {
+      "fields": {
+        "id": "UUID",
+        "ownerId": "UUID (FK User)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "logoUrl": "String",
+        "coverUrl": "String",
+        "description": "Text",
+        "website": "String",
+        "phone": "String",
+        "email": "String",
+        "officeLocations": "JSON Array",
+        "totalListings": "Int",
+        "isVerified": "Boolean",
+        "subscriptionTier": "Enum (free, pro, enterprise)",
+        "subscriptionExpiresAt": "DateTime",
+        "createdAt": "DateTime"
+      }
+    },
+    "Property": {
+      "fields": {
+        "id": "UUID",
+        "agentId": "UUID (FK AgentProfile)",
+        "agencyId": "UUID (FK Agency)",
+        "title": "String",
+        "description": "Text",
+        "propertyType": "Enum (apartment, house, villa, studio, penthouse, office, retail, warehouse, land, building)",
+        "purpose": "Enum (sale, rent_long_term, rent_short_term, lease)",
+        "status": "Enum (active, under_offer, sold, rented, off_market, pending)",
+        "price": "Decimal",
+        "currency": "String (USD, EUR, TRY, etc.)",
+        "pricePerSqm": "Decimal",
+        "area": "Decimal (sqm)",
+        "landArea": "Decimal (sqm, for land/house)",
+        "bedrooms": "Int",
+        "bathrooms": "Int",
+        "floorNumber": "Int",
+        "totalFloors": "Int",
+        "yearBuilt": "Int",
+        "condition": "Enum (new, renovated, good, needs_work)",
+        "furnishing": "Enum (furnished, semi_furnished, unfurnished)",
+        "parking": "Int (Car spaces)",
+        "amenities": "String Array",
+        "features": "JSON (Additional details)",
+        "address": "String",
+        "city": "String",
+        "district": "String",
+        "neighborhood": "String",
+        "latitude": "Decimal",
+        "longitude": "Decimal",
+        "isFeatured": "Boolean",
+        "featuredExpiresAt": "DateTime",
+        "viewCount": "Int",
+        "inquiryCount": "Int",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "media": "One-to-Many with PropertyMedia",
+        "priceHistory": "One-to-Many with PriceHistory"
+      },
+      "indexes": ["status", "propertyType", "purpose", "price", "city", "latitude", "longitude"]
+    },
+    "PropertyMedia": {
+      "fields": {
+        "id": "UUID",
+        "propertyId": "UUID (FK Property)",
+        "type": "Enum (photo, floor_plan, virtual_tour, video, drone)",
+        "url": "String",
+        "thumbnailUrl": "String",
+        "caption": "String",
+        "isCover": "Boolean",
+        "orderIndex": "Int"
+      }
+    },
+    "PriceHistory": {
+      "fields": {
+        "id": "UUID",
+        "propertyId": "UUID (FK Property)",
+        "price": "Decimal",
+        "changedAt": "DateTime",
+        "note": "String (Optional reason)"
+      }
+    },
+    "Inquiry": {
+      "fields": {
+        "id": "UUID",
+        "propertyId": "UUID (FK Property)",
+        "userId": "UUID (FK User)",
+        "message": "Text",
+        "name": "String",
+        "email": "String",
+        "phone": "String",
+        "status": "Enum (new, contacted, qualified, converted, lost)",
+        "source": "Enum (inquiry_form, viewing_request, message)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Viewing": {
+      "fields": {
+        "id": "UUID",
+        "propertyId": "UUID (FK Property)",
+        "userId": "UUID (FK User)",
+        "agentId": "UUID (FK AgentProfile)",
+        "requestedDates": "JSON Array (Preferred date/time slots)",
+        "confirmedDate": "DateTime",
+        "type": "Enum (in_person, virtual_tour, open_house)",
+        "status": "Enum (requested, confirmed, completed, cancelled, rescheduled)",
+        "notes": "Text",
+        "createdAt": "DateTime"
+      }
+    },
+    "Favorite": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "propertyId": "UUID (FK Property)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Shortlist": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "name": "String",
+        "description": "String",
+        "isShared": "Boolean",
+        "shareToken": "String (Unique, for sharing)",
+        "properties": "UUID Array (Property IDs)",
+        "createdAt": "DateTime"
+      }
+    },
+    "SavedSearch": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "filters": "JSON (Search criteria)",
+        "frequency": "Enum (daily, weekly, instant)",
+        "isActive": "Boolean",
+        "lastNotifiedAt": "DateTime",
+        "createdAt": "DateTime"
+      }
+    },
+    "Message": {
+      "fields": {
+        "id": "UUID",
+        "senderId": "UUID (FK User)",
+        "receiverId": "UUID (FK User)",
+        "propertyId": "UUID (FK Property, nullable)",
+        "content": "Text",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "type": "Enum (new_listing, price_drop, viewing_confirmed, inquiry_received, message, saved_search_alert)",
+        "message": "String",
+        "link": "String",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

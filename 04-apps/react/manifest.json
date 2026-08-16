@@ -1,0 +1,160 @@
+{
+  "_meta": {
+    "description": "React 18 + Vite (TypeScript) SPA stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. React 18, Zustand state, React Router 6, TailwindCSS, Vite build tool.",
+    "stack": "react",
+    "display_name": "React + Vite",
+    "type": "spa_frontend",
+    "language": "TypeScript (React 18)",
+    "version": "^18.3.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "React 18 + Vite + TypeScript",
+    "description": "React 18 ile Vite tabanlı, Zustand state management, React Router 6 ile client-side routing, TailwindCSS ile modern UI. Functional components + hooks, lazy loading, Suspense. Axios HTTP client, tip güvenli TypeScript. Hızlı HMR ve tree-shaking ile optimize build.",
+    "use_cases": [
+      "SPA dashboard",
+      "Admin panel",
+      "SaaS uygulaması",
+      "E-Ticaret frontend",
+      "CRM / ERP arayüzü",
+      "Multi-tenant platform frontend"
+    ],
+    "paired_backend": "netwebapi",
+    "not_suitable_for": [
+      "SEO odaklı içerik siteleri (Next.js daha uygun)",
+      "Statik landing page (Astro daha uygun)",
+      "Çok sayfalı statik siteler"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceApp" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "ecommerce-app" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Modern e-ticaret uygulaması" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "api": [
+      { "key": "{{API_BASE_URL}}", "description": "Backend API base URL", "example": "https://api.example.com" },
+      { "key": "{{VITE_API_BASE_URL}}", "description": "Vite env: API base URL", "example": "http://localhost:5000" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "app.example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "React + Vite projesinin zorunlu dizin yapısı",
+    "directories": {
+      "src/main.tsx": "Uygulama giriş noktası — ReactDOM.createRoot, providers",
+      "src/App.tsx": "Root component — RouterProvider + layout",
+      "src/router/": "React Router route tanımları (createBrowserRouter)",
+      "src/pages/": "Sayfa bileşenleri (route başına bir page)",
+      "src/components/": "Yeniden kullanılabilir UI bileşenleri",
+      "src/stores/": "Zustand store tanımları",
+      "src/services/": "API client ve servis fonksiyonları",
+      "src/types/": "TypeScript tip tanımları",
+      "public/": "Statik asset'ler"
+    },
+    "files": {
+      "vite.config.ts": "Vite konfigürasyonu — plugins, resolve alias",
+      "package.json": "Bağımlılıklar ve script'ler",
+      "tsconfig.json": "TypeScript konfigürasyonu",
+      "index.html": "Vite entry HTML — <div id='root'>",
+      "tailwind.config.js": "TailwindCSS konfigürasyonu",
+      "postcss.config.js": "PostCSS konfigürasyonu",
+      "src/main.tsx": "ReactDOM.createRoot + StrictMode",
+      "src/App.tsx": "<RouterProvider router={router} />"
+    }
+  },
+
+  "entry_point": "src/main.tsx",
+  "config_file": "vite.config.ts",
+
+  "dependencies": {
+    "core": [
+      { "package": "react", "version": "^18.3.0" },
+      { "package": "react-dom", "version": "^18.3.0" },
+      { "package": "react-router-dom", "version": "^6.24.0" },
+      { "package": "zustand", "version": "^4.5.2" }
+    ],
+    "http": [
+      { "package": "axios", "version": "^1.7.0" }
+    ],
+    "styling": [
+      { "package": "tailwindcss", "version": "^3.4.3" }
+    ],
+    "dev": [
+      { "package": "vite", "version": "^5.4.0" },
+      { "package": "@vitejs/plugin-react", "version": "^4.3.0" },
+      { "package": "typescript", "version": "^5.5.0" },
+      { "package": "@types/react", "version": "^18.3.0" },
+      { "package": "@types/react-dom", "version": "^18.3.0" },
+      { "package": "autoprefixer", "version": "^10.4.0" },
+      { "package": "postcss", "version": "^8.4.0" }
+    ],
+    "optional": [
+      { "package": "@tanstack/react-query", "version": "^5.40.0", "use_case": "Server state yönetimi" },
+      { "package": "react-hook-form", "version": "^7.52.0", "use_case": "Form validasyon" },
+      { "package": "sonner", "version": "^1.5.0", "use_case": "Toast bildirimleri" },
+      { "package": "lucide-react", "version": "^0.400.0", "use_case": "İkon seti" },
+      { "package": "framer-motion", "version": "^11.2.0", "use_case": "Animasyon" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "functional_components": {
+      "description": "Tüm component'ler functional + hooks — class component kullanılmaz",
+      "rule": "Her component arrow function veya named function, state için useState/useReducer"
+    },
+    "zustand_stores": {
+      "description": "Zustand ile modüler state management — her domain entity'si için ayrı store",
+      "rule": "Store'lar create() ile tanımlanmalı, actions ve state aynı objede"
+    },
+    "route_lazy_loading": {
+      "description": "React.lazy() + Suspense ile code splitting — her sayfa lazy yüklenir",
+      "rule": "Her page component lazy() ile sarılmalı, Suspense fallback tanımlanmalı"
+    },
+    "custom_hooks": {
+      "description": "Tekrar kullanılan mantık custom hook'lara çıkarılmalı",
+      "rule": "use prefix'i ile adlandır, her hook tek sorumluluk"
+    }
+  },
+
+  "deployment": {
+    "primary": "Vercel (SPA)",
+    "alternatives": ["Azure Static Web Apps", "Netlify"],
+    "build_command": "vite build",
+    "output_directory": "dist/",
+    "vercel_config": {
+      "framework": "vite",
+      "buildCommand": "vite build",
+      "outputDirectory": "dist",
+      "routes": [{ "src": "/[^.]+", "dest": "/index.html" }]
+    }
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Dizin yapısını olduğu gibi kopyala",
+      "vite.config.ts ve tailwind.config.js temel konfigürasyonu koru",
+      "src/main.tsx giriş noktası yapısını koru (createRoot → StrictMode → RouterProvider)",
+      "tsconfig.json strict mode ayarlarını koru"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Tüm optional dependencies'i ekleme — sadece projenin ihtiyacı olanları ekle",
+      "API_BASE_URL'yi varsayılan değerde bırakma"
+    ],
+    "customize_for_domain": [
+      "src/router/ → domain entity'lerine göre route tanımları ekle",
+      "src/pages/ → her entity için list ve detail page oluştur",
+      "src/stores/ → her entity için Zustand store oluştur",
+      "src/types/ → domain entity tiplerini tanımla",
+      "src/components/ → reusable UI bileşenlerini oluştur"
+    ]
+  }
+}

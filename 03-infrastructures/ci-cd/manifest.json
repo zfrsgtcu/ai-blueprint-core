@@ -1,0 +1,115 @@
+{
+  "_meta": {
+    "description": "CI/CD pipeline tanımları. AI ajanları build, test, deploy pipeline'larını bu manifest'teki kurallara göre üretir. GitHub Actions ve GitLab CI için şablonlar içerir.",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "primary_platform": "github-actions",
+  "alternative_platform": "gitlab-ci",
+
+  "deployment_targets": {
+    "vercel": {
+      "label": "Vercel (Frontend Static/SSR)",
+      "applies_to": ["astrojs", "nuxtjs", "nextjs", "react", "vue", "svelte"],
+      "deploy_type": "static_or_ssr",
+      "auto_deploy_preview": true
+    },
+    "azure_app_service": {
+      "label": "Azure App Service (.NET Backend)",
+      "applies_to": ["netwebapi", "netblazor"],
+      "deploy_type": "container_or_code",
+      "region_default": "westeurope"
+    },
+    "azure_container_apps": {
+      "label": "Azure Container Apps (Containerized)",
+      "applies_to": ["netwebapi", "nodejs"],
+      "deploy_type": "container",
+      "region_default": "westeurope"
+    },
+    "docker_registry": {
+      "label": "Docker Registry (ACR / Docker Hub)",
+      "applies_to": "all_containerized",
+      "registries": ["azure_container_registry", "docker_hub", "github_container_registry"]
+    }
+  },
+
+  "environments": {
+    "development": {
+      "trigger": "push to any branch except main/master",
+      "auto_deploy": true,
+      "requires_approval": false,
+      "tests_required": ["lint", "unit"]
+    },
+    "staging": {
+      "trigger": "push/merge to develop branch",
+      "auto_deploy": true,
+      "requires_approval": false,
+      "tests_required": ["lint", "unit", "integration"]
+    },
+    "production": {
+      "trigger": "push/merge to main/master branch",
+      "auto_deploy": false,
+      "requires_approval": true,
+      "tests_required": ["lint", "unit", "integration", "e2e"],
+      "branch_protection": true
+    }
+  },
+
+  "pipeline_stages": {
+    "ci": {
+      "order": 1,
+      "label": "Continuous Integration",
+      "steps": [
+        { "name": "checkout", "description": "Kaynak kodu checkout et" },
+        { "name": "setup", "description": "Dil/çatı (Node.js, .NET) kurulumu" },
+        { "name": "cache", "description": "Bağımlılık cache (npm, NuGet)" },
+        { "name": "install", "description": "Bağımlılıkları yükle" },
+        { "name": "lint", "description": "Lint kontrolü (ESLint, Prettier)" },
+        { "name": "build", "description": "Projeyi derle" },
+        { "name": "test-unit", "description": "Birim testleri çalıştır" },
+        { "name": "test-integration", "description": "Entegrasyon testleri (staging+)" },
+        { "name": "test-e2e", "description": "E2E testleri (production)" }
+      ]
+    },
+    "cd": {
+      "order": 2,
+      "label": "Continuous Deployment",
+      "steps": [
+        { "name": "docker-build", "description": "Docker imajı oluştur", "condition": "containerized_deploy" },
+        { "name": "docker-push", "description": "Docker imajını registry'e push et", "condition": "containerized_deploy" },
+        { "name": "deploy", "description": "Hedef platforma deploy et" },
+        { "name": "healthcheck", "description": "Deployment sonrası sağlık kontrolü" },
+        { "name": "notify", "description": "Başarılı/başarısız bildirimi" }
+      ]
+    }
+  },
+
+  "github_actions_specific": {
+    "workflow_directory": ".github/workflows/",
+    "ubuntu_runner": "ubuntu-latest",
+    "windows_runner": "windows-latest",
+    "macos_runner": "macos-latest",
+    "concurrency_rule": "cancel-in-progress: true (aynı branch için)",
+    "cache_keys": {
+      "npm": "node-modules-${{ hashFiles('**/package-lock.json') }}",
+      "nuget": "nuget-${{ hashFiles('**/*.csproj') }}",
+      "docker": "docker-${{ github.sha }}"
+    }
+  },
+
+  "gitlab_ci_specific": {
+    "config_file": ".gitlab-ci.yml",
+    "default_image": "node:20-alpine",
+    "cache_strategy": "pull-push",
+    "stages": ["build", "test", "deploy"]
+  },
+
+  "semantic_versioning": {
+    "enabled": true,
+    "pattern": "v{major}.{minor}.{patch}",
+    "auto_increment": "patch on merge to main",
+    "version_file": "version.json"
+  }
+}

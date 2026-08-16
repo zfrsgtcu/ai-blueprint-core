@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "description": "Contracts for Crowdfunding. Includes Admin CRUD, Search, and Analytics.",
+    "global_rules": {
+      "transactional": "Pledging MUST be transactional.",
+      "error_format": "{ status: number, code: string, message: string, details?: any }"
+    }
+  },
+  "endpoints": [
+    { "route": "GET /api/campaigns", "purpose": "Lists campaigns. Query: status, category, q." },
+    { "route": "GET /api/campaigns/{id}", "purpose": "Details, metrics, and tiers." },
+    { "route": "POST /api/campaigns", "purpose": "Protected: Create draft." },
+    { "route": "PUT /api/campaigns/{id}", "purpose": "Protected: Update content/status." },
+    { "route": "GET /api/campaigns/{id}/updates", "purpose": "Lists updates." },
+    { "route": "POST /api/campaigns/{id}/updates", "purpose": "Protected: Post update." },
+    { "route": "POST /api/pledge", "purpose": "Atomic pledge operation." },
+    { "route": "GET /api/pledges/me", "purpose": "User pledge history." },
+    { "route": "DELETE /api/pledges/{id}", "purpose": "Cancel/Refund pledge." },
+    { "route": "GET /api/comments", "purpose": "Threaded comments for campaign." },
+    { "route": "POST /api/favorites", "purpose": "Toggle favorite." },
+    { "route": "GET /api/admin/metrics", "purpose": "Protected: Total revenue, success rate, backer counts." },
+    { "route": "GET /api/admin/payouts", "purpose": "Protected: List payouts." },
+    { "route": "POST /api/import", "purpose": "Admin CSV import." }
+  ]
+}

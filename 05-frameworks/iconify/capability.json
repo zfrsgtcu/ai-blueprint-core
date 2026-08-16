@@ -1,0 +1,40 @@
+{
+  "_meta": {
+    "description": "Iconify Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. Framework-agnostic ikon kütüphanesi, 200.000+ ikon.",
+    "resource_type": "ui-lib",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "iconify",
+  "category": "ui-lib",
+  "display_name": "Iconify",
+  "description": "200.000+ ikonu tek bir syntax ile sunan framework-agnostic ikon kütüphanesi. Material Design Icons, FontAwesome, HeroIcons, Lucide, Phosphor ve 150+ ikon seti. SVG tabanlı, tree-shakeable, isteğe bağlı API'den yükleme.",
+
+  "installation_context": {
+    "react": {
+      "npm": ["@iconify/react"],
+      "usage": "import { Icon } from '@iconify/react'; — <Icon icon=\"mdi:home\" />",
+      "entry_point": "Herhangi bir component"
+    },
+    "vue": {
+      "npm": ["@iconify/vue"],
+      "usage": "import { Icon } from '@iconify/vue'; — <Icon icon=\"mdi:home\" />",
+      "entry_point": "Herhangi bir component"
+    },
+    "html": {
+      "cdn": "<script src=\"https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js\"></script>",
+      "web_component": "<iconify-icon icon=\"mdi:home\"></iconify-icon>",
+      "note": "Web component olarak çalışır, herhangi bir framework gerektirmez"
+    }
+  },
+
+  "config_template": "integration_template/iconify-setup.template",
+  "usage_pattern": "İkonlar `<Icon icon=\"prefix:name\" />` syntax ile kullanılır. Prefix ikon setini belirtir (mdi, lucide, heroicons, ph vb.). Boyut, renk, döndürme inline attribute olarak verilir. Server-side rendering için icon set'leri build-time bundle'a eklenebilir.",
+
+  "verification_steps": [
+    "Hangi ikon set(ler)i kullanılacak? (mdi, lucide, phosphor?) — proje genelinde tutarlılık",
+    "İkonlar aria-hidden=\"true\" ile sadece dekoratif olarak işaretlenmiş mi?",
+    "Erişilebilirlik: Dekoratif olmayan ikonlara aria-label var mı?",
+    "Server-side rendering için ikonlar optimize edildi mi? (hydration mismatch)"
+  ]
+}

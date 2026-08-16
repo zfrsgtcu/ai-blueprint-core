@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Multi-Vendor Marketplace",
+    "error_format": "{ status, code, message, details }",
+    "rate_limiting": "Public: 1000/min | Auth: 100/min | Seller: 200/min | Admin: 50/min"
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/products": "List products (filter: category, price, rating, seller)",
+      "GET /api/v1/products/{slug}": "Get product details",
+      "GET /api/v1/products/{id}/reviews": "List product reviews",
+      "GET /api/v1/stores/{slug}": "View seller store page",
+      "GET /api/v1/categories": "List categories tree",
+      "GET /api/v1/categories/{slug}/products": "Products in category",
+      "GET /api/v1/search": "Full-text search across products",
+      "GET /api/v1/products/compare": "Compare products (query: ids=1,2,3)"
+    },
+    "buyer": {
+      "POST /api/v1/cart": "Add/Update cart item",
+      "GET /api/v1/cart": "Get current cart",
+      "DELETE /api/v1/cart/{itemId}": "Remove from cart",
+      "POST /api/v1/checkout": "Create order from cart",
+      "GET /api/v1/orders": "List my orders",
+      "GET /api/v1/orders/{id}": "Get order details",
+      "POST /api/v1/orders/{id}/cancel": "Request cancellation",
+      "POST /api/v1/orders/{id}/return": "Request return/refund",
+      "POST /api/v1/wishlists": "Create wishlist",
+      "GET /api/v1/wishlists": "List wishlists",
+      "PUT /api/v1/wishlists/{id}": "Update wishlist",
+      "DELETE /api/v1/wishlists/{id}": "Delete wishlist",
+      "POST /api/v1/products/{id}/reviews": "Submit product review",
+      "POST /api/v1/products/{id}/questions": "Ask a question",
+      "POST /api/v1/stores/{id}/follow": "Follow/Unfollow seller"
+    },
+    "seller": {
+      "POST /api/v1/seller/products": "Create product listing",
+      "PUT /api/v1/seller/products/{id}": "Update product",
+      "DELETE /api/v1/seller/products/{id}": "Delete product",
+      "GET /api/v1/seller/products": "List my products",
+      "GET /api/v1/seller/orders": "List incoming orders",
+      "PUT /api/v1/seller/orders/{id}/status": "Update order status (ship, deliver)",
+      "GET /api/v1/seller/analytics": "Seller dashboard metrics",
+      "GET /api/v1/seller/payouts": "Payout history",
+      "PUT /api/v1/seller/profile": "Update store profile",
+      "POST /api/v1/seller/products/bulk": "Bulk import products"
+    },
+    "admin": {
+      "GET /api/v1/admin/sellers": "List seller applications",
+      "PUT /api/v1/admin/sellers/{id}/approve": "Approve/Reject seller",
+      "POST /api/v1/admin/categories": "Manage categories",
+      "PUT /api/v1/admin/categories/{id}": "Update category",
+      "DELETE /api/v1/admin/categories/{id}": "Delete category",
+      "GET /api/v1/admin/orders": "All orders",
+      "GET /api/v1/admin/disputes": "Dispute resolution queue",
+      "PUT /api/v1/admin/disputes/{id}": "Resolve dispute",
+      "POST /api/v1/admin/coupons": "Create platform coupon",
+      "GET /api/v1/admin/analytics": "Platform analytics dashboard",
+      "GET /api/v1/admin/payouts": "Manage seller payouts"
+    }
+  }
+}

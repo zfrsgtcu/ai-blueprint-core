@@ -1,0 +1,475 @@
+{
+  "_meta": {
+    "description": "Kurumsal E-ticaret veritabanı şeması. Ürün, varyant, kategori, sepet, sipariş, ödeme, iade, kupon, kargo ve müşteri modellerini içerir. Tüm finansal değerler Decimal(19,4) hassasiyetindedir.",
+    "decimal_policy": "Tüm fiyat/tutar alanları Decimal(19,4) kullanır. Float YASAKTIR.",
+    "snapshot_policy": "Sipariş kalemleri oluşturulduğunda ürün adı, SKU, fiyat ve vergi oranı snapshot olarak kopyalanır."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "firstName": "String",
+        "lastName": "String",
+        "phone": "String (Nullable)",
+        "avatar": "String (Nullable)",
+        "birthDate": "Date (Nullable)",
+        "role": "Enum (customer, admin)",
+        "emailVerified": "Boolean (Default: false)",
+        "isActive": "Boolean (Default: true)",
+        "notificationPreferences": "JSONB (Default: { email: true, order_updates: true, promotions: false })",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime",
+        "deletedAt": "DateTime (Nullable, soft delete)"
+      },
+      "indexes": ["email", "role", "isActive"],
+      "note": "Customer rolü alışveriş yapar. Admin rolü ürün/sipariş yönetimi ve dashboard erişimi."
+    },
+    "Address": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "label": "String (örn: 'Ev', 'İş', 'Fatura')",
+        "firstName": "String (Teslimat adı)",
+        "lastName": "String (Teslimat soyadı)",
+        "line1": "String (Adres satırı 1)",
+        "line2": "String (Nullable, adres satırı 2)",
+        "city": "String",
+        "state": "String (Nullable, eyalet/ilçe)",
+        "zipCode": "String",
+        "countryCode": "String (ISO 3166-1 alpha-2)",
+        "phone": "String (Nullable)",
+        "isDefault": "Boolean (Default: false)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(userId, isDefault)", "countryCode", "isActive"],
+      "note": "Adresler silinmez, isActive=false yapılır. Yeni varsayılan atandığında diğerlerinin isDefault'u false olur."
+    },
+    "Brand": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "logo": "String (Nullable, URL)",
+        "website": "String (Nullable)",
+        "description": "Text (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "isActive"],
+      "note": "Marka filtresi ve marka sayfası (SEO) desteği için ayrı model."
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "parentId": "UUID (Nullable, Foreign Key → Category.id, Self-relation)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text (Nullable)",
+        "image": "String (Nullable, URL)",
+        "materializedPath": "String (Index, örn: '/1/5/12/', ağaç navigasyonu için)",
+        "depth": "Int (Default: 0, kök = 0, max 4)",
+        "orderIndex": "Int (Default: 0)",
+        "metaTitle": "String (Nullable, SEO)",
+        "metaDescription": "String (Nullable, SEO)",
+        "isActive": "Boolean (Default: true)",
+        "productCount": "Int (Default: 0, denormalize, alt kategoriler dahil)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "parentId", "materializedPath", "isActive", "orderIndex"],
+      "note": "Rekürsif ağaç yapısı. materializedPath: performanslı tüm alt kategori sorguları için. depth maksimum 4 seviye."
+    },
+    "Product": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "categoryId": "UUID (Foreign Key → Category.id, Index)",
+        "brandId": "UUID (Nullable, Foreign Key → Brand.id, Index)",
+        "name": "String",
+        "slug": "String (Unique, Index)",
+        "description": "Text (Markdown/HTML)",
+        "shortDescription": "String (Nullable, kart görünümü için 160 karakter)",
+        "listPrice": "Decimal(19, 4) (Liste/etiket fiyatı)",
+        "price": "Decimal(19, 4) (Güncel satış fiyatı, Index)",
+        "taxClass": "String (Default: 'default', vergi sınıfı)",
+        "isTaxable": "Boolean (Default: true)",
+        "isDigital": "Boolean (Default: false)",
+        "digitalFileUrl": "String (Nullable, dijital ürün için)",
+        "downloadLimit": "Int (Nullable, default: 5, dijital ürün için maksimum indirme)",
+        "downloadExpiryDays": "Int (Nullable, default: 30, dijital ürün erişim süresi)",
+        "sku": "String (Temel SKU, varyant yoksa kullanılır)",
+        "weight": "Decimal(10, 3) (Nullable, kg)",
+        "dimensions": "JSONB (Nullable, { length, width, height } cm)",
+        "avgRating": "Decimal(3, 2) (Default: 0, denormalize)",
+        "reviewCount": "Int (Default: 0, denormalize)",
+        "tags": "JSONB (Nullable, string array, arama için)",
+        "metaTitle": "String (Nullable, SEO)",
+        "metaDescription": "String (Nullable, SEO)",
+        "ogImage": "String (Nullable, OpenGraph)",
+        "isFeatured": "Boolean (Default: false)",
+        "isReturnable": "Boolean (Default: true)",
+        "status": "Enum (draft, published, archived, discontinued)",
+        "publishedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime",
+        "deletedAt": "DateTime (Nullable)"
+      },
+      "indexes": ["slug", "categoryId", "brandId", "price", "status", "isFeatured", "isDigital", "avgRating DESC"],
+      "note": "listPrice vs price: indirim algısı. price <= listPrice. Dijital ürünlerde weight/dimensions null. archived: stokta yok, discontinued: artık satılmıyor."
+    },
+    "ProductImage": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "productId": "UUID (Foreign Key → Product.id, ON DELETE CASCADE, Index)",
+        "url": "String",
+        "altText": "String (Accessibility için zorunlu)",
+        "orderIndex": "Int (Default: 0)",
+        "isPrimary": "Boolean (Default: false, ürün kartında gösterilecek ana görsel)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(productId, orderIndex)", "(productId, isPrimary)"],
+      "note": "Ürün başına max 10 görsel. isPrimary: ürün başına tek bir görsel primary olabilir."
+    },
+    "ProductAttribute": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "productId": "UUID (Foreign Key → Product.id, ON DELETE CASCADE, Index)",
+        "name": "String (örn: 'Renk', 'Malzeme', 'Garanti Süresi')",
+        "value": "String (örn: 'Kırmızı', 'Pamuk', '2 Yıl')",
+        "orderIndex": "Int (Default: 0)",
+        "isFilterable": "Boolean (Default: false, faceted search için)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(productId, name)", "(name, value)"],
+      "note": "Ürün özniteliklerini esnek şekilde saklar. isFilterable: true olanlar katalog filtrelemesinde kullanılır."
+    },
+    "AttributeDefinition": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (Unique, örn: 'Renk', 'Beden', 'Malzeme')",
+        "allowedValues": "JSONB (Nullable, string array, örn: ['S', 'M', 'L', 'XL'])",
+        "isFilterable": "Boolean (Default: false)",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["name UNIQUE", "isFilterable", "sortOrder"],
+      "note": "Admin tarafından tanımlanan standart öznitelik listesi. allowedValues: null ise serbest metin girişi."
+    },
+    "ProductVariant": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "productId": "UUID (Foreign Key → Product.id, ON DELETE CASCADE, Index)",
+        "sku": "String (Unique, Index)",
+        "price": "Decimal(19, 4) (Varyant bazında fiyat, null ise Product.price kullanılır)",
+        "listPrice": "Decimal(19, 4) (Nullable)",
+        "stock": "Int (Default: 0)",
+        "reservedStock": "Int (Default: 0, checkout sırasında rezerve edilen)",
+        "lowStockThreshold": "Int (Default: 10)",
+        "attributes": "JSONB ({ attributeName: value, ... }, örn: { 'Renk': 'Kırmızı', 'Beden': 'XL' })",
+        "weight": "Decimal(10, 3) (Nullable, varyant bazında ağırlık farkı varsa)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["productId", "sku", "(productId, isActive)", "stock", "lowStockThreshold"],
+      "note": "CRITICAL: Checkout sırasında SELECT ... FOR UPDATE ile stok satırı kilitlenir. Overselling engellenir. attributes JSONB ile esnek varyant nitelikleri."
+    },
+    "Cart": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id, Index, login sonrası doldurulur)",
+        "sessionId": "String (Nullable, Index, misafir kullanıcı için)",
+        "couponCode": "String (Nullable, uygulanan kupon kodu)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId UNIQUE (WHERE userId IS NOT NULL)", "sessionId"],
+      "note": "Kullanıcı başına bir sepet. Guest sepet sessionId ile tutulur. Login sonrası guest sepet kullanıcı sepetine merge edilir."
+    },
+    "CartItem": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "cartId": "UUID (Foreign Key → Cart.id, ON DELETE CASCADE, Index)",
+        "variantId": "UUID (Foreign Key → ProductVariant.id, Index)",
+        "quantity": "Int (Min: 1, Max: stok limiti)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(cartId, variantId) UNIQUE"],
+      "note": "quantity değiştiğinde canlı fiyat kontrolü yapılır. Stok yetersizse quantity stok limitle sınırlanır."
+    },
+    "Coupon": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "code": "String (Unique, Index, büyük harfe normalize)",
+        "discountType": "Enum (percentage, fixed, free_shipping)",
+        "discountValue": "Decimal(19, 4) (percentage: 15 = %15, fixed: 50 = 50 TL)",
+        "minSpend": "Decimal(19, 4) (Nullable, minimum sepet tutarı)",
+        "validFrom": "DateTime",
+        "validTo": "DateTime (Index)",
+        "maxUses": "Int (Nullable, NULL = sınırsız)",
+        "maxUsesPerUser": "Int (Default: 1)",
+        "usageCount": "Int (Default: 0, denormalize)",
+        "applicableProductIds": "JSONB (Nullable, UUID array)",
+        "applicableCategoryIds": "JSONB (Nullable, UUID array)",
+        "applicableBrandIds": "JSONB (Nullable, UUID array)",
+        "isCombinable": "Boolean (Default: false, diğer kuponlarla birleştirilebilir mi)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["code", "validTo", "isActive", "(code, isActive)"],
+      "note": "Kupon doğrulama: validFrom <= NOW <= validTo, usageCount < maxUses, minSpend kontrolü. Uygulama kapsamı: applicableProductIds/CategoryIds/BrandIds."
+    },
+    "CouponUsage": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "couponId": "UUID (Foreign Key → Coupon.id, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "orderId": "UUID (Foreign Key → Order.id)",
+        "discountAmount": "Decimal(19, 4) (Uygulanan indirim tutarı)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(couponId, userId)", "orderId"],
+      "note": "maxUsesPerUser kontrolü için kullanıcı başına kupon kullanım takibi."
+    },
+    "Payment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "provider": "Enum (stripe, iyzico, paypal)",
+        "providerTransactionId": "String (Nullable, Unique, ödeme sağlayıcı transaction ID)",
+        "amount": "Decimal(19, 4)",
+        "currency": "String (Default: 'TRY')",
+        "status": "Enum (pending, processing, succeeded, failed, refunded, partially_refunded)",
+        "paymentMethod": "String (Nullable, card, bank_transfer, wallet)",
+        "last4": "String (Nullable, kartın son 4 hanesi)",
+        "metadata": "JSONB (Nullable, sağlayıcıya özel ek bilgi)",
+        "errorMessage": "Text (Nullable, başarısız ödeme açıklaması)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "providerTransactionId", "status", "createdAt DESC"],
+      "note": "Kart bilgileri ASLA burada saklanmaz. last4 sadece gösterim amaçlı. providerTransactionId: sağlayıcıdan dönen ID."
+    },
+    "Order": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "orderNumber": "String (Unique, Index, format: ORD-YYYYMMDD-XXXXX)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "paymentId": "UUID (Foreign Key → Payment.id, Index)",
+        "couponId": "UUID (Nullable, Foreign Key → Coupon.id)",
+        "subtotal": "Decimal(19, 4) (İndirim öncesi ürün toplamı)",
+        "discountAmount": "Decimal(19, 4) (Default: 0)",
+        "taxAmount": "Decimal(19, 4)",
+        "shippingAmount": "Decimal(19, 4)",
+        "totalAmount": "Decimal(19, 4) (Ödenen toplam tutar)",
+        "currency": "String (Default: 'TRY')",
+        "shippingAddressSnapshot": "JSONB (Sipariş anındaki teslimat adresi)",
+        "billingAddressSnapshot": "JSONB (Nullable, sipariş anındaki fatura adresi)",
+        "shippingMethod": "String (Nullable, standard, express, pickup)",
+        "carrier": "String (Nullable, kargo firması)",
+        "trackingNumber": "String (Nullable)",
+        "trackingUrl": "String (Nullable)",
+        "notes": "Text (Nullable, müşteri notu)",
+        "adminNotes": "Text (Nullable, admin notu)",
+        "status": "Enum (pending_payment, confirmed, processing, shipped, delivered, cancelled, return_requested, partially_returned, returned, refunded)",
+        "ipAddress": "String (Order oluşturulurken client IP)",
+        "customerEmail": "String (Denormalize, kolay sorgu için)",
+        "cancelledAt": "DateTime (Nullable)",
+        "deliveredAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["orderNumber", "userId", "paymentId", "status", "couponId", "createdAt DESC", "(userId, status)", "customerEmail"],
+      "note": "CRITICAL: Sipariş oluşturulduktan sonra totalAmount ve snapshot'lar değiştirilemez. Status workflow: pending_payment → confirmed → processing → shipped → delivered. İptal/İade ayrı akış."
+    },
+    "OrderItem": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "orderId": "UUID (Foreign Key → Order.id, ON DELETE CASCADE, Index)",
+        "variantId": "UUID (Foreign Key → ProductVariant.id)",
+        "productId": "UUID (Foreign Key → Product.id, nullable, denormalize)",
+        "quantity": "Int",
+        "unitPriceSnapshot": "Decimal(19, 4) (Satın alma anındaki birim fiyat)",
+        "listPriceSnapshot": "Decimal(19, 4) (Nullable, satın alma anındaki liste fiyatı)",
+        "taxRateSnapshot": "Decimal(19, 4) (Satın alma anındaki vergi oranı %)",
+        "skuSnapshot": "String (Satın alma anındaki SKU)",
+        "productNameSnapshot": "String (Satın alma anındaki ürün adı)",
+        "variantAttributesSnapshot": "JSONB (Satın alma anındaki varyant nitelikleri)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["orderId", "variantId", "productId"],
+      "note": "CRITICAL: Tüm snapshot'lar değişmez (immutable). Ürün fiyatı/adı değişse bile sipariş geçmişi doğru kalır."
+    },
+    "ReturnRequest": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "orderId": "UUID (Foreign Key → Order.id, Index)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "returnMethod": "Enum (shipping, in_store)",
+        "status": "Enum (pending, approved, rejected, shipped_by_customer, received, inspected, refunded)",
+        "refundAmount": "Decimal(19, 4) (Nullable, hesaplanan iade tutarı)",
+        "shippingLabelUrl": "String (Nullable, iade kargo etiketi)",
+        "reasonSummary": "String (Müşteri tarafından belirtilen genel iade nedeni)",
+        "notes": "Text (Nullable, müşteri notu)",
+        "adminNotes": "Text (Nullable)",
+        "approvedAt": "DateTime (Nullable)",
+        "receivedAt": "DateTime (Nullable)",
+        "refundedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["orderId", "userId", "status", "createdAt DESC"],
+      "note": "İade onaylandıktan sonra müşteri ürünü kargolar (shipping yöntemi). received sonrası inspected → refunded."
+    },
+    "ReturnItem": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "returnRequestId": "UUID (Foreign Key → ReturnRequest.id, ON DELETE CASCADE, Index)",
+        "orderItemId": "UUID (Foreign Key → OrderItem.id)",
+        "variantId": "UUID (Foreign Key → ProductVariant.id)",
+        "quantity": "Int",
+        "reason": "String (İade nedeni: defective, not_as_described, wrong_size, changed_mind, other)",
+        "unitRefundAmount": "Decimal(19, 4) (İade edilen birim fiyat)",
+        "isRestockable": "Boolean (Default: true, stoğa geri eklenebilir mi)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["returnRequestId", "orderItemId", "variantId"],
+      "note": "Kısmi iade: siparişin sadece belirli kalemleri iade edilebilir. isRestockable = false: kullanılmış/hasarlı ürünler stoğa eklenmez."
+    },
+    "StockLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "variantId": "UUID (Foreign Key → ProductVariant.id, Index)",
+        "quantityChange": "Int (Pozitif: giriş, Negatif: çıkış)",
+        "reason": "Enum (sale, restock, return, adjustment, cancellation)",
+        "referenceType": "String (Nullable, 'order', 'return', 'manual_adjustment')",
+        "referenceId": "UUID (Nullable, ilgili Order/ReturnRequest ID)",
+        "adminId": "UUID (Nullable, Foreign Key → User.id, manuel ayarlama yapan admin)",
+        "notes": "Text (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["variantId", "reason", "createdAt DESC", "(referenceType, referenceId)"],
+      "note": "CRITICAL: Her stok değişikliği burada loglanır. Tam denetim izi (audit trail). quantityChange: pozitif = giriş, negatif = çıkış."
+    },
+    "ShippingZone": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (örn: 'Türkiye', 'Avrupa Birliği', 'Kuzey Amerika')",
+        "countries": "JSONB (ISO 3166-1 alpha-2 string array)",
+        "states": "JSONB (Nullable, eyalet/il kodu array)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["isActive"],
+      "note": "Kargo bölgesi coğrafi bölge tanımı. Kullanıcının teslimat adresi hangi bölgeye giriyorsa o bölgenin ücretleri uygulanır."
+    },
+    "ShippingMethod": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (örn: 'Standart Kargo', 'Ekspres Kargo', 'Mağazadan Teslim')",
+        "type": "Enum (standard, express, same_day, pickup)",
+        "estimatedDaysMin": "Int (Nullable)",
+        "estimatedDaysMax": "Int (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["type", "isActive"],
+      "note": "Kargo yöntemleri platform genelinde tanımlanır. Ücretlendirme ShippingRate ile bölge bazında yapılır."
+    },
+    "ShippingRate": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "shippingMethodId": "UUID (Foreign Key → ShippingMethod.id, ON DELETE CASCADE, Index)",
+        "shippingZoneId": "UUID (Foreign Key → ShippingZone.id, Index)",
+        "price": "Decimal(19, 4) (Sabit ücret, tiers boşsa kullanılır)",
+        "freeThreshold": "Decimal(19, 4) (Nullable, bu tutar üzerindeki siparişlerde ücretsiz kargo)",
+        "tiers": "JSONB (Nullable, [{ maxWeight: Decimal, price: Decimal }, ...] kg bazında kademeli fiyat)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(shippingMethodId, shippingZoneId) UNIQUE", "shippingZoneId", "isActive"],
+      "note": "shippingMethod + shippingZone kesişiminde ücret tanımı. tiers: ağırlığa göre kademeli, boşsa sabit price kullanılır."
+    },
+    "TaxRate": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "country": "String (ISO 3166-1 alpha-2)",
+        "state": "String (Nullable, eyalet/il kodu)",
+        "rate": "Decimal(10, 4) (örn: 20.00 = %20 KDV)",
+        "taxClass": "String (Default: 'default')",
+        "description": "String (Nullable, 'TR Standart KDV')",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(country, state, taxClass)", "isActive"],
+      "note": "Vergi oranı: ülke + eyalet + taxClass bazında. TR: %20 standart. US: eyalet bazında (%0-%10)."
+    },
+    "Review": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "productId": "UUID (Foreign Key → Product.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "orderItemId": "UUID (Nullable, Foreign Key → OrderItem.id, doğrulanmış satın alma)",
+        "rating": "Int (1-5, CHECK 1-5)",
+        "title": "String (Nullable, yorum başlığı)",
+        "comment": "Text",
+        "images": "JSONB (Nullable, max 5 URL)",
+        "helpfulCount": "Int (Default: 0, denormalize)",
+        "isApproved": "Boolean (Default: false, admin onayı)",
+        "isVerifiedPurchase": "Boolean (Default: false, orderItemId varsa true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(productId, userId) UNIQUE", "productId", "isApproved", "(productId, rating DESC)"],
+      "note": "CRITICAL: Sadece delivered siparişi olan kullanıcılar yorum yapabilir. (productId, userId) UNIQUE. Onaylanmamış yorumlar ürün sayfasında görünmez."
+    },
+    "Wishlist": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "productId": "UUID (Foreign Key → Product.id, ON DELETE CASCADE)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, productId) UNIQUE", "userId"],
+      "note": "Kullanıcı başına ürün başına bir kez istek listesine eklenebilir."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (order_confirmed, order_shipped, order_delivered, order_cancelled, return_status_changed, price_drop, wishlist_reminder)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'order', 'product', 'return')",
+        "entityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "createdAt"],
+      "note": "Otomatik tetikleyiciler: sipariş durumu değişikliği, fiyat düşüşü, istek listesi hatırlatması."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "adminId": "UUID (Nullable, Foreign Key → User.id)",
+        "action": "String (örn: 'product.update', 'order.status_change', 'stock.adjustment', 'coupon.create')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "changes": "JSONB (Nullable, { fieldName: { old, new } })",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(entityType, entityId)", "adminId", "action", "createdAt DESC"],
+      "note": "Admin işlemlerinin denetim günlüğü. changes: alan bazında eski/yeni değer delta'sı."
+    }
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "_meta": {
+    "description": "Networking katmanı manifesti — reverse proxy, SSL/TLS, trafik yönlendirme ve güvenlik tanımları. AI ajanları Nginx, Traefik veya Caddy konfigürasyonlarını bu manifest'teki kurallara göre üretir.",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "reverse_proxy_options": {
+    "nginx": {
+      "label": "Nginx (Önerilen — En yaygın kullanım)",
+      "image": "nginx:1.27-alpine",
+      "config_file": "nginx.conf",
+      "config_path": "./nginx/",
+      "best_for": "Yüksek performans, statik dosya sunumu, geniş topluluk desteği",
+      "features": ["reverse_proxy", "load_balancing", "caching", "rate_limiting", "gzip", "http2"]
+    },
+    "traefik": {
+      "label": "Traefik (Container-native)",
+      "image": "traefik:v3.1",
+      "config_file": "traefik.yml",
+      "config_path": "./traefik/",
+      "best_for": "Docker-native servis keşfi, otomatik SSL, dashboard",
+      "features": ["auto_discovery", "auto_ssl", "dashboard", "middleware_chain", "docker_labels"]
+    },
+    "caddy": {
+      "label": "Caddy (Basitlik odaklı)",
+      "image": "caddy:2.8-alpine",
+      "config_file": "Caddyfile",
+      "config_path": "./caddy/",
+      "best_for": "Küçük projeler, otomatik HTTPS, basit konfigürasyon",
+      "features": ["auto_https", "simple_config", "markdown_rendering", "http3"]
+    }
+  },
+
+  "ssl_tls": {
+    "provider": {
+      "recommended": "letsencrypt",
+      "alternatives": ["zerossl", "cloudflare_origin", "custom_ca"]
+    },
+    "minimum_tls_version": "1.2",
+    "recommended_tls_version": "1.3",
+    "hsts": {
+      "max_age": 63072000,
+      "include_subdomains": true,
+      "preload": false
+    },
+    "cert_renewal": {
+      "check_interval_days": 7,
+      "renew_threshold_days": 30
+    }
+  },
+
+  "security_headers": {
+    "required": [
+      {
+        "header": "X-Frame-Options",
+        "value": "DENY",
+        "description": "Clickjacking koruması"
+      },
+      {
+        "header": "X-Content-Type-Options",
+        "value": "nosniff",
+        "description": "MIME sniffing engelleme"
+      },
+      {
+        "header": "X-XSS-Protection",
+        "value": "1; mode=block",
+        "description": "XSS filtresi (eski tarayıcılar için)"
+      },
+      {
+        "header": "Referrer-Policy",
+        "value": "strict-origin-when-cross-origin",
+        "description": "Referrer bilgisi kontrolü"
+      }
+    ],
+    "recommended": [
+      {
+        "header": "Content-Security-Policy",
+        "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'",
+        "description": "CSP — XSS ve data injection koruması (projeye göre özelleştirilmeli)"
+      },
+      {
+        "header": "Permissions-Policy",
+        "value": "camera=(), microphone=(), geolocation=(), payment=()",
+        "description": "Tarayıcı API'lerini kısıtlama"
+      }
+    ]
+  },
+
+  "rate_limiting": {
+    "default_zone": {
+      "name": "ratelimit",
+      "rate": "10r/s",
+      "burst": 20,
+      "nodelay": true
+    },
+    "api_zone": {
+      "name": "api_limit",
+      "rate": "30r/s",
+      "burst": 50,
+      "nodelay": true
+    },
+    "static_zone": {
+      "name": "static_limit",
+      "rate": "100r/s",
+      "burst": 200,
+      "nodelay": true
+    }
+  },
+
+  "routing_rules": {
+    "frontend": {
+      "domain": "{DOMAIN}",
+      "subdomains": ["www.{DOMAIN}"],
+      "port": "{FRONTEND_PORT}",
+      "ssl": true,
+      "www_redirect": true
+    },
+    "api": {
+      "domain": "api.{DOMAIN}",
+      "port": "{BACKEND_PORT}",
+      "ssl": true,
+      "cors": {
+        "allowed_origins": ["https://{DOMAIN}"],
+        "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "allowed_headers": ["Authorization", "Content-Type", "X-Requested-With"],
+        "max_age": 86400
+      }
+    },
+    "monitoring": {
+      "domain": "monitoring.{DOMAIN}",
+      "port": 3000,
+      "ssl": true,
+      "auth_basic": true,
+      "ip_whitelist": ["VPN/Office IP"],
+      "note": "Monitoring dashboard'ları kesinlikle public olmamalı"
+    }
+  },
+
+  "gzip_compression": {
+    "enabled": true,
+    "types": [
+      "text/plain",
+      "text/css",
+      "text/javascript",
+      "application/javascript",
+      "application/json",
+      "application/xml",
+      "image/svg+xml",
+      "font/ttf",
+      "font/woff",
+      "font/woff2"
+    ],
+    "min_length": 1000,
+    "comp_level": 5
+  },
+
+  "proxy_buffers": {
+    "client_max_body_size": "10m",
+    "proxy_buffer_size": "4k",
+    "proxy_buffers": "8 16k",
+    "proxy_busy_buffers_size": "32k",
+    "proxy_read_timeout": "60s",
+    "proxy_connect_timeout": "5s",
+    "proxy_send_timeout": "60s"
+  }
+}

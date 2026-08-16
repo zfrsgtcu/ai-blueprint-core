@@ -1,0 +1,181 @@
+{
+  "_meta": {
+    "description": "SvelteKit + Vite (TypeScript) SPA/SSR stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Svelte 5 runes ($state, $derived, $effect), SvelteKit file-based routing, Svelte stores, TailwindCSS, Vite build tool.",
+    "stack": "svelte",
+    "display_name": "SvelteKit",
+    "type": "spa_frontend",
+    "language": "TypeScript (Svelte 5 + SvelteKit)",
+    "version": "^2.0.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "SvelteKit 2 + Svelte 5 + TypeScript",
+    "description": "SvelteKit ile file-based routing, Svelte 5 runes ($state, $derived, $effect) ile reactive state, Svelte stores (writable/derived) ile shared state management, TailwindCSS ile modern UI. SPA modunda client-side navigation, SSR modunda server-side rendering desteği. Vite tabanlı ultra hızlı HMR, tree-shaking ve minimal bundle boyutu. Axios HTTP client, tip güvenli TypeScript.",
+    "use_cases": [
+      "SPA dashboard",
+      "Admin panel",
+      "SaaS uygulaması",
+      "Hızlı prototip geliştirme",
+      "Form ağırlıklı iş uygulaması",
+      "Performans kritik web uygulaması",
+      "SSR gerektiren içerik sitesi"
+    ],
+    "paired_backend": "netwebapi",
+    "not_suitable_for": [
+      "Mevcut React/Vue ekosistemiyle entegrasyon (React wrapper yok)",
+      "Native mobile uygulama (React Native / Flutter daha uygun)",
+      "NPM paket yayınlama (pure Svelte component kütüphanesi)"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceApp" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "ecommerce-app" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Modern e-ticaret uygulaması" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "api": [
+      { "key": "{{API_BASE_URL}}", "description": "Backend API base URL", "example": "https://api.example.com" },
+      { "key": "{{VITE_API_BASE_URL}}", "description": "Vite env: API base URL", "example": "http://localhost:5000" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "app.example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "SvelteKit projesinin zorunlu dizin yapısı",
+    "directories": {
+      "src/routes/": "SvelteKit file-based routing — her route bir +page.svelte dosyası",
+      "src/routes/(app)/": "Layout grubu: authenticated sayfalar",
+      "src/lib/components/": "Yeniden kullanılabilir UI bileşenleri",
+      "src/lib/stores/": "Svelte store tanımları (writable, derived)",
+      "src/lib/services/": "API client ve servis fonksiyonları",
+      "src/lib/types/": "TypeScript tip tanımları",
+      "src/lib/server/": "Server-only kod (sadece SSR modunda)",
+      "static/": "Statik asset'ler (favicon, robots.txt)"
+    },
+    "files": {
+      "svelte.config.js": "SvelteKit konfigürasyonu — adapter, alias",
+      "vite.config.ts": "Vite konfigürasyonu — plugins, resolve alias",
+      "package.json": "Bağımlılıklar ve script'ler",
+      "tsconfig.json": "TypeScript konfigürasyonu",
+      "tailwind.config.js": "TailwindCSS konfigürasyonu (v3) veya app.css import (v4)",
+      "src/app.html": "HTML shell — %sveltekit.head% ve %sveltekit.body%",
+      "src/app.css": "Global CSS — Tailwind directives",
+      "src/routes/+layout.svelte": "Root layout — slot + header/sidebar/footer",
+      "src/routes/+page.svelte": "Home page (index route)",
+      "src/lib/services/api.ts": "Axios instance + interceptors",
+      "src/hooks.client.ts": "Client-side hooks (auth, error handling)"
+    }
+  },
+
+  "entry_point": "src/routes/+page.svelte",
+  "config_file": "svelte.config.js",
+
+  "dependencies": {
+    "core": [
+      { "package": "svelte", "version": "^5.0.0" },
+      { "package": "@sveltejs/kit", "version": "^2.0.0" },
+      { "package": "@sveltejs/adapter-static", "version": "^3.0.0" }
+    ],
+    "http": [
+      { "package": "axios", "version": "^1.7.0" }
+    ],
+    "styling": [
+      { "package": "tailwindcss", "version": "^3.4.3" }
+    ],
+    "dev": [
+      { "package": "vite", "version": "^5.4.0" },
+      { "package": "@sveltejs/vite-plugin-svelte", "version": "^4.0.0" },
+      { "package": "typescript", "version": "^5.5.0" },
+      { "package": "svelte-check", "version": "^4.0.0" },
+      { "package": "autoprefixer", "version": "^10.4.0" },
+      { "package": "postcss", "version": "^8.4.0" }
+    ],
+    "optional": [
+      { "package": "@tanstack/svelte-query", "version": "^5.40.0", "use_case": "Server state yönetimi" },
+      { "package": "formsnap", "version": "^1.0.0", "use_case": "Form validasyon" },
+      { "package": "svelte-sonner", "version": "^0.3.0", "use_case": "Toast bildirimleri" },
+      { "package": "lucide-svelte", "version": "^0.400.0", "use_case": "İkon seti" },
+      { "package": "@sveltejs/adapter-vercel", "version": "^5.0.0", "use_case": "Vercel SSR deployment" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "svelte_5_runes": {
+      "description": "Svelte 5 runes ($state, $derived, $effect) ile component-level reactive state",
+      "rule": "Her component .svelte dosyasında <script> + <style> + markup. Runes sadece .svelte.js/.svelte.ts dosyalarında kullanılabilir. $state reactive değişken, $derived computed, $effect side-effect."
+    },
+    "file_based_routing": {
+      "description": "SvelteKit file-based routing — +page.svelte sayfa, +layout.svelte layout, +page.server.ts server data, +page.ts client data",
+      "rule": "Route tanımı için src/routes/ altında klasör ve +page.svelte oluştur, manuel route tanımı yok"
+    },
+    "svelte_stores": {
+      "description": "Svelte stores (writable, derived) ile component dışı shared state — her domain entity'si için ayrı store",
+      "rule": "Store'lar src/lib/stores/ altında, component'te $storeName prefix ile auto-subscribe"
+    },
+    "slot_layout": {
+      "description": "SvelteKit +layout.svelte ile ortak layout — slot elementi child route'u render eder",
+      "rule": "+layout.svelte'te <slot /> kullan, layout grupları için (group) klasör adı"
+    }
+  },
+
+  "svelte_5_key_differences": {
+    "from_svelte_4": [
+      "let count = $state(0) — reactive değişken (eski: let count = 0)",
+      "let doubled = $derived(count * 2) — computed (eski: $: doubled = count * 2)",
+      "$effect(() => { ... }) — side-effect (eski: $: { ... })",
+      "{#snippet name()}...{/snippet} — reusable block (eski slot'ların yerine)",
+      "onclick — event handler (eski: on:click)",
+      "$props() — props destructuring (eski: export let)",
+      "$host() — host element'e advance erişim"
+    ],
+    "migration_note": "Svelte 5 runes opsiyonel — eski syntax hâlâ çalışır. AI her zaman runes syntax'i kullanmalı."
+  },
+
+  "deployment": {
+    "primary": "Vercel (SPA)",
+    "alternatives": ["Azure Static Web Apps", "Netlify", "Cloudflare Pages"],
+    "build_command": "vite build",
+    "output_directory": "build/",
+    "spa_mode": {
+      "adapter": "@sveltejs/adapter-static",
+      "fallback": "index.html",
+      "config": "export const ssr = false; export const prerender = false;"
+    },
+    "vercel_config": {
+      "framework": "sveltekit",
+      "buildCommand": "vite build",
+      "outputDirectory": "build",
+      "installCommand": "npm install"
+    }
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Dizin yapısını olduğu gibi kopyala",
+      "svelte.config.js ve vite.config.ts temel konfigürasyonu koru",
+      "src/app.html shell yapısını koru (%sveltekit.head% ve %sveltekit.body%)",
+      "src/routes/+layout.svelte layout component yapısını koru",
+      "tsconfig.json strict mode ayarlarını koru"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Tüm optional dependencies'i ekleme — sadece projenin ihtiyacı olanları ekle",
+      "API_BASE_URL'yi varsayılan değerde bırakma",
+      "SSR adapter'ı SPA projesine ekleme — @sveltejs/adapter-static kullan"
+    ],
+    "customize_for_domain": [
+      "src/routes/ → domain entity'lerine göre route klasörleri ve +page.svelte ekle",
+      "src/routes/+layout.svelte → navigasyon linklerini domain'e göre güncelle",
+      "src/lib/stores/ → her entity için Svelte store (writable/derived) oluştur",
+      "src/lib/types/ → domain entity tiplerini tanımla",
+      "src/lib/components/ → reusable UI bileşenlerini oluştur"
+    ]
+  }
+}

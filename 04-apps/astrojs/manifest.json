@@ -1,0 +1,131 @@
+{
+  "_meta": {
+    "description": "Astro.js 4.x stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Astro.js: Hızlı, SEO odaklı, içerik ağırlıklı statik ve hibrit siteler için framework.",
+    "stack": "astrojs",
+    "display_name": "Astro.js",
+    "type": "static_ssr_frontend",
+    "language": "JavaScript/TypeScript",
+    "version": "^4.5.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "Astro.js",
+    "description": "Islands architecture ile hızlı, SEO odaklı, içerik ağırlıklı web siteleri. Mümkün olduğunca statik (static) veya SSR hibrit rendering kullanır. Varsayılan olarak sıfır JavaScript gönderir, sadece interaktif bileşenlere hydration uygular.",
+    "use_cases": [
+      "Kurumsal web sitesi",
+      "Landing page",
+      "Portfolyo / Kişisel site",
+      "Blog",
+      "Dokümantasyon sitesi",
+      "Haber / Dergi sitesi"
+    ],
+    "not_suitable_for": [
+      "Ağır interaktif dashboard'lar",
+      "Real-time uygulamalar",
+      "State-heavy SPA'lar"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "CorporateSite" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "corporate-site" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Kurumsal web sitesi" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "Astro.js projesinin zorunlu dizin yapısı",
+    "directories": {
+      "src/pages/": "Sayfa component'leri (.astro) — file-based routing",
+      "src/layouts/": "Layout component'leri (_layout.astro vb.)",
+      "src/components/": "UI component'leri (PascalCase.astro)",
+      "src/content/": "Content Collections (markdown/MDX içerik)",
+      "public/": "Statik asset'ler (resimler, fontlar, favicon)"
+    },
+    "files": {
+      "astro.config.mjs": "Astro konfigürasyonu — output mode, integrations, site URL",
+      "tailwind.config.js": "TailwindCSS konfigürasyonu",
+      "tsconfig.json": "TypeScript konfigürasyonu",
+      "package.json": "Bağımlılıklar ve script'ler",
+      "src/pages/index.astro": "Ana sayfa (giriş noktası)",
+      "src/layouts/BaseLayout.astro": "Temel layout (header, footer, meta, slot)"
+    }
+  },
+
+  "entry_point": "src/pages/index.astro",
+  "config_file": "astro.config.mjs",
+
+  "dependencies": {
+    "core": [
+      { "package": "astro", "version": "^4.5.0" }
+    ],
+    "styling": [
+      { "package": "tailwindcss", "version": "^3.4.3" },
+      { "package": "@astrojs/tailwind", "version": "^5.1.0" }
+    ],
+    "optional_ui": [
+      { "package": "gsap", "version": "^3.12.5", "use_case": "Animasyon" },
+      { "package": "swiper", "version": "^11.1.0", "use_case": "Slider/karusel" },
+      { "package": "@fancyapps/ui", "version": "^5.0.3", "use_case": "Lightbox/modal" },
+      { "package": "@iconify/react", "version": "^5.0.0", "use_case": "İkon seti" }
+    ],
+    "optional_seo": [
+      { "package": "@astrojs/sitemap", "version": "^3.1.5", "use_case": "Otomatik sitemap" }
+    ]
+  },
+
+  "deployment": {
+    "primary": "Vercel",
+    "config_adapters": ["@astrojs/vercel (serverless)", "@astrojs/vercel (static)"],
+    "build_command": "astro build",
+    "output_directory": "dist/",
+    "build_mode": {
+      "static": { "output": "static", "command": "astro build", "note": "Tamamen statik HTML/JS/CSS" },
+      "server": { "output": "server", "command": "astro build", "note": "SSR hibrit — Node.js adapter gerekir" },
+      "hybrid": { "output": "hybrid", "command": "astro build", "note": "Varsayılan static, belirli sayfalar SSR" }
+    }
+  },
+
+  "architecture_patterns": {
+    "islands_architecture": {
+      "description": "Sadece interaktif olan bölgelere client-side hydration uygula",
+      "directives": ["client:load", "client:visible", "client:idle", "client:media", "client:only"],
+      "rule": "Statik olabilen her şey statik kalsın — sadece gerçekten interaktif olması gerekenler hydrate edilsin"
+    },
+    "content_collections": {
+      "description": "Markdown/MDX içerik için tip güvenli Content Collections API",
+      "config_file": "src/content/config.ts",
+      "rule": "Tüm içerik tipleri için Zod schema tanımla"
+    },
+    "view_transitions": {
+      "description": "Sayfa geçiş animasyonları için View Transitions API",
+      "config": "viewTransitions: true (astro.config.mjs)"
+    }
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Dizin yapısını olduğu gibi kopyala",
+      "package.json'daki core dependencies'i kopyala",
+      "tailwind.config.js ve tsconfig.json'ı kopyala (projeye göre özelleştir)"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Template'teki örnek sayfaları aynen kopyalama — domain logic'e göre uyarla",
+      "Tüm optional dependencies'i ekleme — sadece projenin ihtiyacı olanları ekle"
+    ],
+    "customize_for_domain": [
+      "index.astro → domain'in ana sayfasına uygun içerikle doldur",
+      "BaseLayout.astro → domain'e uygun navigasyon ve footer ekle",
+      "Content Collections → domain entity'lerine uygun schema tanımla"
+    ]
+  }
+}

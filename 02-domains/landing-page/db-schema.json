@@ -1,0 +1,147 @@
+{
+  "_meta": { "description": "Enterprise Landing Page Schema (Pages, Sections, Forms, Variants, Conversions)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "role": "Enum (admin, editor, reviewer)",
+        "createdAt": "DateTime"
+      }
+    },
+    "LandingPage": {
+      "fields": {
+        "id": "UUID",
+        "ownerId": "UUID (FK User)",
+        "title": "String",
+        "slug": "String (Unique)",
+        "metaTitle": "String",
+        "metaDescription": "String",
+        "customDomain": "String (Nullable)",
+        "status": "Enum (draft, review, published, archived)",
+        "isPasswordProtected": "Boolean",
+        "password": "String (Hashed, nullable)",
+        "scheduledAt": "DateTime (Nullable)",
+        "publishedAt": "DateTime",
+        "version": "Int",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "sections": "One-to-Many with PageSection",
+        "variants": "One-to-Many with PageVariant"
+      }
+    },
+    "PageSection": {
+      "fields": {
+        "id": "UUID",
+        "pageId": "UUID (FK LandingPage)",
+        "type": "Enum (hero, features, testimonials, pricing, faq, form, media, stats, footer, custom)",
+        "content": "JSON (Section-specific configuration: headlines, images, CTAs, colors)",
+        "orderIndex": "Int",
+        "visibility": "JSON (Desktop, tablet, mobile visibility settings)",
+        "animation": "JSON (Scroll-triggered animation settings, optional)",
+        "createdAt": "DateTime"
+      }
+    },
+    "PageVariant": {
+      "fields": {
+        "id": "UUID",
+        "pageId": "UUID (FK LandingPage)",
+        "name": "String (e.g., Variant A, Variant B)",
+        "trafficPercent": "Int",
+        "sections": "JSON (Overrides for specific sections)",
+        "isActive": "Boolean",
+        "isWinner": "Boolean",
+        "startedAt": "DateTime",
+        "endedAt": "DateTime",
+        "createdAt": "DateTime"
+      }
+    },
+    "FormField": {
+      "fields": {
+        "id": "UUID",
+        "sectionId": "UUID (FK PageSection)",
+        "label": "String",
+        "fieldType": "Enum (text, email, phone, textarea, dropdown, checkbox, file)",
+        "isRequired": "Boolean",
+        "placeholder": "String",
+        "options": "JSON Array (For dropdown/multi-select)",
+        "orderIndex": "Int"
+      }
+    },
+    "Lead": {
+      "fields": {
+        "id": "UUID",
+        "pageId": "UUID (FK LandingPage)",
+        "variantId": "UUID (FK PageVariant, nullable)",
+        "formData": "JSON",
+        "utmSource": "String",
+        "utmMedium": "String",
+        "utmCampaign": "String",
+        "utmTerm": "String",
+        "utmContent": "String",
+        "ipAddress": "String (Anonymized)",
+        "userAgent": "String",
+        "convertedAt": "DateTime"
+      }
+    },
+    "PageView": {
+      "fields": {
+        "id": "UUID",
+        "pageId": "UUID (FK LandingPage)",
+        "variantId": "UUID (FK PageVariant, nullable)",
+        "sessionId": "String",
+        "ipAddress": "String (Anonymized)",
+        "userAgent": "String",
+        "referrer": "String",
+        "utmSource": "String",
+        "utmMedium": "String",
+        "utmCampaign": "String",
+        "duration": "Int (Seconds)",
+        "scrollDepth": "Int (Percentage)",
+        "viewedAt": "DateTime"
+      },
+      "indexes": ["pageId", "viewedAt"]
+    },
+    "ClickEvent": {
+      "fields": {
+        "id": "UUID",
+        "pageViewId": "UUID (FK PageView)",
+        "element": "String (Selector or CTA name)",
+        "label": "String",
+        "timestamp": "DateTime"
+      }
+    },
+    "CustomDomain": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "domain": "String",
+        "sslStatus": "Enum (pending, active, failed)",
+        "dnsVerified": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Integration": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "type": "Enum (mailchimp, convertkit, sendgrid, hubspot, zapier, webhook)",
+        "config": "JSON (Encrypted API keys, endpoint URLs)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "PageBackup": {
+      "fields": {
+        "id": "UUID",
+        "pageId": "UUID (FK LandingPage)",
+        "version": "Int",
+        "snapshot": "JSON (Full page state)",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

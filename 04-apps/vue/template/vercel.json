@@ -1,0 +1,6 @@
+<!-- PURPOSE OF THIS FILE: Vercel deployment konfigürasyonu — SPA fallback rewrite kuralları -->
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

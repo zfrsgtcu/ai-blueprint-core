@@ -1,0 +1,129 @@
+{
+  "_meta": {
+    "description": "Docker konteyner tanımları ve üretim kısıtlamaları. AI ajanları docker-compose.yaml ve Dockerfile üretirken bu manifest'teki kurallara uymak zorundadır.",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "orchestration": {
+    "primary_tool": "docker-compose",
+    "version": "3.8+",
+    "description": "Tüm servisler docker-compose.yaml ile tek komutla ayağa kaldırılabilir olmalıdır."
+  },
+
+  "services": {
+    "frontend": {
+      "label": "Frontend Uygulaması",
+      "description": "Astro.js, Nuxt.js, Next.js veya React uygulaması",
+      "base_images": {
+        "astrojs": "node:20-alpine",
+        "nuxtjs": "node:20-alpine",
+        "nextjs": "node:20-alpine",
+        "react": "node:20-alpine",
+        "vue": "node:20-alpine",
+        "svelte": "node:20-alpine"
+      },
+      "production_server": {
+        "astrojs": "nginx:alpine (static export) veya node:20-alpine (SSR)",
+        "nuxtjs": "node:20-alpine",
+        "nextjs": "node:20-alpine",
+        "react": "nginx:alpine (static export)",
+        "vue": "nginx:alpine (static export)",
+        "svelte": "nginx:alpine (static export)"
+      },
+      "exposed_port": "3000",
+      "healthcheck": {
+        "type": "http",
+        "path": "/",
+        "interval_seconds": 30,
+        "timeout_seconds": 10,
+        "retries": 3
+      },
+      "volumes": [
+        { "type": "named", "path": "node_modules", "note": "Production'da volume kullanma, multi-stage build ile kopyala" }
+      ]
+    },
+    "backend": {
+      "label": "Backend API",
+      "description": ".NET Web API veya Node.js Express API",
+      "base_images": {
+        "netwebapi": "mcr.microsoft.com/dotnet/aspnet:8.0",
+        "nodejs": "node:20-alpine"
+      },
+      "exposed_port": {
+        "netwebapi": "8080",
+        "nodejs": "3001"
+      },
+      "healthcheck": {
+        "type": "http",
+        "path": "/health",
+        "interval_seconds": 30,
+        "timeout_seconds": 10,
+        "retries": 3
+      },
+      "netwebapi_specific": {
+        "sdk_image": "mcr.microsoft.com/dotnet/sdk:8.0",
+        "runtime_image": "mcr.microsoft.com/dotnet/aspnet:8.0",
+        "build_cmd": "dotnet publish -c Release -o /app/publish",
+        "runtime_cmd": "dotnet {ProjectName}.dll",
+        "required_env": ["ASPNETCORE_ENVIRONMENT", "ASPNETCORE_URLS"],
+        "aspnetcore_urls_default": "http://+:8080"
+      }
+    },
+    "database": {
+      "label": "Veritabanı",
+      "images": {
+        "mssql": "mcr.microsoft.com/mssql/server:2022-latest",
+        "postgresql": "postgres:16-alpine",
+        "mysql": "mysql:8.4",
+        "mariadb": "mariadb:11.4",
+        "mongodb": "mongo:7.0",
+        "redis": "redis:7.2-alpine"
+      },
+      "volumes": [
+        { "type": "named", "path": "/var/lib/{db_type}/data", "note": "Veri kalıcılığı için NAMED volume ZORUNLU." }
+      ],
+      "healthcheck": {
+        "mssql": { "type": "cmd", "cmd": "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $${SA_PASSWORD} -Q 'SELECT 1'", "interval_seconds": 30, "timeout_seconds": 15, "retries": 5 },
+        "postgresql": { "type": "cmd", "cmd": "pg_isready -U $${POSTGRES_USER}", "interval_seconds": 15, "timeout_seconds": 10, "retries": 5 },
+        "mysql": { "type": "cmd", "cmd": "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}", "interval_seconds": 15, "timeout_seconds": 10, "retries": 5 },
+        "mariadb": { "type": "cmd", "cmd": "mariadb-admin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}", "interval_seconds": 15, "timeout_seconds": 10, "retries": 5 },
+        "mongodb": { "type": "cmd", "cmd": "mongosh --eval 'db.runCommand(\"ping\").ok' --quiet", "interval_seconds": 15, "timeout_seconds": 10, "retries": 5 },
+        "redis": { "type": "cmd", "cmd": "redis-cli ping", "interval_seconds": 10, "timeout_seconds": 5, "retries": 3 }
+      }
+    }
+  },
+
+  "networks": {
+    "default": {
+      "name": "app_network",
+      "driver": "bridge"
+    },
+    "isolated_db": {
+      "name": "db_network",
+      "driver": "bridge",
+      "note": "Veritabanı sadece backend ile iletişim kurabilmeli, dış dünyaya kapalı olmalı."
+    }
+  },
+
+  "dockerfile_rules": {
+    "multi_stage_build": "ZORUNLU",
+    "min_stages": 2,
+    "stages": [
+      { "name": "build", "description": "Bağımlılıkları yükle, build al" },
+      { "name": "runtime", "description": "Sadece runtime gereklilikleri, build artifact'lerini kopyala" }
+    ],
+    "user": {
+      "production": "non-root user ZORUNLU",
+      "node": "node (official node image built-in user)",
+      "dotnet": "app (oluştur: RUN adduser --disabled-password app)"
+    },
+    "layer_caching": {
+      "package_files_first": true,
+      "note": "package.json / .csproj önce kopyalanıp restore edilmeli. Kaynak kod sonra kopyalanmalı."
+    },
+    "dockerignore_required": true,
+    "dockerignore_minimal": ["node_modules", ".git", ".env*", "dist", ".output", "bin", "obj", "*.md", "!README.md"]
+  }
+}

@@ -1,0 +1,18 @@
+// {{ProjectName}} — Global CSS
+// TailwindCSS direktifleri. AI: Bu dosyayı değiştirme, Tailwind kullan.
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .container {
+    @apply mx-auto max-w-7xl;
+  }
+}

@@ -1,0 +1,274 @@
+{
+  "_meta": { "description": "Enterprise Restaurant POS Schema (Menu, Orders, Tables, Inventory, Staff, KDS)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "role": "Enum (owner, manager, head_chef, cook, server, host, driver, admin)",
+        "pinCode": "String (4-6 digit for POS login)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Location": {
+      "fields": {
+        "id": "UUID",
+        "name": "String",
+        "address": "String",
+        "phone": "String",
+        "timezone": "String",
+        "settings": "JSON (Tax rate, service charge, currency, receipt footer)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "MenuItem": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "categoryId": "UUID (FK MenuCategory)",
+        "name": "String",
+        "description": "Text",
+        "price": "Decimal",
+        "compareAtPrice": "Decimal (Nullable for discounts)",
+        "imageUrl": "String",
+        "prepTime": "Int (Minutes)",
+        "taxRate": "Decimal (Override, nullable)",
+        "calories": "Int",
+        "allergens": "String Array",
+        "ingredients": "String Array",
+        "isAvailable": "Boolean",
+        "isActive": "Boolean",
+        "orderIndex": "Int",
+        "createdAt": "DateTime"
+      },
+      "relations": {
+        "modifiers": "One-to-Many with MenuModifier"
+      }
+    },
+    "MenuCategory": {
+      "fields": {
+        "id": "UUID",
+        "menuId": "UUID (FK Menu)",
+        "name": "String",
+        "description": "Text",
+        "orderIndex": "Int",
+        "isActive": "Boolean"
+      }
+    },
+    "Menu": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "name": "String",
+        "startTime": "Time (e.g., 07:00 for Breakfast)",
+        "endTime": "Time (e.g., 11:00 for Breakfast)",
+        "isActive": "Boolean"
+      }
+    },
+    "MenuModifier": {
+      "fields": {
+        "id": "UUID",
+        "menuItemId": "UUID (FK MenuItem)",
+        "name": "String (e.g., Size, Extra Toppings)",
+        "type": "Enum (single_select, multi_select)",
+        "isRequired": "Boolean",
+        "options": "JSON Array ({ name: String, priceAdjustment: Decimal })",
+        "orderIndex": "Int"
+      }
+    },
+    "DailySpecial": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "menuItemId": "UUID (FK MenuItem)",
+        "specialPrice": "Decimal",
+        "startTime": "Time",
+        "endTime": "Time",
+        "daysOfWeek": "String Array (e.g., Monday, Tuesday)",
+        "isActive": "Boolean"
+      }
+    },
+    "Table": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "number": "String",
+        "capacity": "Int",
+        "zone": "Enum (indoor, outdoor, bar, vip)",
+        "status": "Enum (available, occupied, reserved, dirty, out_of_service)",
+        "posX": "Int (Floor plan coordinates)",
+        "posY": "Int",
+        "qrCodeUrl": "String (QR for self-ordering)"
+      }
+    },
+    "Order": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "tableId": "UUID (FK Table, nullable for takeaway/delivery)",
+        "serverId": "UUID (FK User)",
+        "orderType": "Enum (dine_in, takeaway, delivery, online)",
+        "status": "Enum (pending, confirmed, preparing, ready, served, paid, completed, cancelled)",
+        "guestCount": "Int",
+        "notes": "Text",
+        "subtotal": "Decimal",
+        "taxTotal": "Decimal",
+        "serviceCharge": "Decimal",
+        "discountTotal": "Decimal",
+        "deliveryFee": "Decimal",
+        "grandTotal": "Decimal",
+        "paymentStatus": "Enum (pending, partial, paid, refunded)",
+        "paymentMethod": "Enum (cash, card, mobile, qr, gift_card, mixed)",
+        "tipAmount": "Decimal",
+        "deliveryAddress": "JSON (For delivery orders)",
+        "deliveryDriverId": "UUID (FK User, nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "items": "One-to-Many with OrderItem"
+      }
+    },
+    "OrderItem": {
+      "fields": {
+        "id": "UUID",
+        "orderId": "UUID (FK Order)",
+        "menuItemId": "UUID (FK MenuItem)",
+        "name": "String (Snapshot of item name)",
+        "quantity": "Int",
+        "unitPrice": "Decimal",
+        "totalPrice": "Decimal",
+        "modifiers": "JSON Array (Selected modifier options)",
+        "notes": "String (Special instructions)",
+        "status": "Enum (pending, preparing, ready, served, cancelled)",
+        "voidReason": "String (Nullable)",
+        "prepStartTime": "DateTime",
+        "prepEndTime": "DateTime",
+        "createdAt": "DateTime"
+      }
+    },
+    "Reservation": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "tableId": "UUID (FK Table, nullable for auto-assign)",
+        "customerName": "String",
+        "customerPhone": "String",
+        "customerEmail": "String",
+        "guestCount": "Int",
+        "reservationTime": "DateTime",
+        "specialRequests": "Text",
+        "status": "Enum (pending, confirmed, seated, completed, cancelled, no_show)",
+        "createdAt": "DateTime"
+      }
+    },
+    "WaitlistEntry": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "customerName": "String",
+        "customerPhone": "String",
+        "guestCount": "Int",
+        "estimatedWaitTime": "Int (Minutes)",
+        "status": "Enum (waiting, notified, seated, cancelled)",
+        "notifiedAt": "DateTime",
+        "createdAt": "DateTime"
+      }
+    },
+    "InventoryItem": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "name": "String",
+        "sku": "String",
+        "unit": "Enum (kg, g, l, ml, piece, box, bag)",
+        "currentStock": "Decimal",
+        "minStock": "Decimal (Low stock threshold)",
+        "unitCost": "Decimal",
+        "supplierId": "UUID (FK Supplier, nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      }
+    },
+    "Recipe": {
+      "fields": {
+        "id": "UUID",
+        "menuItemId": "UUID (FK MenuItem)",
+        "inventoryItemId": "UUID (FK InventoryItem)",
+        "quantity": "Decimal (Amount used per serving)"
+      }
+    },
+    "Supplier": {
+      "fields": {
+        "id": "UUID",
+        "name": "String",
+        "contactPerson": "String",
+        "email": "String",
+        "phone": "String",
+        "address": "String",
+        "paymentTerms": "String"
+      }
+    },
+    "PurchaseOrder": {
+      "fields": {
+        "id": "UUID",
+        "locationId": "UUID (FK Location)",
+        "supplierId": "UUID (FK Supplier)",
+        "status": "Enum (draft, sent, received, cancelled)",
+        "items": "JSON Array ({ itemId, quantity, unitCost })",
+        "totalCost": "Decimal",
+        "receivedAt": "DateTime",
+        "createdAt": "DateTime"
+      }
+    },
+    "StaffShift": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "locationId": "UUID (FK Location)",
+        "startTime": "DateTime",
+        "endTime": "DateTime (Nullable)",
+        "clockInTime": "DateTime (Nullable)",
+        "clockOutTime": "DateTime (Nullable)",
+        "status": "Enum (scheduled, clocked_in, clocked_out, absent)"
+      }
+    },
+    "Customer": {
+      "fields": {
+        "id": "UUID",
+        "name": "String",
+        "email": "String",
+        "phone": "String",
+        "totalVisits": "Int",
+        "totalSpent": "Decimal",
+        "loyaltyPoints": "Int",
+        "tier": "Enum (bronze, silver, gold, platinum)",
+        "notes": "Text (Allergies, preferences)",
+        "createdAt": "DateTime"
+      }
+    },
+    "GiftCard": {
+      "fields": {
+        "id": "UUID",
+        "code": "String (Unique)",
+        "initialBalance": "Decimal",
+        "currentBalance": "Decimal",
+        "expiresAt": "DateTime",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "type": "Enum (order_ready, reservation_reminder, low_stock, shift_reminder, new_delivery)",
+        "message": "String",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

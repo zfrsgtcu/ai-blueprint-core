@@ -1,0 +1,41 @@
+is_global = true
+build_property.EnableAotAnalyzer = 
+build_property.EnableSingleFileAnalyzer = 
+build_property.EnableTrimAnalyzer = false
+build_property.IncludeAllContentForSelfExtract = 
+build_property.TargetFramework = net8.0-maccatalyst
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = false
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = {{ProjectName}}
+build_property.ProjectDir = D:\Projeler\create-projects\ai-blueprint-core\04-apps\netmaui\template\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+
+[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netmaui/template/App.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = {{ProjectName}}.App.xaml
+build_metadata.AdditionalFiles.TargetPath = App.xaml
+build_metadata.AdditionalFiles.RelativePath = App.xaml
+
+[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netmaui/template/AppShell.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = {{ProjectName}}.AppShell.xaml
+build_metadata.AdditionalFiles.TargetPath = AppShell.xaml
+build_metadata.AdditionalFiles.RelativePath = AppShell.xaml
+
+[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netmaui/template/Views/\{\{ModelName\}\}DetailPage.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = {{ProjectName}}.Views.{{ModelName}}DetailPage.xaml
+build_metadata.AdditionalFiles.TargetPath = Views\{{ModelName}}DetailPage.xaml
+build_metadata.AdditionalFiles.RelativePath = Views\{{ModelName}}DetailPage.xaml
+
+[D:/Projeler/create-projects/ai-blueprint-core/04-apps/netmaui/template/Views/\{\{ModelName\}\}sPage.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = {{ProjectName}}.Views.{{ModelName}}sPage.xaml
+build_metadata.AdditionalFiles.TargetPath = Views\{{ModelName}}sPage.xaml
+build_metadata.AdditionalFiles.RelativePath = Views\{{ModelName}}sPage.xaml

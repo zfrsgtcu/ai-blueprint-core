@@ -1,0 +1,391 @@
+{
+  "_meta": {
+    "description": "04-apps katmanı ana manifesti. Referans Mimari Kütüphanesi — her stack'in nasıl görünmesi gerektiğine dair yetkili kaynak. AI ajanları kod üretirken bu manifest'i okuyarak hangi stack'lerin mevcut olduğunu, her stack'in teknik kısıtlarını ve AI iş akışını anlar.",
+    "layer": "04-apps",
+    "layer_name": "Application Skeletons (Referans Mimari Kütüphanesi)",
+    "approach": "Reference Architecture Library",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20 (genişletildi: vue, react, nodejs, html eklendi)",
+    "blueprint_version": "1.0.0"
+  },
+
+  "layer_description": {
+    "purpose": "AI ajanlarının kod üretirken başvurduğu Referans Mimari Kütüphanesi. Buradaki her klasör, bir projenin 'nasıl görünmesi gerektiğine' dair yetkili kaynaktır. AI, bir blueprint oluştururken buradaki yapıyı kopyalamaz, buradaki mantığı okur ve uygular.",
+    "approach_detail": "Her stack klasöründe manifest.json (AI'nın o stack hakkında bilmesi gereken teknik kısıtlar ve değişkenler), template/ (AI'nın üzerinde işlem yapacağı ham kod dosyaları, {{Placeholder}} ifadeler içerir), ve rules.md (AI'nın bu stack'i kullanırken uyması gereken best practice kuralları) bulunur.",
+    "golden_rule": "AI buradaki yapıyı KOPYALAMAZ — buradaki MANTIĞI okur ve UYGULAR. Template'ler başlangıç noktasıdır, bitiş noktası değildir."
+  },
+
+  "stacks": {
+    "frontend": {
+      "astrojs": {
+        "path": "./astrojs/",
+        "display_name": "Astro.js",
+        "type": "Static/SSR Frontend",
+        "language": "JavaScript/TypeScript",
+        "version": "^4.5.0",
+        "description": "Hızlı, SEO odaklı, içerik ağırlıklı statik ve hibrit siteler. Islands architecture, Content Collections, View Transitions API.",
+        "use_cases": ["Kurumsal site", "Landing page", "Portfolyo", "Blog", "Dokümantasyon"],
+        "deployment_target": "Vercel (native support)",
+        "has_backend": false
+      },
+      "nuxtjs": {
+        "path": "./nuxtjs/",
+        "display_name": "Nuxt.js",
+        "type": "SSR/SSG Frontend",
+        "language": "TypeScript (Vue 3)",
+        "version": "^3.12.0",
+        "description": "Vue 3 tabanlı, SSR/SSG destekli, Pinia state yönetimli interaktif web uygulamaları. Composition API, auto-imports, server routes.",
+        "use_cases": ["E-Ticaret frontend", "SaaS dashboard", "LMS", "Booking sistemi", "Admin panel"],
+        "deployment_target": "Vercel (native support)",
+        "has_backend": true,
+        "paired_backend": "netwebapi"
+      },
+      "nextjs": {
+        "path": "./nextjs/",
+        "display_name": "Next.js",
+        "type": "SSR/SSG Frontend",
+        "language": "TypeScript (React 18)",
+        "version": "^14.2.0",
+        "description": "React tabanlı, App Router, Server Components, hibrit rendering. SEO dostu, Vercel-native deployment.",
+        "use_cases": ["E-Ticaret frontend", "SaaS dashboard", "Multi-tenant platform", "Blog"],
+        "deployment_target": "Vercel (native support)",
+        "has_backend": true,
+        "paired_backend": "netwebapi"
+      },
+      "netblazor": {
+        "path": "./netblazor/",
+        "display_name": "Blazor",
+        "type": "WASM/Server Frontend",
+        "language": "C# / Razor",
+        "version": "8.0.0",
+        "description": ".NET tabanlı SPA — Blazor WebAssembly veya Blazor Server. C# ile full-stack web geliştirme, Razor component'leri.",
+        "use_cases": ["Admin panel", "Internal tools", "Enterprise dashboard", "Line-of-business app"],
+        "deployment_target": "Azure App Service",
+        "has_backend": true,
+        "paired_backend": "netwebapi"
+      },
+      "vue": {
+        "path": "./vue/",
+        "display_name": "Vue 3 + Vite",
+        "type": "SPA Frontend",
+        "language": "TypeScript (Vue 3 Composition API)",
+        "version": "^3.5.0",
+        "description": "Vue 3 Composition API, Pinia state management, Vue Router 4, Vite build tool. 'script setup' syntax'i ile temiz ve tip güvenli SPA geliştirme.",
+        "use_cases": ["SPA dashboard", "Admin panel", "SaaS uygulaması", "İçerik yönetim paneli", "Form ağırlıklı uygulama"],
+        "deployment_target": "Vercel (SPA) / Azure Static Web Apps",
+        "has_backend": true,
+        "paired_backend": "netwebapi"
+      },
+      "react": {
+        "path": "./react/",
+        "display_name": "React + Vite",
+        "type": "SPA Frontend",
+        "language": "TypeScript (React 18)",
+        "version": "^18.3.0",
+        "description": "React 18 ile Vite tabanlı hızlı SPA. Zustand state management, React Router 6, TailwindCSS, Axios. Modern hook tabanlı component mimarisi.",
+        "use_cases": ["SPA dashboard", "Admin panel", "SaaS uygulaması", "E-Ticaret frontend", "CRM arayüzü"],
+        "deployment_target": "Vercel (SPA) / Azure Static Web Apps",
+        "has_backend": true,
+        "paired_backend": "netwebapi"
+      },
+      "svelte": {
+        "path": "./svelte/",
+        "display_name": "SvelteKit",
+        "type": "SPA/SSR Frontend",
+        "language": "TypeScript (Svelte 5 + SvelteKit 2)",
+        "version": "^5.0.0",
+        "description": "SvelteKit 2 ile file-based routing, Svelte 5 runes ($state, $derived, $effect) ile minimal reactive kod. Svelte stores (writable/derived) ile shared state. SPA veya SSR modunda çalışabilir. Vite tabanlı ultra hızlı HMR ve en küçük bundle boyutu.",
+        "use_cases": ["SPA dashboard", "Admin panel", "SaaS uygulaması", "Form ağırlıklı uygulama", "Performans kritik web uygulaması", "SSR içerik sitesi"],
+        "deployment_target": "Vercel (SPA/SSR) / Azure Static Web Apps",
+        "has_backend": true,
+        "paired_backend": "netwebapi"
+      },
+      "html": {
+        "path": "./html/",
+        "display_name": "HTML5 + CSS + JS",
+        "type": "Static Frontend",
+        "language": "HTML5 / CSS3 / Vanilla JavaScript (ES6+)",
+        "version": "latest",
+        "description": "Framework'süz, saf HTML5 semantik markup, modern CSS (Grid, Flexbox, Custom Properties), Vanilla JS (ES6+). WAI-ARIA ile tam erişilebilirlik (WCAG 2.1 AA), responsive mobile-first tasarım.",
+        "use_cases": ["Statik landing page", "Kurumsal tanıtım sitesi", "Portfolyo", "Dokümantasyon", "Erişilebilirlik odaklı site"],
+        "deployment_target": "Azure Static Web Apps / GitHub Pages",
+        "has_backend": false
+      }
+    },
+    "backend": {
+      "netwebapi": {
+        "path": "./netwebapi/",
+        "display_name": ".NET Web API",
+        "type": "RESTful Backend",
+        "language": "C# (.NET 8)",
+        "version": "8.0.0",
+        "description": ".NET Core ile RESTful API. EF Core, JWT auth, FluentValidation, Serilog, Swagger, AutoMapper. Kurumsal seviye backend.",
+        "use_cases": ["Tüm backend ihtiyaçları", "E-Ticaret", "SaaS", "LMS", "Booking", "Admin panel API", "Mobil API"],
+        "deployment_target": "Azure App Service veya Azure Container Apps",
+        "has_backend": true,
+        "database": "MSSQL (default) / PostgreSQL (opsiyonel)"
+      },
+      "node-express": {
+        "path": "./node-express/",
+        "display_name": "Node.js Express",
+        "type": "RESTful Backend",
+        "language": "JavaScript/TypeScript",
+        "version": "20.x LTS",
+        "description": "Hafif ve hızlı Node.js backend. Express.js veya Fastify, JWT auth, MongoDB/Mongoose veya MSSQL/Prisma.",
+        "use_cases": ["Hafif API'ler", "Haber sitesi backend", "Serverless fonksiyonlar", "Mikroservis"],
+        "deployment_target": "Vercel Functions veya Azure Container Apps",
+        "has_backend": true,
+        "database": "MongoDB (default) / MSSQL / PostgreSQL"
+      },
+      "nodejs": {
+        "path": "./nodejs/",
+        "display_name": "Pure Node.js",
+        "type": "RESTful Backend (Framework'süz)",
+        "language": "JavaScript (ES6+)",
+        "version": "^20.0.0",
+        "description": "Saf Node.js http modülü ile framework'süz REST API. Sıfır bağımlılık, manuel routing, JWT auth, file-based JSON veritabanı. Eğitim amaçlı veya ultra-minimal deployment.",
+        "use_cases": ["Minimal API", "Eğitim projesi", "Mikroservis (ultra-hafif)", "Edge computing", "Gömülü sistem backend"],
+        "deployment_target": "Azure Container Apps / VPS",
+        "has_backend": true,
+        "database": "File-based JSON (default) / SQLite"
+      }
+    },
+    "mobile": {
+      "netmaui": {
+        "path": "./netmaui/",
+        "display_name": ".NET MAUI",
+        "type": "Native Mobile",
+        "language": "C# / XAML",
+        "version": "8.0.0",
+        "description": ".NET ile iOS/Android native uygulama. XAML UI, MVVM pattern, platform-specific API'ler, offline SQLite.",
+        "use_cases": ["Mobil uygulama (iOS + Android)", "Kurumsal mobil", "Saha uygulaması"],
+        "deployment_target": "App Store + Google Play",
+        "has_backend": true,
+        "paired_backend": "netwebapi"
+      },
+      "react-native": {
+        "path": "./react-native/",
+        "display_name": "React Native",
+        "type": "Cross-platform Mobile",
+        "language": "TypeScript (React)",
+        "version": "latest",
+        "description": "React ile iOS/Android cross-platform mobil uygulama. Expo veya bare React Native CLI.",
+        "use_cases": ["Mobil uygulama (iOS + Android)", "Cross-platform MVP", "Tüketici uygulaması"],
+        "deployment_target": "App Store + Google Play",
+        "has_backend": true,
+        "paired_backend": "netwebapi"
+      }
+    }
+  },
+
+  "ai_workflow": {
+    "description": "AI ajanlarının 04-apps katmanını nasıl kullanacağını tanımlar. Bu iş akışı, AI'nın bir proje blueprint'i oluştururken takip ettiği adımları belirler.",
+    "steps": [
+      {
+        "step": 1,
+        "action": "Read Registry",
+        "detail": "00-registry/versions.json dosyasından stack versiyonlarını oku. Hangi framework'ün hangi sürümünün kullanılacağını belirle."
+      },
+      {
+        "step": 2,
+        "action": "Analyze Stack Mapping",
+        "detail": ".claude/agents-stack-mapping.json dosyasından projenin frontend ve backend kombinasyonuna göre hangi agent'ların çalışacağını belirle."
+      },
+      {
+        "step": 3,
+        "action": "Read Domain Logic",
+        "detail": "02-domains/{domain}/business-logic.md dosyasından iş mantığı kurallarını oku. Hangi entity'lerin, workflow'ların ve validasyonların gerekli olduğunu anla."
+      },
+      {
+        "step": 4,
+        "action": "Read Stack Manifests",
+        "detail": "04-apps/{stack}/manifest.json dosyalarını oku. Seçilen stack'in teknik kısıtlarını, required_variables listesini, directory_structure yapısını ve deployment kurallarını öğren."
+      },
+      {
+        "step": 5,
+        "action": "Read Stack Rules",
+        "detail": "04-apps/{stack}/rules.md dosyalarını oku. ZORUNLU, YASAK ve ÖNERİLEN kuralları anla. Bu kurallar AI'nın kod üretirken uyması gereken kısıtlardır."
+      },
+      {
+        "step": 6,
+        "action": "Map & Generate",
+        "detail": "02-domains business logic'teki entity ve workflow'ları 04-apps template'lerindeki {{Placeholder}} değerleriyle eşleştir. Template'leri doldur ve 07-workspaces altına yaz."
+      },
+      {
+        "step": 7,
+        "action": "Apply Infrastructure",
+        "detail": "03-infrastructures katmanındaki blueprint'leri uygula (Dockerfile, CI/CD, monitoring, networking, secrets)."
+      },
+      {
+        "step": 8,
+        "action": "Validate",
+        "detail": "Oluşturulan projenin manifest → rules → templates zincirine uygunluğunu kontrol et. ZORUNLU kuralların ihlal edilmediğini doğrula."
+      }
+    ]
+  },
+
+  "cross_cutting_rules": {
+    "description": "Tüm stack'lerde geçerli olan kesişen kurallar",
+    "rules": [
+      {
+        "id": "AS-001",
+        "rule": "Tüm {{Placeholder}} değerleri değiştirilmelidir",
+        "severity": "ZORUNLU",
+        "detail": "Hiçbir template dosyası placeholder ile projeye yazılmamalıdır. AI, her placeholder'ı domain logic'teki gerçek entity/model adıyla değiştirmelidir."
+      },
+      {
+        "id": "AS-002",
+        "rule": "Tüm _meta açıklamaları korunmalıdır",
+        "severity": "ZORUNLU",
+        "detail": "Her JSON dosyasında _meta alanı, her .md dosyasında HTML yorumu ile amaç açıklaması bulunmalıdır."
+      },
+      {
+        "id": "AS-003",
+        "rule": "Versiyonlar 00-registry/versions.json'dan okunur",
+        "severity": "ZORUNLU",
+        "detail": "AI, package.json veya .csproj oluştururken versions.json'daki kilitli versiyonları kullanmalıdır. Kendi başına versiyon atayamaz."
+      },
+      {
+        "id": "AS-004",
+        "rule": "Business logic entity'leri template'lerdeki placeholder'ları belirler",
+        "severity": "ZORUNLU",
+        "detail": "02-domains business-logic.md'deki entity adları, template'lerdeki {{ModelName}}, {{EntityName}} gibi placeholder'ların değerini belirler."
+      },
+      {
+        "id": "AS-005",
+        "rule": "03-infrastructures kuralları her stack için geçerlidir",
+        "severity": "ZORUNLU",
+        "detail": "CC-001 - CC-007 arası tüm cross-cutting infrastructure kuralları, üretilen kodda da uygulanmalıdır."
+      },
+      {
+        "id": "AS-006",
+        "rule": "Template'ler başlangıç noktasıdır, bitiş noktası değildir",
+        "severity": "ÖNEMLİ",
+        "detail": "AI, template'leri olduğu gibi kopyalamaz. Domain logic'e göre genişletir, özelleştirir ve gereksiz kısımları çıkarır."
+      },
+      {
+        "id": "AS-007",
+        "rule": "Her stack'in kendi agent'ı vardır",
+        "severity": "ÖNEMLİ",
+        "detail": "Stack'e özel agent (.claude/agents/ altında) o stack'in best practice'lerini bilir. AI, o agent'in kurallarını da uygulamalıdır."
+      }
+    ]
+  },
+
+  "placeholder_conventions": {
+    "description": "Template dosyalarında kullanılan placeholder'ların anlamları. AI, bu placeholder'ları gerçek değerlerle değiştirir.",
+    "common_placeholders": {
+      "{{ProjectName}}": "Projenin PascalCase adı (örn: ECommerceApp)",
+      "{{project_name}}": "Projenin snake_case adı (örn: ecommerce_app)",
+      "{{project-name}}": "Projenin kebab-case adı (örn: ecommerce-app)",
+      "{{PROJECT_NAME}}": "Projenin SCREAMING_SNAKE_CASE adı",
+      "{{ModelName}}": "Entity'nin PascalCase adı (örn: Product, Category)",
+      "{{modelName}}": "Entity'nin camelCase adı (örn: product, category)",
+      "{{model-name}}": "Entity'nin kebab-case adı (örn: product, category)",
+      "{{DomainName}}": "02-domains altındaki domain'in PascalCase adı",
+      "{{HumanReadableName}}": "İnsan tarafından okunabilir çoğul ad (örn: Ürünler, Kategoriler)",
+      "{{Description}}": "Entity'nin Türkçe açıklaması"
+    },
+    "infrastructure_placeholders": {
+      "note": "03-infrastructures manifest.json'daki placeholder'lar da kullanılır: {PROJECT_NAME}, {DOMAIN}, {FRONTEND_PORT}, {BACKEND_PORT}, {ADMIN_EMAIL}, {DB_TYPE}"
+    }
+  },
+
+  "stack_specific_defaults": {
+    "description": "Her stack tipi için varsayılan dosya yapısı ve deployment hedefi",
+    "astrojs": {
+      "files": ["astro.config.mjs", "tailwind.config.js", "tsconfig.json", "package.json"],
+      "directories": ["src/pages/", "src/layouts/", "src/components/", "src/content/", "public/"],
+      "entry_point": "src/pages/index.astro",
+      "deploy": "Vercel"
+    },
+    "nuxtjs": {
+      "files": ["nuxt.config.ts", "tailwind.config.js", "tsconfig.json", "package.json", "app.vue"],
+      "directories": ["pages/", "components/", "composables/", "stores/", "server/api/", "public/"],
+      "entry_point": "app.vue",
+      "deploy": "Vercel"
+    },
+    "nextjs": {
+      "files": ["next.config.js", "tailwind.config.js", "tsconfig.json", "package.json"],
+      "directories": ["app/", "components/", "lib/", "public/"],
+      "entry_point": "app/layout.tsx",
+      "deploy": "Vercel"
+    },
+    "netwebapi": {
+      "files": ["Program.cs", "appsettings.json", "*.csproj"],
+      "directories": ["Controllers/", "Services/", "Models/", "DTOs/", "Data/", "Middleware/"],
+      "entry_point": "Program.cs",
+      "deploy": "Azure App Service"
+    },
+    "netblazor": {
+      "files": ["Program.cs", "App.razor", "wwwroot/index.html", "*.csproj"],
+      "directories": ["Pages/", "Components/", "Services/", "Models/"],
+      "entry_point": "App.razor",
+      "deploy": "Azure App Service"
+    },
+    "node-express": {
+      "files": ["package.json", "src/index.js", ".env.example"],
+      "directories": ["src/routes/", "src/controllers/", "src/middleware/", "src/models/", "src/services/"],
+      "entry_point": "src/index.js",
+      "deploy": "Vercel Functions / Azure Container Apps"
+    },
+    "netmaui": {
+      "files": ["App.xaml", "AppShell.xaml", "MauiProgram.cs", "*.csproj"],
+      "directories": ["Views/", "ViewModels/", "Models/", "Services/", "Platforms/"],
+      "entry_point": "MauiProgram.cs",
+      "deploy": "App Store + Google Play"
+    },
+    "react-native": {
+      "files": ["package.json", "App.tsx", "app.json", "tsconfig.json"],
+      "directories": ["screens/", "components/", "navigation/", "services/", "hooks/"],
+      "entry_point": "App.tsx",
+      "deploy": "App Store + Google Play"
+    },
+    "vue": {
+      "files": ["vite.config.ts", "package.json", "tsconfig.json", "index.html", "tailwind.config.js"],
+      "directories": ["src/main.ts", "src/App.vue", "src/router/", "src/views/", "src/components/", "src/stores/", "src/services/", "src/types/"],
+      "entry_point": "src/main.ts",
+      "deploy": "Vercel (SPA)"
+    },
+    "react": {
+      "files": ["vite.config.ts", "package.json", "tsconfig.json", "index.html", "tailwind.config.js"],
+      "directories": ["src/main.tsx", "src/App.tsx", "src/router/", "src/pages/", "src/components/", "src/stores/", "src/services/", "src/types/"],
+      "entry_point": "src/main.tsx",
+      "deploy": "Vercel (SPA)"
+    },
+    "svelte": {
+      "files": ["svelte.config.js", "vite.config.ts", "package.json", "tsconfig.json", "tailwind.config.js", "postcss.config.js"],
+      "directories": ["src/app.html", "src/app.css", "src/routes/+layout.svelte", "src/routes/+page.svelte", "src/lib/components/", "src/lib/stores/", "src/lib/services/", "src/lib/types/"],
+      "entry_point": "src/routes/+page.svelte",
+      "deploy": "Vercel (SPA/SSR)"
+    },
+    "nodejs": {
+      "files": ["package.json", "src/index.js", ".env.example"],
+      "directories": ["src/router.js", "src/handlers/", "src/services/", "src/middleware/", "src/utils/", "src/config/"],
+      "entry_point": "src/index.js",
+      "deploy": "Azure Container Apps / VPS"
+    },
+    "html": {
+      "files": ["index.html", "css/style.css", "css/reset.css", "js/main.js", "js/api.js", "js/router.js"],
+      "directories": ["css/", "js/", "js/components/", "pages/", "assets/"],
+      "entry_point": "index.html",
+      "deploy": "Azure Static Web Apps / GitHub Pages"
+    }
+  },
+
+  "deal_breakers": {
+    "description": "Bunlardan herhangi biri varsa, AI'nın ürettiği proje referans mimariye uygun DEĞİLDİR",
+    "rules": [
+      "1. ❌ Template dosyasında {{Placeholder}} bırakılmış",
+      "2. ❌ Versiyon numarası 00-registry/versions.json'dan farklı",
+      "3. ❌ ZORUNLU bir kural ihlal edilmiş",
+      "4. ❌ Manifest'te tanımlanmayan bir dosya yapısı kullanılmış",
+      "5. ❌ Stack'in paired_backend gerektirmesine rağmen backend oluşturulmamış",
+      "6. ❌ Deployment target manifest'tekinden farklı seçilmiş",
+      "7. ❌ Dizin yapısı manifest'teki directory_structure ile uyuşmuyor",
+      "8. ❌ Cross-cutting rules (AS-001 - AS-007) ihlal edilmiş",
+      "9. ❌ 03-infrastructures cross-cutting rules (CC-001 - CC-007) uygulanmamış",
+      "10. ❌ Business logic entity'leri template'lere doğru yansıtılmamış"
+    ]
+  }
+}

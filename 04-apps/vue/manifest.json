@@ -1,0 +1,152 @@
+{
+  "_meta": {
+    "description": "Vue 3 + Vite (TypeScript) SPA stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Vue 3 Composition API, Pinia state, Vue Router 4, TailwindCSS, Vite build tool.",
+    "stack": "vue",
+    "display_name": "Vue 3 + Vite",
+    "type": "spa_frontend",
+    "language": "TypeScript (Vue 3 Composition API)",
+    "version": "^3.5.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "Vue 3 + Vite + TypeScript",
+    "description": "Vue 3 Composition API ile 'script setup' syntax'i kullanan, Pinia state management, Vue Router 4 ile SPA routing, TailwindCSS ile stillendirme. Vite build tool ile ultra hızlı HMR ve optimized build. Tip güvenli, modüler ve performanslı SPA geliştirme.",
+    "use_cases": [
+      "SPA dashboard",
+      "Admin panel",
+      "SaaS uygulaması",
+      "İçerik yönetim paneli (CMS panel)",
+      "Form ağırlıklı iş uygulaması",
+      "CRM / ERP arayüzü"
+    ],
+    "paired_backend": "netwebapi",
+    "not_suitable_for": [
+      "SEO odaklı içerik siteleri (Nuxt.js daha uygun)",
+      "Statik landing page (Astro daha uygun)",
+      "SSR gerektiren projeler (Nuxt.js SSR modu)"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "AdminDashboard" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "admin-dashboard" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Kurumsal admin paneli" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Admin" }
+    ],
+    "api": [
+      { "key": "{{API_BASE_URL}}", "description": "Backend API base URL", "example": "https://api.example.com" },
+      { "key": "{{VITE_API_BASE_URL}}", "description": "Vite env: API base URL", "example": "http://localhost:5000" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "admin.example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "Vue 3 + Vite projesinin zorunlu dizin yapısı",
+    "directories": {
+      "src/main.ts": "Uygulama giriş noktası — createApp, Pinia, Router kaydı",
+      "src/App.vue": "Root component — RouterView + layout",
+      "src/router/": "Vue Router route tanımları",
+      "src/views/": "Sayfa bileşenleri (route başına bir view)",
+      "src/components/": "Yeniden kullanılabilir UI bileşenleri",
+      "src/stores/": "Pinia store tanımları",
+      "src/services/": "API client ve servis fonksiyonları",
+      "src/types/": "TypeScript tip tanımları",
+      "public/": "Statik asset'ler"
+    },
+    "files": {
+      "vite.config.ts": "Vite konfigürasyonu — plugins, resolve alias",
+      "package.json": "Bağımlılıklar ve script'ler",
+      "tsconfig.json": "TypeScript konfigürasyonu",
+      "index.html": "Vite entry HTML — <div id='app'>",
+      "tailwind.config.js": "TailwindCSS konfigürasyonu",
+      "postcss.config.js": "PostCSS konfigürasyonu",
+      "src/main.ts": "createApp + use(pinia) + use(router)",
+      "src/App.vue": "<RouterView /> + layout"
+    }
+  },
+
+  "entry_point": "src/main.ts",
+  "config_file": "vite.config.ts",
+
+  "dependencies": {
+    "core": [
+      { "package": "vue", "version": "^3.5.0" },
+      { "package": "vue-router", "version": "^4.4.0" },
+      { "package": "pinia", "version": "^2.1.7" }
+    ],
+    "styling": [
+      { "package": "tailwindcss", "version": "^3.4.3" }
+    ],
+    "http": [
+      { "package": "axios", "version": "^1.7.0" }
+    ],
+    "dev": [
+      { "package": "vite", "version": "^5.4.0" },
+      { "package": "@vitejs/plugin-vue", "version": "^5.1.0" },
+      { "package": "typescript", "version": "^5.5.0" },
+      { "package": "vue-tsc", "version": "^2.0.0" },
+      { "package": "autoprefixer", "version": "^10.4.0" },
+      { "package": "postcss", "version": "^8.4.0" }
+    ],
+    "optional": [
+      { "package": "@vueuse/core", "version": "^10.0.0", "use_case": "Composition utility'leri" },
+      { "package": "vee-validate", "version": "^4.12.0", "use_case": "Form validasyon" },
+      { "package": "vue-sonner", "version": "^1.1.0", "use_case": "Toast bildirimleri" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "composition_api": {
+      "description": "<script setup lang='ts'> syntax'i ile Composition API — reactive state, computed, watch",
+      "rule": "Tüm component'ler <script setup> kullanmalı, Options API'den kaçınılmalı"
+    },
+    "pinia_stores": {
+      "description": "Pinia ile modüler state management — her domain entity'si için ayrı store",
+      "rule": "Store'lar composition API style (setup stores) ile yazılmalı"
+    },
+    "file_based_naming": {
+      "description": "Views: PascalCase ({{ModelName}}ListView.vue), Components: PascalCase ({{ModelName}}Card.vue), Stores: camelCase ({{modelName}}.store.ts)",
+      "rule": "Dosya adlandırması tutarlı olmalı"
+    }
+  },
+
+  "deployment": {
+    "primary": "Vercel (SPA)",
+    "alternatives": ["Azure Static Web Apps", "Netlify"],
+    "build_command": "vite build",
+    "output_directory": "dist/",
+    "vercel_config": {
+      "framework": "vite",
+      "buildCommand": "vite build",
+      "outputDirectory": "dist",
+      "routes": [{ "src": "/[^.]+", "dest": "/index.html" }]
+    }
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Dizin yapısını olduğu gibi kopyala",
+      "vite.config.ts ve tailwind.config.js temel konfigürasyonu koru",
+      "src/main.ts giriş noktası yapısını koru (createApp → pinia → router → mount)",
+      "tsconfig.json strict mode ayarlarını koru"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Tüm optional dependencies'i ekleme — sadece projenin ihtiyacı olanları ekle",
+      "API_BASE_URL'yi varsayılan değerde bırakma"
+    ],
+    "customize_for_domain": [
+      "src/router/ → domain entity'lerine göre route tanımları ekle",
+      "src/views/ → her entity için list ve detail view oluştur",
+      "src/stores/ → her entity için Pinia store oluştur",
+      "src/types/ → domain entity tiplerini tanımla",
+      "src/components/ → reusable UI bileşenlerini oluştur"
+    ]
+  }
+}

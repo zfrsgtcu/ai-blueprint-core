@@ -1,0 +1,135 @@
+{
+  "_meta": {
+    "description": "Pure Node.js (framework'süz) HTTP Server stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Saf Node.js http modülü, manuel routing, JWT auth, file-based JSON veritabanı.",
+    "stack": "nodejs",
+    "display_name": "Pure Node.js",
+    "type": "backend_api",
+    "language": "JavaScript (ES6+ / CJS)",
+    "version": "^20.0.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "Saf Node.js (http modülü)",
+    "description": "Node.js'in built-in `http` modülü ile framework'süz REST API. Manuel URL routing, JWT auth, file-based JSON veritabanı. Sıfır npm bağımlılığı (jwt ve bcrypt hariç). Eğitim projeleri, ultra-minimal deployment, veya framework kısıtlaması olan ortamlar için idealdir.",
+    "use_cases": [
+      "Minimal REST API",
+      "Eğitim / öğrenme projesi",
+      "Mikroservis (ultra-hafif, cold-start < 50ms)",
+      "Edge computing backend",
+      "Gömülü sistem / IoT backend",
+      "Framework kısıtlaması olan ortam"
+    ],
+    "not_suitable_for": [
+      "Büyük ölçekli production API (Express.js daha uygun)",
+      "WebSocket-heavy uygulamalar",
+      "Dosya upload ağırlıklı servisler",
+      "GraphQL endpoint'leri"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "MinimalApi" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "minimal-api" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Minimal REST API" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Product" }
+    ],
+    "auth": [
+      { "key": "{{JWT_SECRET}}", "description": "JWT signing secret (min 256-bit)", "example": "super-secret-key-change-in-production" },
+      { "key": "{{JWT_EXPIRES_IN}}", "description": "Access token süresi", "example": "1h" }
+    ],
+    "deployment": [
+      { "key": "{{PORT}}", "description": "Sunucu portu", "example": "3000" },
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "api.example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "Pure Node.js projesinin zorunlu dizin yapısı",
+    "directories": {
+      "src/index.js": "HTTP server oluşturma, router bağlama, request listener",
+      "src/config/": "Ortam değişkenleri ve konfigürasyon",
+      "src/router.js": "Manuel URL router — method + path → handler eşleştirme",
+      "src/handlers/": "Route handler fonksiyonları (controller benzeri)",
+      "src/services/": "İş mantığı servisleri",
+      "src/middleware/": "Auth, body parser, CORS middleware'leri",
+      "src/utils/": "Yardımcı fonksiyonlar (response, logger, jwt)",
+      "data/": "File-based JSON veritabanı dosyaları"
+    },
+    "files": {
+      "src/index.js": "createServer + router + server.listen",
+      "src/config/env.js": "Ortam değişkenleri doğrulama",
+      "src/router.js": "Route tanımları ve URL eşleştirme",
+      "src/middleware/auth.js": "JWT doğrulama middleware'i",
+      "src/middleware/bodyParser.js": "JSON body parse middleware'i",
+      "src/utils/response.js": "Standart JSON yanıt yardımcıları",
+      "src/utils/jwt.js": "JWT sign/verify yardımcıları",
+      "package.json": "Script'ler ve minimum bağımlılıklar",
+      ".env.example": "Ortam değişkenleri şablonu"
+    }
+  },
+
+  "entry_point": "src/index.js",
+  "config_file": ".env / src/config/env.js",
+
+  "dependencies": {
+    "core": [
+      { "package": "jsonwebtoken", "version": "^9.0.2", "note": "JWT signing/verification" }
+    ],
+    "dev": [],
+    "optional": [
+      { "package": "bcryptjs", "version": "^2.4.3", "use_case": "Şifre hashleme" },
+      { "package": "better-sqlite3", "version": "^11.0.0", "use_case": "SQLite veritabanı (file-based alternatif)" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "manual_routing": {
+      "description": "req.method + req.url parse → regex veya string eşleştirme → handler",
+      "rule": "Router, URL'den path ve varsa path param'ları çıkarır, handler'a enjekte eder"
+    },
+    "middleware_chain": {
+      "description": "CORS → bodyParser → auth → router sırasıyla request pipeline",
+      "rule": "Her middleware (req, res) alır, next() çağırarak devam eder veya response döner"
+    },
+    "file_based_db": {
+      "description": "JSON dosyalarına okuma/yazma — her entity için bir .json dosyası",
+      "rule": "Async fs.readFile / fs.writeFile, concurrent write'lar için kilit mekanizması"
+    },
+    "native_http": {
+      "description": "Sadece Node.js built-in modüller: http, fs, path, crypto, url",
+      "rule": "Express.js, Fastify, Koa yok — her şey built-in modüllerle"
+    }
+  },
+
+  "deployment": {
+    "primary": "Azure Container Apps",
+    "alternatives": ["VPS (PM2)", "Docker container"],
+    "start_command": "node src/index.js",
+    "health_check": "/health",
+    "docker_support": true
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Manuel routing yapısını koru",
+      "Middleware chain sıralamasını koru",
+      "response.js utility'lerini olduğu gibi kopyala",
+      ".env.example yapısını koru"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "JWT_SECRET'ı varsayılan değerde bırakma",
+      "data/ klasörünü production verisiyle doldurmadan bırakma"
+    ],
+    "customize_for_domain": [
+      "src/handlers/ → domain entity'lerine göre handler dosyaları ekle",
+      "src/services/ → iş mantığı servislerini oluştur",
+      "src/router.js → domain entity route'larını kaydet",
+      "data/ → başlangıç JSON veritabanı dosyalarını oluştur"
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+<!-- PURPOSE OF THIS FILE: Ana layout component — header, sidebar/nav, main content alanı, footer. -->
+@inherits LayoutComponentBase
+
+<div class="flex min-h-screen flex-col bg-gray-50">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
+        <div class="container-page flex h-16 items-center justify-between">
+            <a href="/" class="text-xl font-bold text-gray-900">
+                {{ProjectName}}
+            </a>
+            <NavMenu />
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1">
+        @Body
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 bg-white">
+        <div class="container-page py-6 text-center text-sm text-gray-500">
+            © @DateTime.Now.Year {{ProjectName}}. Tüm hakları saklıdır.
+        </div>
+    </footer>
+</div>

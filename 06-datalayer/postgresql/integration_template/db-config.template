@@ -1,0 +1,89 @@
+<!-- PURPOSE OF THIS FILE: PostgreSQL bağlantı konfigürasyonu şablonu — AI tarafından projeye enjekte edilir, {{Placeholder}}'lar domain logic ile doldurulur -->
+/* ═══════════════════════════════════════════════════════════════════
+   PostgreSQL Bağlantı Konfigürasyonu
+   Şunlardan birini seç: .NET / pg Pool / Prisma / Drizzle
+   ═══════════════════════════════════════════════════════════════════ */
+
+// ============================================================
+// Seçenek A: .NET (Entity Framework Core)
+// Dosya: Program.cs içine enjekte edilir
+// ============================================================
+#if NET
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
+        npgsqlOptions.CommandTimeout(30);
+    }));
+#endif
+
+// ============================================================
+// Seçenek B: Node.js pg Pool
+// Dosya: src/config/database.js olarak oluşturulur
+// ============================================================
+#if NODE_PG
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20,                          // max bağlantı
+  idleTimeoutMillis: 30000,         // boş bağlantı timeout
+  connectionTimeoutMillis: 5000,    // bağlantı timeout
+});
+
+// Havuz testi
+pool.query('SELECT NOW()')
+  .then(() => console.log('PostgreSQL bağlantısı başarılı'))
+  .catch(err => console.error('PostgreSQL bağlantı hatası:', err.message));
+
+module.exports = { pool };
+#endif
+
+// ============================================================
+// Seçenek C: Prisma Schema
+// Dosya: prisma/schema.prisma
+// ============================================================
+#if PRISMA
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model {{ModelName}} {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("{{model_names}}")
+  @@index([name])
+}
+#endif
+
+// ============================================================
+// Seçenek D: Drizzle ORM
+// Dosya: src/config/database.ts
+// ============================================================
+#if DRIZZLE
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export const db = drizzle(pool, { logger: process.env.NODE_ENV === 'development' });
+#endif
+
+/* ═══════════════════════════════════════════════════════════════════
+   .env / environment variable formatı:
+   DATABASE_URL=postgresql://{{DB_USER}}:{{DB_PASSWORD}}@{{DB_HOST}}:{{DB_PORT}}/{{DB_NAME}}
+   ═══════════════════════════════════════════════════════════════════ */

@@ -1,0 +1,129 @@
+{
+  "_meta": {
+    "description": "Blazor WebAssembly 8.0 stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Blazor WASM: C# ile client-side SPA, component tabanlı, .NET ekosistemiyle tam entegrasyon.",
+    "stack": "netblazor",
+    "display_name": "Blazor WebAssembly",
+    "type": "wasm_spa_frontend",
+    "language": "C# 12 (.NET 8)",
+    "version": "net8.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "Blazor WebAssembly 8.0",
+    "description": "C# ile yazılmış client-side Single Page Application (SPA). .NET runtime WebAssembly üzerinde tarayıcıda çalışır. Component tabanlı mimari, Razor syntax, dependency injection. .NET ekosisteminde kalmak isteyen ekipler için idealdir.",
+    "use_cases": [
+      "Kurumsal admin panel",
+      "Dashboard / Raporlama arayüzü",
+      "İç yönetim araçları",
+      "ERP/CRM frontend",
+      "Finans kuruluşu arayüzü"
+    ],
+    "paired_backend": "netwebapi",
+    "not_suitable_for": [
+      "SEO kritik siteler (SSR yok — Blazor Server daha uygun)",
+      "Halka açık e-ticaret (SEO — Astro.js/Nuxt.js daha uygun)",
+      "Mobil uygulama (.NET MAUI daha uygun)"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceAdmin" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "ecommerce-admin" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Admin panel — e-ticaret yönetimi" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "api_integration": [
+      { "key": "{{API_BASE_URL}}", "description": "Backend API base URL", "example": "https://api.example.com" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "admin.example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "Blazor WebAssembly projesinin zorunlu dizin yapısı",
+    "directories": {
+      "Pages/": "Razor component sayfaları (.razor) — routing",
+      "Shared/": "Paylaşılan UI component'leri",
+      "Services/": "API client servisleri, business logic",
+      "Models/": "DTO ve entity sınıfları",
+      "wwwroot/": "Statik asset'ler (CSS, JS, resimler, favicon)"
+    },
+    "files": {
+      "Program.cs": "Uygulama giriş noktası — DI kaydı, HttpClient",
+      "App.razor": "Root component — Router, Layout",
+      "_Imports.razor": "Global using direktifleri",
+      "{{ProjectName}}.csproj": "Proje dosyası",
+      "wwwroot/app.css": "Global CSS (TailwindCSS)"
+    }
+  },
+
+  "entry_point": "Program.cs",
+  "config_file": "{{ProjectName}}.csproj",
+
+  "dependencies": {
+    "core": [
+      { "package": "Microsoft.AspNetCore.Components.WebAssembly", "version": "8.0.*" },
+      { "package": "Microsoft.AspNetCore.Components.WebAssembly.DevServer", "version": "8.0.*", "note": "Development only" }
+    ],
+    "http": [
+      { "package": "Microsoft.Extensions.Http", "version": "8.0.*" }
+    ],
+    "auth": [
+      { "package": "Microsoft.AspNetCore.Components.WebAssembly.Authentication", "version": "8.0.*" }
+    ],
+    "optional": [
+      { "package": "Blazored.LocalStorage", "version": "4.5.*", "use_case": "Local storage erişimi" },
+      { "package": "Blazored.Modal", "version": "7.3.*", "use_case": "Modal dialog" },
+      { "package": "Blazored.Toast", "version": "4.2.*", "use_case": "Toast notification" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "component_based": {
+      "description": "Razor component'leri (.razor) — HTML + C# @code blokları",
+      "rule": "Her component tek sorumluluk prensibine uymalı, reusable olmalı"
+    },
+    "http_client": {
+      "description": "Typed HttpClient DI ile servislere enjekte edilir",
+      "rule": "Program.cs'te HttpClient base URL API'ye ayarlanır, her servis constructor'dan alır"
+    },
+    "state_management": {
+      "description": "Component state + DI singleton servisler",
+      "rule": "Sayfalar arası state için scoped/singleton service, form state için component field"
+    }
+  },
+
+  "deployment": {
+    "primary": "Azure Static Web Apps",
+    "alternatives": ["Azure Blob Storage (static website)", "Vercel"],
+    "build_command": "dotnet publish -c Release -o ./publish",
+    "output_directory": "publish/wwwroot/",
+    "note": "WASM dosyaları brotli/gzip sıkıştırma ile sunulmalı"
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Program.cs yapısını koru (DI, HttpClient kaydı)",
+      "App.razor Router yapısını koru",
+      "wwwroot/app.css TailwindCSS yapısını koru",
+      "Core NuGet paketlerini .csproj'a ekle"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Örnek sayfaları aynen bırakma — domain logic'e göre uyarla",
+      "API base URL'i varsayılan değerde bırakma"
+    ],
+    "customize_for_domain": [
+      "Pages/ → domain sayfalarını oluştur (CRUD sayfaları, dashboard)",
+      "Services/ → typed HttpClient servisleri oluştur",
+      "Models/ → domain DTO'larını tanımla",
+      "Shared/ → reusable UI component'leri (data grid, form, modal wrapper)",
+      "wwwroot/app.css → TailwindCSS ile özel stil"
+    ]
+  }
+}

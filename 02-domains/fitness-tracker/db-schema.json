@@ -1,0 +1,496 @@
+{
+  "_meta": {
+    "description": "Enterprise Fitness Tracker Database Schema. Covers users, exercises, workouts, nutrition, goals, social features, and coach-client relationships."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "username": "String (Unique)",
+        "displayName": "String",
+        "email": "String (Unique)",
+        "emailVerified": "Boolean (Default: false)",
+        "hashedPassword": "String",
+        "role": "Enum (user, coach, admin)",
+        "subscriptionTier": "Enum (free, pro, premium)",
+        "bio": "Text (Nullable)",
+        "avatarUrl": "String (Nullable)",
+        "gender": "Enum (male, female, other, prefer_not_to_say, nullable)",
+        "dateOfBirth": "Date (Nullable)",
+        "fitnessLevel": "Enum (beginner, intermediate, advanced, nullable)",
+        "activityLevel": "Enum (sedentary, lightly_active, moderately_active, very_active, extremely_active, nullable)",
+        "primaryGoal": "Enum (lose_weight, build_muscle, improve_endurance, general_health, strength, flexibility, nullable)",
+        "settings": "JSON (Privacy, notification prefs, units: metric/imperial, health sync connections)",
+        "isActive": "Boolean (Default: true)",
+        "lastActiveAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["username", "email", "role"]
+    },
+    "UserFollow": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "followerId": "UUID (FK User)",
+        "followingId": "UUID (FK User)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["followerId", ["followerId", "followingId (unique composite)"]]
+    },
+    "BodyMetric": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "weight": "Float (Nullable, kg or lbs based on user setting)",
+        "bodyFatPercentage": "Float (Nullable)",
+        "muscleMass": "Float (Nullable)",
+        "bmi": "Float (Nullable, auto-calculated)",
+        "measurements": "JSON (Custom measurements: { chest, waist, hips, leftArm, rightArm, leftThigh, rightThigh, calves, neck })",
+        "notes": "Text (Nullable)",
+        "loggedAt": "Date (The date this measurement was taken)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "loggedAt"]
+    },
+    "ProgressPhoto": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "type": "Enum (front, side, back, other)",
+        "imageUrl": "String",
+        "thumbnailUrl": "String",
+        "weight": "Float (Nullable, weight at time of photo)",
+        "notes": "Text (Nullable)",
+        "takenAt": "Date",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "takenAt"]
+    },
+    "Exercise": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text",
+        "instructions": "Text (Step-by-step form cues)",
+        "muscleGroup": "Enum (chest, back, legs, shoulders, arms, core, full_body)",
+        "secondaryMuscles": "Enum Array (Smaller stabilizer muscles targeted)",
+        "equipment": "Enum (barbell, dumbbell, machine, bodyweight, cable, kettlebell, resistance_band, medicine_ball, other)",
+        "type": "Enum (strength, cardio, flexibility, balance, plyometric)",
+        "difficulty": "Enum (beginner, intermediate, advanced)",
+        "mediaUrls": "JSON Array ([{ type: 'image'|'video', url, thumbnail }])",
+        "isCustom": "Boolean (Default: false)",
+        "createdById": "UUID (Nullable, FK User, if custom exercise)",
+        "isPublic": "Boolean (Default: false, for custom exercises shared publicly)",
+        "isApproved": "Boolean (Default: true, false for admin-review custom exercises)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "muscleGroup", "equipment", "type", "isCustom", "createdById"]
+    },
+    "WorkoutTemplate": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "description": "Text (Nullable)",
+        "createdById": "UUID (FK User)",
+        "goal": "Enum (strength, hypertrophy, endurance, weight_loss, general, flexibility)",
+        "level": "Enum (beginner, intermediate, advanced)",
+        "estimatedDuration": "Int (Minutes, nullable)",
+        "isPublic": "Boolean (Default: false)",
+        "isFeatured": "Boolean (Default: false, admin-curated)",
+        "useCount": "Int (Denormalized, Default: 0)",
+        "saveCount": "Int (Denormalized, Default: 0)",
+        "sourceTemplateId": "UUID (Nullable, FK to self, for cloned templates)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["createdById", "isPublic", "goal", "level"]
+    },
+    "WorkoutTemplateExercise": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "templateId": "UUID (FK WorkoutTemplate)",
+        "exerciseId": "UUID (FK Exercise)",
+        "sortOrder": "Int",
+        "targetSets": "Int (Nullable)",
+        "targetReps": "String (Nullable, e.g. '8-12' or 'AMRAP')",
+        "targetWeight": "Float (Nullable, percentage of 1RM or absolute)",
+        "targetDuration": "Int (Nullable, seconds for timed exercises)",
+        "targetDistance": "Float (Nullable, for cardio)",
+        "restInterval": "Int (Seconds, Default: 90)",
+        "notes": "Text (Nullable, form tips for this specific usage)",
+        "supersetGroup": "Int (Nullable, groups exercises into supersets by shared group number)",
+        "circuitOrder": "Int (Nullable, position within circuit if applicable)"
+      },
+      "indexes": ["templateId", "sortOrder"]
+    },
+    "WorkoutSession": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "templateId": "UUID (Nullable, FK WorkoutTemplate, if started from template)",
+        "name": "String (Nullable, e.g. 'Leg Day' or auto-generated)",
+        "status": "Enum (active, completed, cancelled)",
+        "startedAt": "DateTime",
+        "completedAt": "DateTime (Nullable)",
+        "totalDuration": "Int (Nullable, seconds, calculated on completion)",
+        "totalVolume": "Float (Nullable, kg/lbs total weight lifted, calculated)",
+        "totalCaloriesBurned": "Int (Nullable, estimated)",
+        "notes": "Text (Nullable, mood, energy, general observations)",
+        "energyLevel": "Enum (1-5, nullable)",
+        "perceivedDifficulty": "Enum (1-10 RPE, nullable)",
+        "isShared": "Boolean (Default: false)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "startedAt", "status", "isShared"]
+    },
+    "WorkoutSet": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sessionId": "UUID (FK WorkoutSession)",
+        "exerciseId": "UUID (FK Exercise)",
+        "templateExerciseId": "UUID (Nullable, FK WorkoutTemplateExercise)",
+        "setNumber": "Int",
+        "type": "Enum (warmup, working, drop_set, failure, amrap, emom)",
+        "weight": "Float (Nullable, for weighted exercises)",
+        "reps": "Int (Nullable)",
+        "duration": "Int (Nullable, seconds for timed/bodyweight)",
+        "distance": "Float (Nullable, for cardio)",
+        "rpe": "Float (Nullable, Rate of Perceived Exertion 1-10)",
+        "isPersonalRecord": "Boolean (Default: false, auto-detected)",
+        "estimatedOneRepMax": "Float (Nullable, auto-calculated from weight + reps)",
+        "notes": "Text (Nullable, per-set notes)",
+        "completedAt": "DateTime"
+      },
+      "indexes": ["sessionId", "exerciseId", "completedAt"]
+    },
+    "PersonalRecord": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "exerciseId": "UUID (FK Exercise)",
+        "type": "Enum (estimated_1rm, max_weight, max_reps, max_volume, longest_distance, fastest_pace, longest_duration)",
+        "value": "Float",
+        "unit": "String (kg, lbs, reps, km, miles, min_per_km, etc.)",
+        "sessionId": "UUID (FK WorkoutSession, nullable)",
+        "achievedAt": "DateTime",
+        "supersededAt": "DateTime (Nullable, when this PR was beaten)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "exerciseId", "type"]
+    },
+    "FoodItem": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "barcode": "String (Nullable, Indexed)",
+        "brand": "String (Nullable)",
+        "servingSize": "Float (Default: 100)",
+        "servingUnit": "String (Default: 'g', e.g. g, ml, oz, cup, piece)",
+        "calories": "Float (Per serving)",
+        "protein": "Float (g per serving)",
+        "carbs": "Float (g per serving)",
+        "fat": "Float (g per serving)",
+        "fiber": "Float (g per serving, nullable)",
+        "sugar": "Float (g per serving, nullable)",
+        "sodium": "Float (mg per serving, nullable)",
+        "saturatedFat": "Float (g per serving, nullable)",
+        "transFat": "Float (g per serving, nullable)",
+        "cholesterol": "Float (mg per serving, nullable)",
+        "isCustom": "Boolean (Default: false)",
+        "createdById": "UUID (Nullable, FK User)",
+        "isVerified": "Boolean (Default: true, false = pending review)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["name", "barcode", "isCustom", "createdById"]
+    },
+    "NutritionDiary": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "date": "Date",
+        "waterIntake": "Float (Default: 0, in glasses or ml based on user setting)",
+        "waterGoal": "Float (Default: 8)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", ["userId", "date (unique composite)"]]
+    },
+    "Meal": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "diaryId": "UUID (FK NutritionDiary)",
+        "type": "Enum (breakfast, lunch, dinner, snack, post_workout, other)",
+        "name": "String (Nullable, e.g. 'Post-workout shake')",
+        "sortOrder": "Int (Default: 0)",
+        "totalCalories": "Float (Denormalized, Default: 0)",
+        "totalProtein": "Float (Denormalized, Default: 0)",
+        "totalCarbs": "Float (Denormalized, Default: 0)",
+        "totalFat": "Float (Denormalized, Default: 0)",
+        "notes": "Text (Nullable)",
+        "loggedAt": "DateTime"
+      },
+      "indexes": ["diaryId", "type"]
+    },
+    "MealFoodItem": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "mealId": "UUID (FK Meal)",
+        "foodItemId": "UUID (FK FoodItem)",
+        "servings": "Float (Default: 1, multiplier of food item's serving size)",
+        "calories": "Float (Denormalized from food item × servings)",
+        "protein": "Float (Denormalized)",
+        "carbs": "Float (Denormalized)",
+        "fat": "Float (Denormalized)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["mealId"]
+    },
+    "NutritionTarget": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User, Unique)",
+        "dailyCalories": "Int",
+        "proteinGrams": "Int",
+        "carbsGrams": "Int",
+        "fatGrams": "Int",
+        "proteinPercentage": "Int (Default: 30)",
+        "carbsPercentage": "Int (Default: 40)",
+        "fatPercentage": "Int (Default: 30)",
+        "isAutoCalculated": "Boolean (Default: true, false = manually set)",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId (unique)"]
+    },
+    "MealPlan": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "createdById": "UUID (FK User)",
+        "name": "String",
+        "description": "Text (Nullable)",
+        "goal": "Enum (cutting, bulking, maintenance, keto, vegan, high_protein, custom)",
+        "totalDailyCalories": "Int (Approximate)",
+        "isPublic": "Boolean (Default: false)",
+        "saveCount": "Int (Denormalized, Default: 0)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["createdById", "goal", "isPublic"]
+    },
+    "MealPlanDay": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "mealPlanId": "UUID (FK MealPlan)",
+        "dayName": "String (e.g. 'Monday', 'Workout Day', 'Rest Day')",
+        "sortOrder": "Int"
+      }
+    },
+    "MealPlanMeal": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "mealPlanDayId": "UUID (FK MealPlanDay)",
+        "type": "Enum (breakfast, lunch, dinner, snack)",
+        "name": "String",
+        "foodItems": "JSON Array ([{ foodItemId, servings, notes }])",
+        "sortOrder": "Int"
+      }
+    },
+    "Goal": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "type": "Enum (weight, strength, habit, nutrition, measurement, custom)",
+        "title": "String",
+        "description": "Text (Nullable)",
+        "targetValue": "Float",
+        "currentValue": "Float (Default: 0)",
+        "unit": "String (kg, lbs, reps, workouts_per_week, cm, inches, days, etc.)",
+        "exerciseId": "UUID (Nullable, FK Exercise, for strength goals)",
+        "startDate": "Date",
+        "targetDate": "Date (Nullable)",
+        "status": "Enum (active, completed, abandoned, on_track, at_risk, off_track)",
+        "milestones": "JSON Array ([{ value, label, achievedAt }])",
+        "completionPercentage": "Float (Default: 0)",
+        "completedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "type", "status", "targetDate"]
+    },
+    "GoalCheckIn": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "goalId": "UUID (FK Goal)",
+        "value": "Float",
+        "notes": "Text (Nullable)",
+        "loggedAt": "Date",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["goalId", "loggedAt"]
+    },
+    "Challenge": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "description": "Text",
+        "type": "Enum (workout_count, total_distance, total_volume, streak, custom)",
+        "metric": "String (e.g. 'pushups', 'running_km', 'workout_days')",
+        "targetValue": "Float",
+        "startDate": "Date",
+        "endDate": "Date",
+        "isPublic": "Boolean (Default: true)",
+        "createdById": "UUID (FK User, nullable for admin-created)",
+        "participantCount": "Int (Denormalized, Default: 0)",
+        "imageUrl": "String (Nullable)",
+        "rules": "Text (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["isPublic", "startDate", "endDate"]
+    },
+    "ChallengeParticipant": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "challengeId": "UUID (FK Challenge)",
+        "userId": "UUID (FK User)",
+        "currentValue": "Float (Default: 0)",
+        "rank": "Int (Nullable, recomputed periodically)",
+        "joinedAt": "DateTime"
+      },
+      "indexes": ["challengeId", "userId (unique composite)", "currentValue"]
+    },
+    "WorkoutLike": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sessionId": "UUID (FK WorkoutSession, shared workouts only)",
+        "userId": "UUID (FK User)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["sessionId", ["sessionId", "userId (unique composite)"]]
+    },
+    "WorkoutComment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sessionId": "UUID (FK WorkoutSession)",
+        "userId": "UUID (FK User)",
+        "content": "Text",
+        "isEdited": "Boolean (Default: false)",
+        "status": "Enum (published, deleted, reported)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["sessionId", "createdAt"]
+    },
+    "Conversation": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "type": "Enum (direct, coach_client)",
+        "lastMessageAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      }
+    },
+    "ConversationParticipant": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "conversationId": "UUID (FK Conversation)",
+        "userId": "UUID (FK User)",
+        "lastReadAt": "DateTime (Nullable)",
+        "joinedAt": "DateTime"
+      },
+      "indexes": ["conversationId", "userId"]
+    },
+    "Message": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "conversationId": "UUID (FK Conversation)",
+        "senderId": "UUID (FK User)",
+        "type": "Enum (text, workout_share, meal_plan_share, progress_share)",
+        "content": "Text (Nullable, for text messages)",
+        "sharedEntityType": "Enum (Nullable, workout, meal_plan, progress_photo)",
+        "sharedEntityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["conversationId", "createdAt"]
+    },
+    "CoachClient": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "coachId": "UUID (FK User, must have role=coach)",
+        "clientId": "UUID (FK User)",
+        "status": "Enum (active, inactive, pending)",
+        "startDate": "Date",
+        "endDate": "Date (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["coachId", "clientId", "status"]
+    },
+    "TrainingProgram": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "coachId": "UUID (FK User)",
+        "clientId": "UUID (FK User)",
+        "name": "String",
+        "description": "Text (Nullable)",
+        "type": "Enum (workout, nutrition, combined)",
+        "startDate": "Date",
+        "endDate": "Date (Nullable)",
+        "status": "Enum (active, completed, paused)",
+        "templateIds": "UUID Array (References to WorkoutTemplate or MealPlan)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["coachId", "clientId", "status"]
+    },
+    "CheckIn": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "coachId": "UUID (FK User)",
+        "clientId": "UUID (FK User)",
+        "programId": "UUID (Nullable, FK TrainingProgram)",
+        "type": "Enum (weekly, biweekly, monthly, custom)",
+        "scheduledDate": "Date",
+        "submittedAt": "DateTime (Nullable)",
+        "clientNotes": "Text (Nullable)",
+        "clientMetrics": "JSON (Weight, measurements, energy, mood, etc.)",
+        "photoUrls": "String Array (Nullable, progress photos)",
+        "coachFeedback": "Text (Nullable)",
+        "status": "Enum (pending, submitted, reviewed)",
+        "reviewedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["coachId", "clientId", "status", "scheduledDate"]
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User, recipient)",
+        "actorId": "UUID (FK User, nullable)",
+        "type": "Enum (workout_liked, workout_commented, new_follower, pr_achieved, goal_completed, challenge_joined, challenge_ended, checkin_due, checkin_reviewed, program_assigned, streak_milestone, reminder)",
+        "targetType": "Enum (workout, goal, challenge, checkin, user, program)",
+        "targetId": "UUID (Nullable)",
+        "content": "String (Preview text)",
+        "isRead": "Boolean (Default: false)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "isRead", "createdAt"]
+    },
+    "Report": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "reporterId": "UUID (FK User)",
+        "targetType": "Enum (workout_comment, workout_session, user, custom_exercise, food_item)",
+        "targetId": "UUID",
+        "reason": "Enum (spam, harassment, inappropriate_content, misinformation, other)",
+        "description": "Text (Nullable)",
+        "status": "Enum (pending, reviewed, resolved, dismissed)",
+        "resolvedById": "UUID (Nullable, FK User)",
+        "createdAt": "DateTime",
+        "resolvedAt": "DateTime (Nullable)"
+      },
+      "indexes": ["status", "createdAt"]
+    }
+  }
+}

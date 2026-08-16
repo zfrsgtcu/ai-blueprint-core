@@ -1,0 +1,430 @@
+{
+  "_meta": {
+    "description": "E-Öğrenme Sistemi (LMS) veritabanı şeması. Kurs hiyerarşisi (Course→Module→Lesson), kayıt ve erişim, ilerleme takibi (heartbeat), quiz (çok formatlı soru, attempt), ödev (submission + grading), sertifika, kupon ve ödeme, forum, canlı ders, değerlendirme ve denetim modellerini içerir. Güvenlik: quiz cevapları sunucu taraflı değerlendirilir, fiyatlar client'tan alınmaz."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "fullName": "String",
+        "role": "Enum (student, instructor, admin) (Default: student)",
+        "avatarUrl": "String (Nullable)",
+        "bio": "Text (Nullable, max 500 karakter, eğitmen profili için)",
+        "website": "String (Nullable)",
+        "socialLinks": "JSONB (Nullable, { twitter?, linkedin?, github?, youtube? })",
+        "isActive": "Boolean (Default: true)",
+        "failedLoginAttempts": "Int (Default: 0)",
+        "lockedUntil": "DateTime (Nullable)",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "role", "isActive"],
+      "note": "student: kurslara kaydolur, ilerleme takip eder. instructor: kurs oluşturur, öğrencileri değerlendirir. admin: tüm platform yönetimi. 5 başarısız giriş → 15 dakika hesap kilidi."
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (max 100 karakter, Unique)",
+        "slug": "String (Unique, Index)",
+        "description": "Text (Nullable)",
+        "iconUrl": "String (Nullable)",
+        "parentId": "UUID (Nullable, Foreign Key → Category.id, self-relation)",
+        "courseCount": "Int (Default: 0, denormalize)",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["slug", "parentId", "sortOrder"],
+      "note": "Kurs kategorileri. En fazla 3 seviye derinlik. parentId null ise ana kategori."
+    },
+    "Course": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "instructorId": "UUID (Foreign Key → User.id, Index)",
+        "categoryId": "UUID (Nullable, Foreign Key → Category.id, Index)",
+        "title": "String (max 300 karakter)",
+        "slug": "String (Unique, Index, URL dostu)",
+        "description": "Text (Zengin metin, kurs açıklaması)",
+        "shortDescription": "String (Nullable, max 200 karakter, kart görünümü için)",
+        "requirements": "Text (Nullable, ön koşullar, Markdown)",
+        "objectives": "JSONB (Default: [], kazanımlar: ['string1', 'string2'])",
+        "targetAudience": "Text (Nullable, hedef kitle)",
+        "price": "Decimal (10, 2) (Default: 0, 0 = ücretsiz kurs)",
+        "currency": "String (Default: 'TRY')",
+        "level": "Enum (beginner, intermediate, advanced, all_levels) (Default: all_levels)",
+        "language": "String (Default: 'tr', kurs içerik dili)",
+        "coverImage": "String (Nullable, CDN URL)",
+        "trailerVideoUrl": "String (Nullable, tanıtım videosu)",
+        "durationHours": "Decimal (6, 1) (Default: 0, toplam video/metin süresi)",
+        "moduleCount": "Int (Default: 0, denormalize)",
+        "lessonCount": "Int (Default: 0, denormalize)",
+        "averageRating": "Decimal (3, 2) (Default: 0.00)",
+        "reviewCount": "Int (Default: 0, denormalize)",
+        "enrollmentCount": "Int (Default: 0, denormalize)",
+        "completionRate": "Decimal (5, 2) (Default: 0, denormalize, tamamlama yüzdesi)",
+        "hasDripFeeding": "Boolean (Default: false, kademeli içerik açma)",
+        "dripSchedule": "JSONB (Nullable, { modules: [{ moduleId, unlockDelayHours }] })",
+        "isPublished": "Boolean (Default: false)",
+        "publishedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "instructorId", "categoryId", "isPublished", "level", "averageRating DESC", "enrollmentCount DESC"],
+      "note": "price=0 ise ücretsiz kurs, ödeme adımı atlanır. hasDripFeeding=true ise dripSchedule'e göre dersler kademeli açılır. durationHours: tüm video/text derslerin toplam dakikası / 60. completionRate: completed / enrolled * 100."
+    },
+    "Module": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "courseId": "UUID (Foreign Key → Course.id, ON DELETE CASCADE, Index)",
+        "title": "String (max 300 karakter)",
+        "description": "Text (Nullable)",
+        "orderIndex": "Int (Modül sırası)",
+        "unlockDelayHours": "Int (Nullable, drip-feeding için, kayıttan sonra kaç saat sonra açılır)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(courseId, orderIndex)", "courseId"],
+      "note": "orderIndex 0'dan başlar. unlockDelayHours: drip-feeding aktifse bu modül kayıttan N saat sonra açılır. null ise hemen açıktır."
+    },
+    "Lesson": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "moduleId": "UUID (Foreign Key → Module.id, ON DELETE CASCADE, Index)",
+        "title": "String (max 300 karakter)",
+        "type": "Enum (video, markdown, quiz, assignment)",
+        "content": "Text (Nullable, markdown dersler için içerik)",
+        "videoUrl": "String (Nullable, HLS/signed URL, video dersler için)",
+        "videoProvider": "Enum (vimeo, youtube, s3_signed) (Nullable)",
+        "durationMinutes": "Int (Nullable, video veya okuma süresi)",
+        "attachments": "JSONB (Nullable, [{ name, url, sizeBytes, mimeType }])",
+        "orderIndex": "Int (Ders sırası)",
+        "isFreePreview": "Boolean (Default: false, ücretsiz önizleme)",
+        "unlockDelayHours": "Int (Nullable, drip-feeding, bu dersin açılması için ek süre)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(moduleId, orderIndex)", "moduleId", "type", "isFreePreview"],
+      "note": "type=video: videoUrl zorunlu. type=markdown: content zorunlu. type=quiz: Quiz modeli ile ilişki. type=assignment: Assignment modeli ile ilişki. isFreePreview: kayıtsız kullanıcılar görebilir (video max 5 dk, metin max 500 kelime)."
+    },
+    "Enrollment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "courseId": "UUID (Foreign Key → Course.id, Index)",
+        "status": "Enum (active, completed, expired, refunded) (Default: active)",
+        "progressPercentage": "Decimal (5, 2) (Default: 0, tamamlanan ders / toplam ders * 100)",
+        "enrolledAt": "DateTime",
+        "expiresAt": "DateTime (Nullable, süreli erişim için)",
+        "completedAt": "DateTime (Nullable, tüm dersler tamamlandığında)",
+        "lastActivityAt": "DateTime (Nullable, son ders etkileşimi)",
+        "refundedAt": "DateTime (Nullable, iade tarihi)",
+        "certificateId": "UUID (Nullable, Foreign Key → Certificate.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, courseId) UNIQUE", "userId", "courseId", "status", "enrolledAt"],
+      "note": "Her kullanıcı bir kursa bir kez kaydolabilir (UNIQUE). status=expired: expiresAt geçmiş. refunded: iade edilmiş, erişim yok. progressPercentage: LessonProgress tablosundan hesaplanır. lastActivityAt: heartbeat veya quiz attempt ile güncellenir."
+    },
+    "LessonProgress": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "lessonId": "UUID (Foreign Key → Lesson.id, ON DELETE CASCADE)",
+        "enrollmentId": "UUID (Foreign Key → Enrollment.id, ON DELETE CASCADE, Index)",
+        "watchedDuration": "Int (Default: 0, saniye, video dersler için heartbeat ile hesaplanır)",
+        "isCompleted": "Boolean (Default: false)",
+        "completedAt": "DateTime (Nullable)",
+        "lastWatchedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(userId, lessonId) UNIQUE", "enrollmentId", "userId", "isCompleted"],
+      "note": "Video dersler: heartbeat ile watchedDuration güncellenir, >= durationMinutes*60*0.9 → isCompleted=true. Markdown dersler: ders sayfasını açma → isCompleted=true (basit). Quiz: QuizAttempt.isPassed=true → completed. Assignment: AssignmentSubmission.score != null → completed."
+    },
+    "VideoHeartbeat": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "lessonId": "UUID (Foreign Key → Lesson.id, Index)",
+        "currentTime": "Decimal (10, 2) (Anlık video pozisyonu, saniye)",
+        "playbackRate": "Decimal (3, 2) (Oynatma hızı)",
+        "isPlaying": "Boolean",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, lessonId, createdAt)", "createdAt"],
+      "note": "Client her 15 saniyede bir heartbeat gönderir. playbackRate > 2.0 → kabul edilmez (hızlı izleme tespiti). Aynı currentTime tekrarı → sayılmaz. 30 günlük veriler cron job ile temizlenir."
+    },
+    "Quiz": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "lessonId": "UUID (Foreign Key → Lesson.id, ON DELETE CASCADE, UNIQUE, Index)",
+        "passingScore": "Decimal (5, 2) (Geçme notu, örn: 70.00 = %70)",
+        "timeLimitMinutes": "Int (Nullable, sınav süresi dakika, null = süresiz)",
+        "shuffleQuestions": "Boolean (Default: true, soruları karıştır)",
+        "attemptsAllowed": "Int (Default: 3, 0 = sınırsız)",
+        "showCorrectAnswers": "Boolean (Default: true, sınav sonrası doğru cevapları göster)",
+        "cheatDetectionEnabled": "Boolean (Default: true, sekme değiştirme tespiti)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["lessonId"],
+      "note": "Her ders sadece 1 quiz içerebilir. passingScore: quiz puanı >= passingScore → isPassed=true. attemptsAllowed: her deneme yeni QuizAttempt oluşturur, en yüksek skorlu geçerlidir. cheatDetectionEnabled: 3'ten fazla sekme değiştirme → otomatik teslim."
+    },
+    "Question": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "quizId": "UUID (Foreign Key → Quiz.id, ON DELETE CASCADE, Index)",
+        "text": "String (Soru metni)",
+        "type": "Enum (multiple_choice, true_false, fill_in_the_blank, essay)",
+        "correctOptionId": "UUID (Nullable, Foreign Key → Option.id, doğru seçenek)",
+        "correctTextAnswer": "String (Nullable, fill_in_the_blank için doğru metin)",
+        "explanation": "Text (Nullable, cevap açıklaması, yanlış cevapta gösterilir)",
+        "points": "Int (Default: 1, soru puanı)",
+        "orderIndex": "Int (Sıralama)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["quizId", "orderIndex", "type"],
+      "note": "correctOptionId: client'a GÖNDERİLMEZ. API sadece question text + options (id, text) döndürür. fill_in_the_blank: correctOptionId null, correctTextAnswer ile karşılaştırma (trim+lowercase+normalize). essay: manuel değerlendirme gerekir."
+    },
+    "Option": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "questionId": "UUID (Foreign Key → Question.id, ON DELETE CASCADE, Index)",
+        "text": "String (Seçenek metni)",
+        "orderIndex": "Int (Sıralama, shuffleQuestions=true ise ignore edilir)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["questionId"],
+      "note": "Seçenekler UI'da gösterilir ama hangisinin doğru olduğu client'a bildirilmez."
+    },
+    "QuizAttempt": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "quizId": "UUID (Foreign Key → Quiz.id, Index)",
+        "score": "Decimal (5, 2) (Alınan puan)",
+        "totalPoints": "Int (Maksimum puan)",
+        "isPassed": "Boolean (score >= quiz.passingScore)",
+        "answers": "JSONB (Kullanıcı cevaplarının snapshot'ı: [{ questionId, selectedOptionId?, textAnswer? }])",
+        "cheatFlag": "Boolean (Default: false, kopya tespiti)",
+        "tabSwitchCount": "Int (Default: 0, sekme değiştirme sayısı)",
+        "startedAt": "DateTime",
+        "completedAt": "DateTime (Nullable)",
+        "timeSpentSeconds": "Int (Nullable, sorguda geçen süre)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, quizId)", "quizId", "userId", "isPassed"],
+      "note": "Her denemede yeni kayıt. cheatFlag=true → eğitmene bildirim. answers snapshot'ı: o anki seçenek ID'leri ile kaydedilir, seçenekler sonradan değişse bile kayıt korunur. timeSpentSeconds: completedAt - startedAt."
+    },
+    "Assignment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "lessonId": "UUID (Foreign Key → Lesson.id, ON DELETE CASCADE, UNIQUE, Index)",
+        "title": "String (max 300 karakter)",
+        "description": "Text (Markdown, ödev açıklaması)",
+        "instructions": "Text (Nullable, teslim talimatları)",
+        "dueDate": "DateTime (Nullable, son teslim tarihi)",
+        "maxScore": "Int (Default: 100)",
+        "allowedFileTypes": "JSONB (Default: ['pdf','docx','zip','png','jpg'], kabul edilen dosya türleri)",
+        "maxFileSizeMB": "Int (Default: 50)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["lessonId"],
+      "note": "Her ders sadece 1 ödev içerebilir. dueDate null ise süresiz. dueDate geçmiş gönderimler 'late' işaretlenir."
+    },
+    "AssignmentSubmission": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "assignmentId": "UUID (Foreign Key → Assignment.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "submissionUrl": "String (Dosya S3 key)",
+        "submissionFileName": "String (Orijinal dosya adı)",
+        "submissionFileSize": "Int (Bayt)",
+        "status": "Enum (submitted, late, superseded, graded) (Default: submitted)",
+        "score": "Int (Nullable, aldığı not, max = assignment.maxScore)",
+        "feedback": "Text (Nullable, eğitmen geri bildirimi)",
+        "resubmissionRequired": "Boolean (Default: false)",
+        "gradedBy": "UUID (Nullable, Foreign Key → User.id, notlandıran eğitmen)",
+        "submittedAt": "DateTime",
+        "gradedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(assignmentId, userId)", "assignmentId", "userId", "status"],
+      "note": "Yeniden gönderim: önceki submission status=superseded. resubmissionRequired=true → öğrenciye bildirim + yeniden yükleme hakkı."
+    },
+    "Certificate": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "courseId": "UUID (Foreign Key → Course.id, Index)",
+        "certificateNumber": "String (Unique, Index, format: 'CERT-{timestamp}-{random6}')",
+        "templateId": "String (Nullable, sertifika şablon ID'si)",
+        "downloadUrl": "String (PDF URL, CDN)",
+        "issueDate": "DateTime",
+        "isRevoked": "Boolean (Default: false)",
+        "revokedAt": "DateTime (Nullable)",
+        "revokeReason": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["certificateNumber", "userId", "courseId", "(userId, courseId) UNIQUE"],
+      "note": "Her kullanıcı-kurs için 1 sertifika (UNIQUE). certificateNumber tahmin edilemez (UUID + random). Public doğrulama endpoint'i. isRevoked=true → doğrulamada { valid: false }. PDF Puppeteer/Playwright ile üretilir."
+    },
+    "Coupon": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "code": "String (Unique, Index, büyük harf, örn: 'YAZ2026')",
+        "discountType": "Enum (percentage, fixed)",
+        "discountValue": "Decimal (10, 2) (percentage: 0-100, fixed: para birimi)",
+        "minPurchaseAmount": "Decimal (10, 2) (Nullable, minimum sepet tutarı)",
+        "courseId": "UUID (Nullable, Foreign Key → Course.id, belirli kursa özel ise)",
+        "categoryId": "UUID (Nullable, Foreign Key → Category.id, belirli kategoriye özel ise)",
+        "validFrom": "DateTime (Nullable, geçerlilik başlangıcı)",
+        "validUntil": "DateTime (Nullable, geçerlilik bitişi, null = süresiz)",
+        "maxUses": "Int (Default: 100, maksimum kullanım sayısı)",
+        "usedCount": "Int (Default: 0)",
+        "maxUsesPerUser": "Int (Default: 1, kullanıcı başına maksimum kullanım)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["code", "isActive", "validUntil", "usedCount"],
+      "note": "Kupon doğrulama: isActive=true, (validFrom null veya NOW() >= validFrom), (validUntil null veya NOW() <= validUntil), usedCount < maxUses. Kullanım atomik: UPDATE SET usedCount = usedCount + 1 WHERE id = ? AND usedCount < maxUses."
+    },
+    "CouponUsage": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "couponId": "UUID (Foreign Key → Coupon.id, ON DELETE CASCADE)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "orderId": "UUID (Foreign Key → Order.id)",
+        "discountAmount": "Decimal (10, 2)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(couponId, userId)", "userId", "orderId"],
+      "note": "Kupon kullanım geçmişi. maxUsesPerUser kontrolü bu tablo üzerinden yapılır."
+    },
+    "Order": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "courseId": "UUID (Foreign Key → Course.id)",
+        "couponId": "UUID (Nullable, Foreign Key → Coupon.id)",
+        "originalAmount": "Decimal (10, 2) (İndirimsiz fiyat)",
+        "discountAmount": "Decimal (10, 2) (Default: 0)",
+        "finalAmount": "Decimal (10, 2) (Ödenen tutar)",
+        "currency": "String (Default: 'TRY')",
+        "status": "Enum (pending, completed, failed, refunded) (Default: pending)",
+        "paymentMethod": "String (Nullable, 'stripe', 'iyzico', 'transfer')",
+        "transactionId": "String (Nullable, Payment gateway transaction ID)",
+        "refundTransactionId": "String (Nullable)",
+        "refundedAt": "DateTime (Nullable)",
+        "idempotencyKey": "String (Unique, Index)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId", "courseId", "status", "idempotencyKey", "transactionId"],
+      "note": "Fiyat hesaplaması BACKEND tarafında yapılır, client fiyatı kullanılmaz. idempotencyKey ile çifte ödeme engeli. status=completed → Enrollment oluşturulur. status=refunded → Enrollment.status=refunded, erişim kesilir."
+    },
+    "Review": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "courseId": "UUID (Foreign Key → Course.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "enrollmentId": "UUID (Foreign Key → Enrollment.id)",
+        "rating": "Int (1-5)",
+        "title": "String (Nullable, max 200 karakter)",
+        "comment": "Text (Nullable, max 2000 karakter)",
+        "isApproved": "Boolean (Default: true, admin moderasyonu)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(courseId, userId) UNIQUE", "courseId", "rating", "isApproved"],
+      "note": "Her kullanıcı bir kursa 1 değerlendirme yapabilir. Sadece enrollment.status=completed veya active olanlar yapabilir. Course.averageRating ve reviewCount trigger ile güncellenir."
+    },
+    "LiveSession": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "courseId": "UUID (Foreign Key → Course.id, ON DELETE CASCADE, Index)",
+        "title": "String (max 300 karakter)",
+        "description": "Text (Nullable)",
+        "scheduledAt": "DateTime (UTC)",
+        "durationMinutes": "Int (Tahmini süre)",
+        "meetingUrl": "String (Zoom/Google Meet linki)",
+        "meetingProvider": "Enum (zoom, google_meet, teams, custom) (Default: zoom)",
+        "recordingUrl": "String (Nullable, kayıt linki, oturum sonrası eklenir)",
+        "isCanceled": "Boolean (Default: false)",
+        "cancelReason": "String (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["courseId", "scheduledAt", "isCanceled"],
+      "note": "Canlı dersler kurs zaman çizelgesinde gösterilir. scheduledAt UTC. recordingUrl: oturum sonrası eğitmen tarafından eklenir. Kayıt erişimi sadece enrolled öğrencilere."
+    },
+    "ForumThread": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "courseId": "UUID (Foreign Key → Course.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "title": "String (max 300 karakter)",
+        "isPinned": "Boolean (Default: false, eğitmen sabitlemesi)",
+        "isLocked": "Boolean (Default: false, eğitmen kilitlemesi)",
+        "postCount": "Int (Default: 0, denormalize)",
+        "lastPostAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(courseId, isPinned DESC, lastPostAt DESC)", "courseId", "userId"],
+      "note": "Sadece enrolled öğrenciler ve eğitmenler oluşturabilir. isPinned → her zaman üstte. isLocked → yeni gönderi yapılamaz."
+    },
+    "ForumPost": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "threadId": "UUID (Foreign Key → ForumThread.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "content": "Text (max 10000 karakter)",
+        "contentHtml": "Text (Nullable, Markdown→HTML, DOMPurify sanitize)",
+        "isReported": "Boolean (Default: false)",
+        "reportReason": "String (Nullable)",
+        "reportedBy": "UUID (Nullable, Foreign Key → User.id)",
+        "reportedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(threadId, createdAt)", "userId", "isReported"],
+      "note": "Flat yapı (iç içe değil). Aynı kullanıcı 60 saniyede 1 gönderi. isReported=true → admin/mod incelemesi."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (enrollment_confirmed, course_completed, certificate_earned, lesson_unlocked, quiz_graded, assignment_graded, resubmission_required, forum_reply, live_session_reminder, payment_success, payment_failed, refund_processed, course_published)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'course', 'lesson', 'quiz', 'assignment', 'certificate', 'forum', 'order')",
+        "entityId": "UUID (Nullable)",
+        "channels": "JSONB (['email', 'in_app', 'push'])",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)", "createdAt"],
+      "note": "Tüm bildirimler asenkron (kuyruk + worker). lesson_unlocked: drip-feeding ile ders açıldığında. live_session_reminder: canlı dersten 1 saat ve 24 saat önce."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "action": "String (örn: 'enrollment.create', 'enrollment.refund', 'quiz.attempt_start', 'quiz.attempt_complete', 'assignment.submit', 'assignment.grade', 'certificate.issue', 'certificate.revoke', 'order.complete', 'order.refund', 'progress.reset', 'course.publish', 'coupon.create', 'user.role_change')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "details": "JSONB (Nullable, { changes?: {}, reason?: string, score?: number })",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "action", "(entityType, entityId)", "createdAt DESC"],
+      "note": "90 gün saklanır. Sınav cevapları ve soru içerikleri loglanmaz, sadece metadata (score, passed, attempt#). Ödev dosya içeriği loglanmaz."
+    }
+  }
+}

@@ -1,0 +1,220 @@
+{
+  "_meta": {
+    "description": "Rezervasyon Sistemi veritabanı şeması. Kaynak, hizmet, müsaitlik takvimi, rezervasyon, ödeme, bekleme listesi, özel alan şeması, tekrarlayan rezervasyon grubu ve denetim modellerini içerir. Tüm tarih/saat alanları UTC ISO 8601 formatındadır."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "phone": "String (Nullable, SMS bildirimleri için)",
+        "fullName": "String",
+        "role": "Enum (user, admin) (Default: user)",
+        "timezone": "String (Default: 'UTC', IANA timezone, bildirim zamanlaması için)",
+        "language": "String (Default: 'tr', bildirim dili)",
+        "notificationPreferences": "JSONB (Default: { email: true, sms: false, in_app: true })",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["email", "role"],
+      "note": "role=admin olanlar tüm rezervasyonları ve kaynakları yönetebilir. timezone bildirim zamanlamasını etkiler, rezervasyon saatleri her zaman UTC'dir."
+    },
+    "Resource": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index)",
+        "name": "String (max 200 karakter)",
+        "description": "Text (Nullable)",
+        "type": "Enum (room, staff, equipment)",
+        "location": "String (Nullable, fiziksel konum veya oda numarası)",
+        "capacity": "Int (Default: 1, eşzamanlı maksimum rezervasyon sayısı)",
+        "color": "String (Nullable, takvimde gösterim için HEX renk kodu)",
+        "imageUrl": "String (Nullable)",
+        "customFieldsSchema": "JSONB (Nullable, [{ name, label, type: 'text'|'number'|'select'|'checkbox'|'date', required?, options?: [], min?, max?, defaultValue? }], max 20 alan)",
+        "minBookingNotice": "Int (Default: 60, minimum kaç dakika önceden rezervasyon yapılabileceği)",
+        "maxBookingAdvance": "Int (Default: 90, maksimum kaç gün ileriye rezervasyon yapılabileceği)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["ownerId", "type", "isActive"],
+      "note": "capacity > 1 olan kaynaklar aynı zaman diliminde birden fazla rezervasyon alabilir. minBookingNotice: örn 60 → en erken 1 saat sonrasına rezervasyon. maxBookingAdvance: örn 90 → en fazla 90 gün sonrasına."
+    },
+    "Service": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "resourceId": "UUID (Nullable, Foreign Key → Resource.id, Index, belirli bir kaynağa bağlı ise)",
+        "name": "String (max 200 karakter)",
+        "description": "Text (Nullable)",
+        "durationMinutes": "Int (Hizmet süresi, dakika)",
+        "bufferMinutes": "Int (Default: 0, hizmet sonrası tampon süre)",
+        "slotIntervalMinutes": "Int (Default: 30, slot gösterim aralığı: 5, 10, 15, 30, 60)",
+        "price": "Decimal (10, 2) (Hizmet ücreti, 0 = ücretsiz)",
+        "currency": "String (Default: 'TRY')",
+        "color": "String (Nullable, takvimde gösterim için HEX renk kodu)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["resourceId", "isActive"],
+      "note": "bufferMinutes: örn masaj 60dk + temizlik 15dk → rezervasyon 75dk bloke eder. slotIntervalMinutes: UI'da slot'ların hangi aralıklarla gösterileceği. price=0 ise ücretsiz hizmet, ödeme adımı atlanır."
+    },
+    "AvailabilitySchedule": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "resourceId": "UUID (Foreign Key → Resource.id, ON DELETE CASCADE, Index)",
+        "dayOfWeek": "Int (0=Pazar, 1=Pazartesi, ..., 6=Cumartesi)",
+        "startTime": "Time (Günün saati, timezone bağımsız, örn: '09:00')",
+        "endTime": "Time (Günün saati, örn: '17:00')",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(resourceId, dayOfWeek) UNIQUE", "resourceId"],
+      "note": "Bir resource için her gün birden fazla zaman aralığı tanımlanabilir (örn: 09:00-12:00 ve 13:00-17:00). Time tipi sadece saat:dakika tutar, UTC'den bağımsızdır."
+    },
+    "BlockedTime": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "resourceId": "UUID (Foreign Key → Resource.id, ON DELETE CASCADE, Index)",
+        "startTimeUTC": "DateTime (ISO 8601 UTC)",
+        "endTimeUTC": "DateTime (ISO 8601 UTC)",
+        "reason": "String (max 500 karakter, örn: 'Tatil', 'Bakım', 'Özel etkinlik')",
+        "recurringPattern": "String (Nullable, 'weekly' → her hafta aynı gün/saat)",
+        "createdBy": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(resourceId, startTimeUTC, endTimeUTC)", "resourceId"],
+      "note": "Tatil, bakım veya özel durumlar için zaman bloklama. recurringPattern='weekly' ise her hafta aynı gün/saat otomatik bloklanır. Müsaitlik hesaplamasında BlockedTime'lar çıkarılır."
+    },
+    "RecurringGroup": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "pattern": "JSONB ({ frequency: 'daily'|'weekly'|'monthly', interval: 1, count: N, daysOfWeek?: [], endDate?: ISO UTC })",
+        "totalCount": "Int (Toplam tekrarlama sayısı)",
+        "createdCount": "Int (Default: 0, oluşturulan rezervasyon sayısı)",
+        "createdAt": "DateTime"
+      },
+      "indexes": [],
+      "note": "Tekrarlayan rezervasyonların gruplanması için. Her tekrarlama ayrı Booking kaydı oluşturur, bu grup ile ilişkilendirilir. Maksimum count: 52."
+    },
+    "Booking": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "resourceId": "UUID (Foreign Key → Resource.id, Index)",
+        "serviceId": "UUID (Nullable, Foreign Key → Service.id)",
+        "recurringGroupId": "UUID (Nullable, Foreign Key → RecurringGroup.id)",
+        "startTimeUTC": "DateTime (ISO 8601 UTC, Index)",
+        "endTimeUTC": "DateTime (ISO 8601 UTC, Index)",
+        "status": "Enum (pending, confirmed, completed, cancelled, no_show, expired) (Default: pending)",
+        "totalPrice": "Decimal (10, 2)",
+        "cancellationReason": "String (Nullable, max 500 karakter)",
+        "refundAmount": "Decimal (10, 2) (Nullable)",
+        "refundRate": "Decimal (5, 4) (Nullable, iade oranı: 1.0=tam, 0.5=yarım)",
+        "customFields": "JSONB (Nullable, Resource.customFieldsSchema'ya göre doldurulmuş değerler)",
+        "notes": "Text (Nullable, kullanıcı notu, max 1000 karakter)",
+        "adminNotes": "Text (Nullable, admin notu, kullanıcı görmez)",
+        "checkinCode": "String (Nullable, 6 haneli sayısal kod, check-in için)",
+        "checkedInAt": "DateTime (Nullable)",
+        "expiresAt": "DateTime (Nullable, soft lock süre sonu, UTC)",
+        "cancelledAt": "DateTime (Nullable)",
+        "completedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": [
+        "(resourceId, startTimeUTC, endTimeUTC)",
+        "(resourceId, status)",
+        "userId",
+        "recurringGroupId",
+        "startTimeUTC",
+        "expiresAt",
+        "status"
+      ],
+      "note": "CRITICAL: Overlap kontrolü (resourceId, status IN ('pending','confirmed'), startTimeUTC < newEnd, endTimeUTC > newStart). expiresAt: pending durumda 15 dk soft lock. checkinCode: 6 haneli rastgele sayı, QR kod için. refundRate: >24h=1.0, 12-24h=0.5, <12h=0.0."
+    },
+    "Payment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "bookingId": "UUID (Foreign Key → Booking.id, UNIQUE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "amount": "Decimal (10, 2) (Ödenen tutar)",
+        "currency": "String (Default: 'TRY')",
+        "status": "Enum (pending, paid, refunded, partially_refunded, failed) (Default: pending)",
+        "paymentMethod": "String (Nullable, 'stripe', 'iyzico', 'transfer')",
+        "transactionId": "String (Nullable, Payment gateway transaction ID)",
+        "refundTransactionId": "String (Nullable)",
+        "refundAmount": "Decimal (10, 2) (Nullable)",
+        "refundedAt": "DateTime (Nullable)",
+        "idempotencyKey": "String (Unique, Index, tekrarlayan ödemeleri engellemek için)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["bookingId", "userId", "idempotencyKey", "status", "transactionId"],
+      "note": "Idempotency-Key ile aynı ödeme iki kez işlenmez. Key'ler 24 saat saklanır. partially_refunded: kısmi iade (admin manuel iade). Payment status değişiklikleri AuditLog'a kaydedilir."
+    },
+    "Waitlist": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "resourceId": "UUID (Foreign Key → Resource.id, Index)",
+        "serviceId": "UUID (Nullable, Foreign Key → Service.id)",
+        "requestedDate": "Date (İstenen gün)",
+        "requestedStartTime": "Time (İstenen başlangıç saati, timezone bağımsız)",
+        "requestedEndTime": "Time (İstenen bitiş saati)",
+        "status": "Enum (waiting, notified, expired) (Default: waiting)",
+        "notifiedAt": "DateTime (Nullable, UTC)",
+        "notificationExpiresAt": "DateTime (Nullable, notified sonrası 1 saat)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(resourceId, status, createdAt)", "userId", "requestedDate"],
+      "note": "FIFO sıralı: ORDER BY createdAt ASC. İptal durumunda ilk sıradaki kişiye bildirim. notified sonrası 1 saat içinde rezervasyon yapılmazsa expired + sıradakine geçilir. 72 saat sonra cron job ile waiting durumundakiler silinir."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (booking_confirmed, booking_reminder_24h, booking_reminder_1h, booking_cancelled, booking_no_show, waitlist_available, payment_failed, refund_processed)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'booking', 'payment', 'waitlist')",
+        "entityId": "UUID (Nullable)",
+        "channels": "JSONB (Hangi kanallara gönderildiği: ['email', 'sms', 'in_app'])",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)", "createdAt"],
+      "note": "Tüm bildirimler asenkron (kuyruk + worker). booking_reminder tetikleyicileri cron job ile kontrol edilir: her 5 dakikada bir yaklaşan rezervasyonlar taranır."
+    },
+    "Review": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "bookingId": "UUID (Foreign Key → Booking.id, UNIQUE, Index)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "resourceId": "UUID (Foreign Key → Resource.id)",
+        "rating": "Int (1-5)",
+        "comment": "Text (Nullable, max 1000 karakter)",
+        "isPublic": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["bookingId", "resourceId", "userId", "(resourceId, rating)"],
+      "note": "Sadece completed rezervasyonlar için değerlendirme yapılabilir. Her rezervasyon için 1 değerlendirme."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "action": "String (örn: 'booking.create', 'booking.cancel', 'booking.confirm', 'booking.checkin', 'booking.noshow', 'resource.create', 'service.update', 'payment.refund', 'payment.manual_refund', 'waitlist.notify')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "details": "JSONB (Nullable, { changes?: {}, reason?: string, refundAmount?: number })",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "action", "(entityType, entityId)", "createdAt DESC"],
+      "note": "90 gün saklanır. Rezervasyon içeriği (customFields) loglanmaz, sadece metadata."
+    }
+  }
+}

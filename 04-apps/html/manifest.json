@@ -1,0 +1,125 @@
+{
+  "_meta": {
+    "description": "HTML5 + CSS3 + Vanilla JavaScript (ES6+) statik site stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Framework'süz, semantik HTML5, WAI-ARIA erişilebilirlik, responsive mobile-first CSS, Vanilla JS ES6+.",
+    "stack": "html",
+    "display_name": "HTML5 + CSS + JS",
+    "type": "static_frontend",
+    "language": "HTML5 / CSS3 / JavaScript (ES6+)",
+    "version": "latest",
+    "lock_policy": "standard",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "Yok — Saf HTML5 + CSS3 + Vanilla JavaScript",
+    "description": "Framework'süz, sıfır bağımlılıklı statik web sitesi. Semantik HTML5 elementleri, WAI-ARIA attribute'leri ile WCAG 2.1 AA uyumlu tam erişilebilirlik. CSS Grid + Flexbox + Custom Properties ile responsive mobile-first tasarım. ES6+ Vanilla JS ile modüler, framework-free SPA routing. Progressive enhancement prensibi.",
+    "use_cases": [
+      "Statik landing page",
+      "Kurumsal tanıtım sitesi",
+      "Portfolyo / Kişisel site",
+      "Dokümantasyon sitesi",
+      "Erişilebilirlik odaklı kamu sitesi",
+      "MVP / Hızlı prototip"
+    ],
+    "not_suitable_for": [
+      "Ağır interaktif dashboard (React/Vue daha uygun)",
+      "Real-time uygulamalar",
+      "Büyük ölçekli state yönetimi gerektiren SPA'lar"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "CorporateSite" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "corporate-site" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Kurumsal web sitesi" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Corporate" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "www.example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "HTML5 + CSS + JS projesinin zorunlu dizin yapısı",
+    "directories": {
+      "index.html": "Ana sayfa — semantik HTML5, ARIA landmark'lar",
+      "css/": "Stil dosyaları (reset.css, style.css)",
+      "js/": "JavaScript modülleri (main.js, api.js, router.js)",
+      "js/components/": "Yeniden kullanılabilir UI bileşenleri (Web Components veya pure JS)",
+      "pages/": "Ek sayfalar (HTML fragment'leri)",
+      "assets/": "Statik asset'ler (resim, font, favicon)"
+    },
+    "files": {
+      "index.html": "Ana giriş noktası — <!DOCTYPE html>, lang='tr', charset, viewport",
+      "css/reset.css": "CSS reset / normalize",
+      "css/style.css": "Ana stil — Custom Properties, responsive",
+      "js/main.js": "Uygulama başlatma — router init, event binding",
+      "js/api.js": "fetch wrapper — API çağrıları",
+      "js/router.js": "Hash-based SPA routing"
+    }
+  },
+
+  "entry_point": "index.html",
+  "config_file": "Yok (tüm konfigürasyon HTML/CSS/JS içinde)",
+
+  "dependencies": {
+    "core": [],
+    "optional_cdn": [
+      { "package": "Google Fonts (Inter + Fira Code)", "url": "fonts.googleapis.com", "use_case": "Tipografi" },
+      { "package": "Lucide Icons (CDN)", "url": "unpkg.com/lucide@latest", "use_case": "İkon seti (isteğe bağlı)" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "semantic_html5": {
+      "description": "Tüm içerik anlamlı HTML5 elementleriyle yapılandırılır: <header>, <nav>, <main>, <section>, <article>, <aside>, <footer>, <figure>, <details>",
+      "rule": "<div> sadece stil wrapper olarak kullanılır, içerik her zaman semantik elementlerde"
+    },
+    "aria_accessibility": {
+      "description": "WAI-ARIA 1.2 attribute'leri ile yardımcı teknolojilere tam erişilebilirlik: aria-label, aria-labelledby, aria-describedby, aria-hidden, aria-expanded, aria-current, role",
+      "rule": "WCAG 2.1 AA seviyesi hedeflenir: renk kontrastı ≥ 4.5:1, klavye navigasyonu, skip-to-content link"
+    },
+    "progressive_enhancement": {
+      "description": "Temel içerik ve fonksiyonellik her ortamda çalışır, gelişmiş özellikler kademeli eklenir",
+      "rule": "JavaScript kapalıyken temel içerik erişilebilir olmalı, CSS kapalıyken HTML anlamlı olmalı"
+    },
+    "mobile_first": {
+      "description": "Varsayılan stil mobil görünüm, min-width media query'lerle masaüstüne genişlet",
+      "rule": "max-width değil min-width media query kullan, breakpoint'ler: 640px, 768px, 1024px, 1280px"
+    },
+    "bem_naming": {
+      "description": "CSS class adlandırması BEM (Block__Element--Modifier) konvansiyonu",
+      "rule": "Her component bir Block, alt öğeler __ ile, varyantlar -- ile"
+    }
+  },
+
+  "deployment": {
+    "primary": "Azure Static Web Apps",
+    "alternatives": ["GitHub Pages", "Netlify", "Vercel (static)", "Nginx"],
+    "build_command": "Yok (statik dosyalar direkt serve)",
+    "output_directory": "./ (root)",
+    "no_build_required": true
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "css/reset.css — CSS reset/normalize her projede kullanılır",
+      "js/api.js — fetch wrapper utility'si",
+      "HTML semantik yapı iskeletini koru",
+      "ARIA landmark rollerini (banner, main, navigation, contentinfo) koru"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Tüm sayfaları aynı şablonla oluşturma — her sayfa kendi içeriğine göre semantik elementler kullanmalı",
+      "Renk paletini değiştirmeden bırakma — markaya uygun özelleştir"
+    ],
+    "customize_for_domain": [
+      "index.html → domain'e uygun hero, about, features, contact bölümleri ekle",
+      "css/style.css → marka renkleri, font, spacing Custom Properties ile tanımla",
+      "js/components/ → domain entity kartları için Web Component oluştur",
+      "pages/ → ek sayfaları domain'e göre oluştur (about.html, contact.html, blog.html)"
+    ]
+  }
+}

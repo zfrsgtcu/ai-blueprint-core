@@ -1,0 +1,212 @@
+{
+  "_meta": {
+    "description": "Kitle Fonlaması (Crowdfunding) veritabanı şeması. Kullanıcı, kampanya, ödül kademeleri (tier), taahhüt (pledge), ödeme, yorum, güncelleme, favori, bildirim ve admin onay modellerini içerir."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "firstName": "String",
+        "lastName": "String",
+        "avatar": "String (Nullable)",
+        "bio": "Text (Nullable)",
+        "website": "String (Nullable)",
+        "socialLinks": "JSONB (Nullable, { twitter, linkedin, instagram })",
+        "role": "Enum (user, creator, admin)",
+        "isVerified": "Boolean (Default: false, kimlik doğrulaması)",
+        "totalBacked": "Decimal (15, 2) (Default: 0, denormalize — toplam destek tutarı)",
+        "totalCampaigns": "Int (Default: 0, denormalize — oluşturulan kampanya sayısı)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "role", "isVerified"],
+      "note": "creatorId, backerId, userId FK'leri bu tabloyu referans alır. isVerified: creator'ların kampanya açabilmesi için ön koşul."
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text (Nullable)",
+        "icon": "String (Nullable)",
+        "sortOrder": "Int (Default: 0)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["slug", "isActive", "sortOrder"]
+    },
+    "Campaign": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "creatorId": "UUID (Foreign Key → User.id, Index)",
+        "categoryId": "UUID (Foreign Key → Category.id, Index)",
+        "title": "String",
+        "slug": "String (Unique)",
+        "tagline": "String (Kısa slogan/özet, maksimum 160 karakter)",
+        "description": "Text (Detaylı açıklama, markdown veya blok tabanlı)",
+        "coverImage": "String",
+        "coverVideo": "String (Nullable, YouTube/Vimeo URL'i)",
+        "images": "JSONB (Nullable, ek görseller string array)",
+        "goalAmount": "Decimal (15, 2)",
+        "currentAmount": "Decimal (15, 2) (Default: 0, denormalize)",
+        "minPledgeAmount": "Decimal (15, 2) (Default: 1.00, minimum destek tutarı)",
+        "currency": "String (Default: 'TRY')",
+        "location": "String (Nullable, kampanya lokasyonu/şehir)",
+        "deadline": "DateTime",
+        "status": "Enum (draft, pending_review, active, successful, failed, cancelled)",
+        "isPublished": "Boolean (Default: false)",
+        "publishedAt": "DateTime (Nullable)",
+        "fundedAt": "DateTime (Nullable, hedefe ulaşma zamanı)",
+        "cancelledAt": "DateTime (Nullable)",
+        "viewCount": "Int (Default: 0)",
+        "backerCount": "Int (Default: 0, denormalize)",
+        "favoriteCount": "Int (Default: 0, denormalize)",
+        "commentCount": "Int (Default: 0, denormalize)",
+        "updateCount": "Int (Default: 0, denormalize)",
+        "tags": "JSONB (Nullable, string array — etiketler)",
+        "allowLatePledges": "Boolean (Default: false, başarılı kampanyanın deadline sonrası destek alıp almayacağı)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "creatorId", "categoryId", "status", "deadline", "isPublished", "createdAt DESC", "(status, deadline)"],
+      "note": "currentAmount ve backerCount her yeni başarılı pledge'de transaction içinde güncellenir. status workflow: draft → pending_review → active → (successful|failed). cancelled her aşamada mümkün."
+    },
+    "CampaignReview": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "campaignId": "UUID (Foreign Key → Campaign.id, ON DELETE CASCADE, Index)",
+        "reviewerId": "UUID (Foreign Key → User.id, Nullable)",
+        "status": "Enum (pending, approved, rejected)",
+        "rejectionReason": "Text (Nullable, reddedilme gerekçesi)",
+        "reviewNotes": "Text (Nullable, admin notları)",
+        "reviewedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(campaignId, status)", "reviewerId"],
+      "note": "Business logic gereği: Admin MUST approve/review before active. Kampanya pending_review durumundayken bu kayıt oluşturulur."
+    },
+    "Tier": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "campaignId": "UUID (Foreign Key → Campaign.id, ON DELETE CASCADE, Index)",
+        "title": "String (Ödül kademesi adı, örn: 'Erken Katılımcı')",
+        "description": "Text (Detaylı açıklama)",
+        "amount": "Decimal (15, 2) (Bu kademeye katılmak için minimum tutar)",
+        "maxBackers": "Int (Nullable, stok sınırı. NULL = limitsiz)",
+        "currentBackers": "Int (Default: 0, denormalize)",
+        "estimatedDeliveryDate": "DateTime (Nullable, tahmini teslim tarihi)",
+        "includes": "JSONB (Nullable, bu kademeye dahil olanlar: ['Ürün', 'Teşekkür Sertifikası'])",
+        "image": "String (Nullable)",
+        "isLimited": "Boolean (Default: false, maxBackers varsa true)",
+        "isSoldOut": "Boolean (Default: false)",
+        "sortOrder": "Int (Default: 0, artan tutara göre)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(campaignId, sortOrder)", "(campaignId, isSoldOut)"],
+      "note": "Pledge.atomikliği: tier stok kontrolü (maxBackers - currentBackers > 0) transaction içinde yapılır. currentBackers her başarılı pledge'de güncellenir."
+    },
+    "CampaignUpdate": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "campaignId": "UUID (Foreign Key → Campaign.id, ON DELETE CASCADE, Index)",
+        "title": "String",
+        "content": "Text",
+        "isPublic": "Boolean (Default: true, false = sadece backer'lara)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(campaignId, createdAt DESC)"],
+      "note": "Yeni güncelleme eklendiğinde backer'lara bildirim gönderilir."
+    },
+    "CampaignFaq": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "campaignId": "UUID (Foreign Key → Campaign.id, ON DELETE CASCADE, Index)",
+        "question": "Text",
+        "answer": "Text",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(campaignId, sortOrder)"],
+      "note": "Kampanya sahibi tarafından yönetilir. Sık sorulan sorular bölümünde gösterilir."
+    },
+    "Comment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "campaignId": "UUID (Foreign Key → Campaign.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "content": "Text",
+        "parentId": "UUID (Nullable, Foreign Key → Comment.id, iç içe yanıtlar)",
+        "isCreatorReply": "Boolean (Default: false, kampanya sahibi yanıtı)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(campaignId, createdAt)", "parentId"],
+      "note": "Kampanya sahibinin yorumları 'creator' rozeti ile vurgulanır."
+    },
+    "Favorite": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "campaignId": "UUID (Foreign Key → Campaign.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, campaignId) UNIQUE", "campaignId"],
+      "note": "Kampanya başlangıç/bitiş/güncelleme olaylarında favorilere bildirim gönderilir."
+    },
+    "Pledge": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "campaignId": "UUID (Foreign Key → Campaign.id, Index)",
+        "backerId": "UUID (Foreign Key → User.id, Index)",
+        "tierId": "UUID (Nullable, Foreign Key → Tier.id)",
+        "amount": "Decimal (15, 2) (Gerçek ödenen tutar)",
+        "tierAmount": "Decimal (15, 2) (Nullable, seçilen tier'ın o anki tutarı)",
+        "rewardSnapshot": "JSONB (Nullable, seçilen tier'ın o anki bilgilerinin kopyası: { title, description, includes, estimatedDeliveryDate })",
+        "transactionId": "String (Unique, ödeme sağlayıcı transaction ID'si)",
+        "paymentMethod": "String (kredi_karti, banka_transferi, cuzdan)",
+        "status": "Enum (authorized, captured, refunded, failed, cancelled)",
+        "refundAmount": "Decimal (15, 2) (Nullable, kısmi iade tutarı)",
+        "cancelledAt": "DateTime (Nullable)",
+        "refundedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["backerId", "transactionId", "status", "(campaignId, createdAt DESC)"],
+      "note": "CRITICAL: Pledge oluşturma transactional olmalıdır: 1) Kampanya status='active' ve deadline geçmemiş kontrolü, 2) Tier stok kontrolü (maxBackers - currentBackers > 0), 3) Ödeme provizyonu, 4) currentAmount güncelleme, 5) backerCount güncelleme, 6) Tier.currentBackers güncelleme. rewardSnapshot: tier bilgileri pledge anında kopyalanır, sonradan tier değişse bile pledge kaydı etkilenmez."
+    },
+    "Payout": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "campaignId": "UUID (Foreign Key → Campaign.id, Index)",
+        "creatorId": "UUID (Foreign Key → User.id)",
+        "amount": "Decimal (15, 2) (Çekilen tutar)",
+        "platformFee": "Decimal (15, 2) (Kesilen platform komisyonu)",
+        "netAmount": "Decimal (15, 2) (amount - platformFee)",
+        "payoutMethod": "JSONB (Banka bilgileri: { bankName, iban, accountHolder })",
+        "status": "Enum (pending, processed, failed)",
+        "processedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(campaignId, status)", "creatorId"],
+      "note": "Sadece başarılı (successful) kampanyalar payout yapabilir. All-or-Nothing modelinde başarısız kampanyalarda para backer'lara iade edilir."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (campaign_update, pledge_confirmed, pledge_refunded, campaign_succeeded, campaign_failed, comment_reply, favorite_reminder, admin_review)",
+        "title": "String",
+        "message": "Text",
+        "referenceType": "String (Nullable, 'Campaign', 'Pledge', 'Comment')",
+        "referenceId": "UUID (Nullable, ilgili entity ID'si)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)"],
+      "note": "Kampanya güncelleme, pledge onayı, iade, kampanya başarı/başarısızlık durumlarında otomatik oluşturulur."
+    }
+  }
+}

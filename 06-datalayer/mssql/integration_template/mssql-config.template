@@ -1,0 +1,82 @@
+<!-- PURPOSE OF THIS FILE: MSSQL bağlantı konfigürasyonu şablonu — AI tarafından projeye enjekte edilir -->
+/* ═══════════════════════════════════════════════════════════════════
+   MSSQL Bağlantı Konfigürasyonu
+   Seçenek: .NET (EF Core) / Node.js (mssql pool)
+   ═══════════════════════════════════════════════════════════════════ */
+
+// ============================================================
+// Seçenek A: .NET EF Core
+// Dosya: Program.cs içine enjekte edilir
+// ============================================================
+#if NET
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? "Server={{DB_HOST}},{{DB_PORT}};Database={{DB_NAME}};User Id={{DB_USER}};Password={{DB_PASSWORD}};TrustServerCertificate=True;Encrypt=True";
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        );
+        sqlOptions.CommandTimeout(60);
+        sqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.GetName().Name);
+    })
+);
+
+// Azure SQL Managed Identity alternatifi (şifresiz):
+// var connectionString = "Server=tcp:{{DB_HOST}}.database.windows.net;Authentication=Active Directory Default;Database={{DB_NAME}}";
+// builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+#endif
+
+// ============================================================
+// Seçenek B: Node.js mssql driver
+// Dosya: src/config/database.js
+// ============================================================
+#if NODE
+const sql = require('mssql');
+
+const dbConfig = {
+  server: process.env.DB_HOST || '{{DB_HOST}}',
+  port: parseInt(process.env.DB_PORT, 10) || {{DB_PORT}},
+  database: process.env.DB_NAME || '{{DB_NAME}}',
+  user: process.env.DB_USER || '{{DB_USER}}',
+  password: process.env.DB_PASSWORD || '{{DB_PASSWORD}}',
+  options: {
+    encrypt: true,
+    trustServerCertificate: process.env.NODE_ENV !== 'production',
+    enableArithAbort: true,
+    connectTimeout: 15000,
+    requestTimeout: 30000,
+  },
+  pool: {
+    max: 10,
+    min: 2,
+    idleTimeoutMillis: 30000,
+  },
+};
+
+const pool = new sql.ConnectionPool(dbConfig);
+const poolConnect = pool.connect();
+
+pool.on('error', (err) => {
+  console.error('MSSQL bağlantı hatası:', err.message);
+});
+
+async function getConnection() {
+  await poolConnect;
+  return pool;
+}
+
+module.exports = { getConnection, sql };
+#endif
+
+/* ═══════════════════════════════════════════════════════════════════
+   Connection string formatı:
+   Server={{DB_HOST}},{{DB_PORT}};Database={{DB_NAME}};User Id={{DB_USER}};Password={{DB_PASSWORD}};TrustServerCertificate=True;Encrypt=True
+
+   Azure SQL Managed Identity:
+   Server=tcp:{{DB_HOST}}.database.windows.net;Authentication=Active Directory Default;Database={{DB_NAME}}
+   ═══════════════════════════════════════════════════════════════════ */

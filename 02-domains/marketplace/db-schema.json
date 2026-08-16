@@ -1,0 +1,221 @@
+{
+  "_meta": { "description": "Enterprise Marketplace Schema (Products, Sellers, Orders, Reviews, Payouts, Disputes)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "role": "Enum (buyer, seller, admin)",
+        "createdAt": "DateTime"
+      }
+    },
+    "SellerProfile": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User, Unique)",
+        "storeName": "String",
+        "slug": "String (Unique)",
+        "description": "Text",
+        "logoUrl": "String",
+        "bannerUrl": "String",
+        "contactEmail": "String",
+        "phone": "String",
+        "address": "JSON (Street, city, country)",
+        "taxId": "String",
+        "businessLicense": "String (URL)",
+        "verificationStatus": "Enum (pending, verified, rejected, suspended)",
+        "commissionRate": "Decimal (Override, nullable)",
+        "payoutMethod": "Enum (bank_transfer, paypal, stripe)",
+        "payoutAccountDetails": "JSON (Encrypted)",
+        "totalSales": "Decimal",
+        "averageRating": "Decimal",
+        "createdAt": "DateTime"
+      }
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID",
+        "parentId": "UUID (Self-referencing FK, nullable)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "icon": "String",
+        "commissionRate": "Decimal (Default commission % for this category)",
+        "attributeTemplates": "JSON Array (Category-specific attributes)",
+        "orderIndex": "Int"
+      }
+    },
+    "Product": {
+      "fields": {
+        "id": "UUID",
+        "sellerId": "UUID (FK SellerProfile)",
+        "categoryId": "UUID (FK Category)",
+        "title": "String",
+        "slug": "String",
+        "description": "Text",
+        "productType": "Enum (physical, digital, service, subscription)",
+        "price": "Decimal",
+        "compareAtPrice": "Decimal (Nullable)",
+        "sku": "String",
+        "inventory": "Int",
+        "isUnlimited": "Boolean",
+        "status": "Enum (draft, active, paused, archived)",
+        "images": "JSON Array (URLs with alt text)",
+        "attributes": "JSON (Category-specific attributes)",
+        "variants": "JSON Array (Options with prices/inventory)",
+        "shippingConfig": "JSON (Weight, dimensions, shipping class)",
+        "digitalFileUrl": "String (For digital products)",
+        "isFeatured": "Boolean",
+        "viewCount": "Int",
+        "soldCount": "Int",
+        "averageRating": "Decimal (Calculated)",
+        "reviewCount": "Int",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["sellerId", "categoryId", "status", "price"]
+    },
+    "Cart": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User, nullable for guest)",
+        "sessionId": "String (For guest users)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "items": "One-to-Many with CartItem"
+      }
+    },
+    "CartItem": {
+      "fields": {
+        "id": "UUID",
+        "cartId": "UUID (FK Cart)",
+        "productId": "UUID (FK Product)",
+        "variantId": "String (Optional)",
+        "quantity": "Int",
+        "savedForLater": "Boolean"
+      }
+    },
+    "Order": {
+      "fields": {
+        "id": "UUID",
+        "buyerId": "UUID (FK User)",
+        "orderNumber": "String (Human-readable, unique)",
+        "subtotal": "Decimal",
+        "shippingTotal": "Decimal",
+        "taxTotal": "Decimal",
+        "discountTotal": "Decimal",
+        "grandTotal": "Decimal",
+        "currency": "String",
+        "status": "Enum (pending, confirmed, processing, shipped, delivered, completed, cancelled)",
+        "paymentStatus": "Enum (pending, paid, refunded, partial_refund, failed)",
+        "paymentMethod": "String",
+        "notes": "Text",
+        "shippingAddress": "JSON",
+        "billingAddress": "JSON",
+        "couponCode": "String (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      }
+    },
+    "OrderItem": {
+      "fields": {
+        "id": "UUID",
+        "orderId": "UUID (FK Order)",
+        "sellerId": "UUID (FK SellerProfile)",
+        "productId": "UUID (FK Product)",
+        "variantLabel": "String",
+        "quantity": "Int",
+        "unitPrice": "Decimal",
+        "totalPrice": "Decimal",
+        "commission": "Decimal (Calculated)",
+        "status": "Enum (pending, confirmed, shipped, delivered, cancelled, returned)",
+        "trackingNumber": "String (Nullable)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Review": {
+      "fields": {
+        "id": "UUID",
+        "productId": "UUID (FK Product)",
+        "orderItemId": "UUID (FK OrderItem, Unique)",
+        "userId": "UUID (FK User)",
+        "rating": "Int (1-5)",
+        "title": "String",
+        "content": "Text",
+        "images": "JSON Array",
+        "isVerifiedPurchase": "Boolean",
+        "isApproved": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "ProductQuestion": {
+      "fields": {
+        "id": "UUID",
+        "productId": "UUID (FK Product)",
+        "userId": "UUID (FK User)",
+        "question": "Text",
+        "answer": "Text (Nullable)",
+        "answeredBy": "UUID (FK User, seller or admin)",
+        "createdAt": "DateTime",
+        "answeredAt": "DateTime"
+      }
+    },
+    "Payout": {
+      "fields": {
+        "id": "UUID",
+        "sellerId": "UUID (FK SellerProfile)",
+        "amount": "Decimal",
+        "periodStart": "DateTime",
+        "periodEnd": "DateTime",
+        "status": "Enum (pending, processing, completed, failed)",
+        "payoutMethod": "String",
+        "reference": "String (External payout ID)",
+        "processedAt": "DateTime",
+        "createdAt": "DateTime"
+      }
+    },
+    "Dispute": {
+      "fields": {
+        "id": "UUID",
+        "orderId": "UUID (FK Order)",
+        "raisedBy": "UUID (FK User)",
+        "reason": "Enum (item_not_received, item_not_as_described, damaged, wrong_item, other)",
+        "description": "Text",
+        "evidence": "JSON Array (Image URLs)",
+        "status": "Enum (open, under_review, resolved_buyer, resolved_seller, refunded)",
+        "resolvedBy": "UUID (FK User, admin)",
+        "resolution": "Text",
+        "createdAt": "DateTime",
+        "resolvedAt": "DateTime"
+      }
+    },
+    "Coupon": {
+      "fields": {
+        "id": "UUID",
+        "sellerId": "UUID (FK SellerProfile, nullable for platform-wide)",
+        "code": "String (Unique)",
+        "type": "Enum (percentage, fixed_amount)",
+        "value": "Decimal",
+        "minOrderAmount": "Decimal",
+        "maxUses": "Int",
+        "currentUses": "Int",
+        "expiresAt": "DateTime",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User)",
+        "type": "String (order_confirmed, shipped, review_received, payout_processed, question_answered, dispute_update)",
+        "message": "String",
+        "link": "String",
+        "isRead": "Boolean",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

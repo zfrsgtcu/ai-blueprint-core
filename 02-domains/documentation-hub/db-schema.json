@@ -1,0 +1,266 @@
+{
+  "_meta": {
+    "description": "Dokümantasyon Merkezi veritabanı şeması. Proje, sürüm, kategori hiyerarşisi, makale (çoklu dil + MDX içerik), sürüm geçmişi, yönlendirme motoru, arama logu, sayfa görüntüleme, geri bildirim, medya, proje üye yönetimi ve denetim modellerini içerir. RBAC, i18n, versioning ve full-text search için optimize edilmiştir."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "fullName": "String",
+        "role": "Enum (admin, editor, writer) (Default: writer)",
+        "avatarUrl": "String (Nullable)",
+        "isActive": "Boolean (Default: true)",
+        "failedLoginAttempts": "Int (Default: 0)",
+        "lockedUntil": "DateTime (Nullable)",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "role", "isActive"],
+      "note": "role=admin tüm projelerde otomatik yetkili. Editor: proje bazında atanır, makale yayınlama yetkisi var. Writer: makale oluşturur ama yayınlayamaz, Editor onayı gerekir. 5 başarısız giriş → 15 dakika hesap kilidi."
+    },
+    "Project": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index)",
+        "slug": "String (Unique, Index, URL dostu, proje alt domain/path: /docs/{slug})",
+        "name": "String (max 200 karakter)",
+        "description": "Text (Nullable, max 1000 karakter)",
+        "logoUrl": "String (Nullable, CDN URL)",
+        "defaultLocale": "String (Default: 'en', proje varsayılan dili)",
+        "supportedLocales": "JSONB (Default: ['en'], desteklenen diller, örn: ['en','tr','de'])",
+        "primaryColor": "String (Nullable, HEX, tema rengi)",
+        "isPublic": "Boolean (Default: true, false ise auth zorunlu)",
+        "gaTrackingId": "String (Nullable, Google Analytics ID)",
+        "customDomain": "String (Nullable, özel domain, reverse proxy ayarı)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "ownerId", "isPublic"],
+      "note": "Her proje bağımsız dokümantasyon alanı. supportedLocales'deki her dil için ayrı makale/kategori ağacı tutulabilir. customDomain: docs.ornek.com -> bu projeyi serve eder."
+    },
+    "ProjectMember": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE)",
+        "userId": "UUID (Foreign Key → User.id, ON DELETE CASCADE)",
+        "role": "Enum (editor, writer) (Proje içindeki rol)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(projectId, userId) UNIQUE", "projectId", "userId"],
+      "note": "Proje bazlı yetkilendirme. Admin rolü tüm projelerde otomatik yetkili, bu tabloya kayıt gerekmez. Bir kullanıcı farklı projelerde farklı rollerde olabilir."
+    },
+    "Version": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "name": "String (semver: 'v1', 'v2', 'v2.3'), Index",
+        "displayName": "String (UI'da gösterilen: 'Version 2.3 (Current)')",
+        "releaseDate": "DateTime (Nullable, yayınlanma tarihi)",
+        "isStable": "Boolean (Default: true, latest bu sürümlerden en yükseği)",
+        "isDeprecated": "Boolean (Default: false)",
+        "deprecationMessage": "String (Nullable, 'v3 kullanmanızı öneririz')",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(projectId, name) UNIQUE", "projectId", "isStable"],
+      "note": "latest = projectId + isStable=true + ORDER BY name DESC LIMIT 1. Yeni sürüm oluşturulduğunda mevcut sürümün tüm kategorileri ve makaleleri deep copy yapılır (async job). isDeprecated → sayfa üstünde uyarı banner'ı."
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "versionId": "UUID (Foreign Key → Version.id, ON DELETE CASCADE, Index)",
+        "parentId": "UUID (Nullable, Foreign Key → Category.id, self-relation)",
+        "locale": "String (Dil kodu: 'en', 'tr', etc.)",
+        "name": "String (max 200 karakter)",
+        "slug": "String (URL dostu, aynı version+locale+parent altında unique)",
+        "description": "Text (Nullable, max 500 karakter)",
+        "orderIndex": "Int (Default: 0, sıralama)",
+        "articleCount": "Int (Default: 0, denormalize)",
+        "isPublished": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(versionId, locale)", "parentId", "orderIndex", "slug"],
+      "note": "Maksimum derinlik: 5 seviye. Döngüsel referans engeli. Silindiğinde alt kategoriler parentId=deleted.parentId, makaleler belirtilen moveToCategoryId'ye taşınır. slug benzersizliği: versionId + locale + parentId kapsamında."
+    },
+    "Article": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "categoryId": "UUID (Foreign Key → Category.id, ON DELETE CASCADE, Index)",
+        "locale": "String (Dil kodu, Index)",
+        "slug": "String (URL dostu, Index)",
+        "title": "String (max 300 karakter)",
+        "content": "Text (Markdown/MDX, ham içerik)",
+        "contentHtml": "Text (Derlenmiş HTML, SSG/ISR için önceden işlenmiş)",
+        "contentPlain": "Text (Arama için düz metin, Markdown/HTML'den extract)",
+        "excerpt": "String (Nullable, max 500 karakter, boşsa content'ten otomatik)",
+        "keywords": "JSONB (Default: [], arama optimizasyonu için anahtar kelimeler)",
+        "metaTitle": "String (Nullable, max 70 karakter, SEO başlığı)",
+        "metaDescription": "String (Nullable, max 160 karakter, SEO açıklaması)",
+        "status": "Enum (draft, published, archived) (Default: draft)",
+        "viewCount": "Int (Default: 0, denormalize, 5 dk batch update)",
+        "helpfulCount": "Int (Default: 0, denormalize)",
+        "notHelpfulCount": "Int (Default: 0, denormalize)",
+        "lastPublishedAt": "DateTime (Nullable)",
+        "updatedBy": "UUID (ForeignKey → User.id)",
+        "isDeleted": "Boolean (Default: false, soft delete)",
+        "deletedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": [
+        "(categoryId, locale, slug)",
+        "status",
+        "viewCount DESC",
+        "locale",
+        "(status, locale, updatedAt DESC)",
+        "updatedBy"
+      ],
+      "note": "slug + locale + category.versionId kombinasyonu global unique olmalıdır (category üzerinden version'a erişilir). content: Markdown/MDX. contentHtml: build-time veya save-time derlenir. contentPlain: arama indeksleme için. viewCount: Redis → DB batch update (5 dk). Soft delete: isDeleted=true, 90 gün sonra kalıcı silinebilir."
+    },
+    "ArticleHistory": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "articleId": "UUID (Foreign Key → Article.id, ON DELETE CASCADE, Index)",
+        "content": "Text (O andaki içerik snapshot'ı)",
+        "contentHtml": "Text (Nullable, o andaki HTML)",
+        "title": "String (O andaki başlık)",
+        "changeDescription": "String (Nullable, değişiklik açıklaması, max 500 karakter)",
+        "updatedBy": "UUID (Foreign Key → User.id)",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(articleId, updatedAt DESC)", "updatedBy"],
+      "note": "Her makale güncellemesinde otomatik snapshot. İçerik diff'i için kullanılabilir. Son 50 sürüm saklanır, eskileri cron job ile temizlenir."
+    },
+    "Redirect": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, ON DELETE CASCADE, Index)",
+        "versionId": "UUID (Nullable, Foreign Key → Version.id, belirli bir sürüme ait ise)",
+        "fromPath": "String (Yönlendirme kaynağı, örn: '/docs/v1/old-page')",
+        "toPath": "String (Yönlendirme hedefi, örn: '/docs/v2/new-page')",
+        "statusCode": "Int (301 veya 302, Default: 301)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["projectId", "fromPath", "isActive"],
+      "note": "Orta katman (middleware/CDN) tarafından uygulanır. fromPath tam eşleşme, glob/pattern desteklenmez. Zincirleme yönlendirme max 10. versionId null ise tüm sürümler için geçerli."
+    },
+    "SearchLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "projectId": "UUID (Foreign Key → Project.id, Index)",
+        "versionId": "UUID (Nullable, Foreign Key → Version.id)",
+        "query": "String (Normalize edilmiş arama terimi, lowercase+trim)",
+        "originalQuery": "String (Orijinal arama terimi)",
+        "locale": "String (default: 'en')",
+        "resultsCount": "Int (Dönen sonuç sayısı, 0 = sonuçsuz arama)",
+        "clickedArticleId": "UUID (Nullable, kullanıcının tıkladığı makale)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "ipAddress": "String (Nullable)",
+        "userAgent": "String (Nullable)",
+        "took": "Int (Arama süresi, ms)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(projectId, createdAt DESC)", "resultsCount", "query", "locale"],
+      "note": "Analitik amaçlı. resultsCount=0 → 'içerik boşluğu' raporu. 30 gün sonra cron job ile toplulaştırılıp ham veriler silinir."
+    },
+    "PageView": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "articleId": "UUID (Foreign Key → Article.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "ipAddress": "String (Nullable)",
+        "userAgent": "String (Nullable)",
+        "referrer": "String (Nullable)",
+        "country": "String (Nullable, IP geo-location)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(articleId, createdAt)", "createdAt", "userId"],
+      "note": "Async işlenir (kuyruk). articleId + ipAddress + 5 dakika window = tekilleştirme (aynı session tekrar sayılmaz). Popüler makaleler Redis sorted set ile hesaplanır. 90 gün sonra cron job ile temizlenir."
+    },
+    "Comment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "articleId": "UUID (Foreign Key → Article.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Nullable, Foreign Key → User.id, kayıtlı kullanıcı)",
+        "parentCommentId": "UUID (Nullable, Foreign Key → Comment.id, iç içe yanıt, max 3 seviye)",
+        "authorName": "String (Anonim yorum için zorunlu)",
+        "content": "Text (max 5000 karakter)",
+        "status": "Enum (pending, approved, spam, rejected) (Default: pending)",
+        "moderatedBy": "UUID (Nullable, Foreign Key → User.id)",
+        "moderatedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(articleId, status)", "userId", "parentCommentId", "status"],
+      "note": "İç içe yanıt max 3 seviye. Sadece status=approved olanlar public API'de görünür. spam → 30 gün sonra silinir. Anonim yorum: userId null, authorName zorunlu."
+    },
+    "Feedback": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "articleId": "UUID (Foreign Key → Article.id, ON DELETE CASCADE, Index)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "isHelpful": "Boolean (true=faydalı, false=faydasız)",
+        "comment": "Text (Nullable, max 1000 karakter, faydasızsa neden?)",
+        "source": "Enum (bottom, search) (Geri bildirimin kaynağı: sayfa altı veya arama sonuçları)",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(articleId, createdAt)", "isHelpful", "source"],
+      "note": "IP bazlı rate limit: aynı makaleye günde 1 feedback. Feedback sonrası Article.helpfulCount/notHelpfulCount asenkron güncellenir. Admin panelinde helpfulRate < 50% olan makaleler işaretlenir."
+    },
+    "Media": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "uploadedBy": "UUID (Foreign Key → User.id)",
+        "projectId": "UUID (Foreign Key → Project.id, Index)",
+        "fileName": "String (Orijinal dosya adı)",
+        "storageKey": "String (S3 object key, benzersiz)",
+        "mimeType": "String",
+        "sizeBytes": "Int",
+        "width": "Int (Nullable, görseller için)",
+        "height": "Int (Nullable, görseller için)",
+        "variants": "JSONB (Nullable, { '320w'?, '768w'?, '1200w'? } → CDN URL'ler)",
+        "altText": "String (Nullable, erişilebilirlik)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["projectId", "uploadedBy", "storageKey"],
+      "note": "Desteklenen: PNG, JPG, GIF, WEBP, SVG (sanitize), PDF. Max 10 MB. CDN üzerinden serve: Cache-Control: public, max-age=31536000. SVG'ler sanitize edilir (scripts, event handler'lar temizlenir)."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (article_published, article_review_needed, article_comment, feedback_negative, new_version_available)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'article', 'comment', 'version')",
+        "entityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)"],
+      "note": "article_review_needed: Writer makaleyi tamamladığında Editor'a. feedback_negative: helpfulRate %50'nin altına düştüğünde Editor'a. In-app + e-posta bildirimi."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "action": "String (örn: 'article.create', 'article.update', 'article.publish', 'article.archive', 'article.restore', 'category.create', 'category.delete', 'category.move', 'version.create', 'user.role_change', 'project.create', 'project.delete', 'redirect.create', 'redirect.delete')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "details": "JSONB (Nullable, { changes?: {}, reason?: string })",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "action", "(entityType, entityId)", "createdAt DESC"],
+      "note": "90 gün saklanır. Makale içeriği loglanmaz, sadece metadata (title, status, category, locale değişiklikleri)."
+    }
+  }
+}

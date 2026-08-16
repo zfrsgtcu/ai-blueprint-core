@@ -1,0 +1,145 @@
+{
+  "_meta": {
+    "description": "Next.js 14.x (App Router) stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Next.js: React 18 tabanlı, Server Components öncelikli, App Router ile SSR/SSG/ISR destekli modern web uygulamaları.",
+    "stack": "nextjs",
+    "display_name": "Next.js",
+    "type": "ssr_ssg_frontend",
+    "language": "TypeScript (React 18+)",
+    "version": "^14.2.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "Next.js 14+",
+    "description": "React 18 Server Components öncelikli, App Router tabanlı SSR/SSG/ISR hibrit rendering. Route handlers, Server Actions, middleware ve streaming ile tam teşekküllü web uygulamaları. Vercel altyapısında en iyi performansı verir.",
+    "use_cases": [
+      "E-Ticaret frontend",
+      "SaaS dashboard",
+      "LMS (E-Öğrenme) platformu",
+      "Booking / Randevu sistemi",
+      "Admin panel",
+      "Multi-tenant CRM",
+      "Blog / CMS frontend",
+      "Kurumsal web sitesi"
+    ],
+    "paired_backend": "node-express",
+    "not_suitable_for": [
+      "Tamamen statik landing page'ler (Astro.js daha uygun)",
+      "Native mobil uygulama (React Native kullan)"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceApp" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "ecommerce-app" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Kurumsal e-ticaret platformu" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "api_integration": [
+      { "key": "{{API_BASE_URL}}", "description": "Backend API base URL", "example": "https://api.example.com" },
+      { "key": "{{NEXT_PUBLIC_API_BASE_URL}}", "description": "Client-side API URL (NEXT_PUBLIC_ prefix)", "example": "https://api.example.com" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "Next.js App Router projesinin zorunlu dizin yapısı",
+    "directories": {
+      "app/": "App Router sayfaları ve layout'lar (React Server Components)",
+      "app/api/": "Route Handler endpoint'leri",
+      "components/": "Paylaşılan UI component'leri",
+      "lib/": "Utility fonksiyonları, API client'lar",
+      "hooks/": "Custom React hook'lar",
+      "types/": "TypeScript type tanımları",
+      "public/": "Statik asset'ler (resimler, fontlar, favicon)"
+    },
+    "files": {
+      "next.config.js": "Next.js konfigürasyonu — images, rewrites, headers",
+      "app/layout.tsx": "Root layout (metadata, html/body yapısı)",
+      "app/page.tsx": "Ana sayfa (giriş noktası)",
+      "tailwind.config.ts": "TailwindCSS konfigürasyonu",
+      "tsconfig.json": "TypeScript konfigürasyonu",
+      "package.json": "Bağımlılıklar ve script'ler"
+    }
+  },
+
+  "entry_point": "app/layout.tsx",
+  "config_file": "next.config.js",
+
+  "dependencies": {
+    "core": [
+      { "package": "next", "version": "^14.2.0" },
+      { "package": "react", "version": "^18.3.0" },
+      { "package": "react-dom", "version": "^18.3.0" }
+    ],
+    "styling": [
+      { "package": "tailwindcss", "version": "^3.4.4" },
+      { "package": "autoprefixer", "version": "^10.4.19" },
+      { "package": "postcss", "version": "^8.4.38" }
+    ],
+    "optional_state": [
+      { "package": "@tanstack/react-query", "version": "^5.45.0", "use_case": "Server state yönetimi" },
+      { "package": "zustand", "version": "^4.5.0", "use_case": "Client state yönetimi" }
+    ],
+    "optional_ui": [
+      { "package": "framer-motion", "version": "^11.2.0", "use_case": "Animasyon" },
+      { "package": "lucide-react", "version": "^0.390.0", "use_case": "İkon seti" },
+      { "package": "next-intl", "version": "^3.15.0", "use_case": "Çoklu dil desteği" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "server_components": {
+      "description": "React Server Components (RSC) — varsayılan olarak tüm component'ler server'da render edilir",
+      "rule": "'use client' direktifi sadece interactivity gerektiren component'lere eklenir"
+    },
+    "app_router": {
+      "description": "Dosya tabanlı routing, layout nesting, loading/error/not-found özel dosyaları",
+      "rule": "Sayfalar app/ altında page.tsx, layout'lar layout.tsx olarak tanımlanır"
+    },
+    "server_actions": {
+      "description": "Form submission ve data mutation için server-side fonksiyonlar",
+      "rule": "'use server' ile işaretlenmiş async fonksiyonlar, API endpoint'e gerek olmadan çalışır"
+    },
+    "route_handlers": {
+      "description": "app/api/ altında HTTP method handler'ları",
+      "rule": "Harici API'lere proxy veya lightweight backend için kullanılabilir"
+    }
+  },
+
+  "deployment": {
+    "primary": "Vercel",
+    "build_command": "next build",
+    "output": ".next/ (Vercel) veya standalone",
+    "rendering_strategies": {
+      "SSR": "Server-Side Rendering — her istekte server'da render",
+      "SSG": "Static Site Generation — build zamanında render",
+      "ISR": "Incremental Static Regeneration — belirli aralıklarla yeniden oluşturma"
+    }
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Dizin yapısını olduğu gibi kopyala",
+      "next.config.js, tailwind.config.ts, tsconfig.json'ı kopyala (projeye göre özelleştir)",
+      "Core dependencies'i package.json'a ekle"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Template'teki örnek sayfaları aynen kopyalama — domain logic'e göre uyarla",
+      "app/page.tsx'daki örnek kartları aynen bırakma"
+    ],
+    "customize_for_domain": [
+      "app/page.tsx → domain'in ana sayfasına uygun içerikle doldur",
+      "app/api/ → BFF proxy endpoint'leri veya route handler'lar ekle",
+      "lib/ → API client, utility fonksiyonları oluştur",
+      "components/ → domain entity'lerine göre UI component'leri oluştur",
+      "hooks/ → custom hook'lar (useProducts, useAuth vb.) oluştur"
+    ]
+  }
+}

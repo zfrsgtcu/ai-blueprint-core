@@ -1,0 +1,111 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Social Network Platform",
+    "error_format": "{ status, code, message, details }",
+    "rate_limiting": "Public: 500/min | Auth: 200/min | Webhook: 1000/min | Admin: 100/min"
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/users/{username}": "View public user profile",
+      "GET /api/v1/posts/{id}": "Get single post (public if user is public)",
+      "GET /api/v1/explore": "Explore feed (algorithmic curation)",
+      "GET /api/v1/trending": "Trending hashtags and topics",
+      "GET /api/v1/search": "Global search (users, posts, hashtags, groups)",
+      "GET /api/v1/hashtags/{tag}": "Posts by hashtag"
+    },
+    "auth": {
+      "POST /api/v1/auth/register": "Create account",
+      "POST /api/v1/auth/login": "Login",
+      "POST /api/v1/auth/logout": "Logout",
+      "POST /api/v1/auth/refresh": "Refresh token",
+      "POST /api/v1/auth/social": "Social login callback"
+    },
+    "feed": {
+      "GET /api/v1/feed": "Get main feed (chronological or algorithmic)",
+      "GET /api/v1/feed/following": "Feed from followed users only",
+      "GET /api/v1/stories": "Get friends' active stories",
+      "GET /api/v1/stories/{id}": "Get story with viewers"
+    },
+    "posts": {
+      "POST /api/v1/posts": "Create new post",
+      "PUT /api/v1/posts/{id}": "Edit post",
+      "DELETE /api/v1/posts/{id}": "Delete post",
+      "POST /api/v1/posts/{id}/like": "Like/Unlike post",
+      "POST /api/v1/posts/{id}/reaction": "Add extended reaction",
+      "GET /api/v1/posts/{id}/reactions": "List reactions with user avatars",
+      "POST /api/v1/posts/{id}/save": "Save/Unsave post",
+      "POST /api/v1/posts/{id}/report": "Report post",
+      "POST /api/v1/posts/{id}/share": "Share post (repost/quote)",
+      "POST /api/v1/stories": "Create story",
+      "DELETE /api/v1/stories/{id}": "Delete story",
+      "POST /api/v1/stories/{id}/reply": "Reply to story"
+    },
+    "comments": {
+      "POST /api/v1/posts/{id}/comments": "Post comment",
+      "PUT /api/v1/comments/{id}": "Edit comment",
+      "DELETE /api/v1/comments/{id}": "Delete comment",
+      "POST /api/v1/comments/{id}/like": "Like/Unlike comment",
+      "GET /api/v1/posts/{id}/comments": "List comments (pagination)"
+    },
+    "connections": {
+      "POST /api/v1/users/{id}/follow": "Follow/Unfollow user",
+      "DELETE /api/v1/users/{id}/follow": "Unfollow user",
+      "POST /api/v1/users/{id}/friend-request": "Send friend request",
+      "PUT /api/v1/friend-requests/{id}": "Accept/Reject friend request",
+      "GET /api/v1/followers": "List my followers",
+      "GET /api/v1/following": "List who I follow",
+      "GET /api/v1/friends/suggestions": "Friend/follow suggestions",
+      "POST /api/v1/users/{id}/block": "Block/Unblock user",
+      "POST /api/v1/users/{id}/restrict": "Restrict user"
+    },
+    "messaging": {
+      "GET /api/v1/chats": "List conversations",
+      "POST /api/v1/chats": "Create conversation (DM/group)",
+      "GET /api/v1/chats/{id}": "Get chat details",
+      "GET /api/v1/chats/{id}/messages": "Get messages (paginated, newest first)",
+      "POST /api/v1/chats/{id}/messages": "Send message",
+      "PUT /api/v1/messages/{id}": "Edit message (within time limit)",
+      "DELETE /api/v1/messages/{id}": "Delete message",
+      "POST /api/v1/messages/{id}/reaction": "React to message",
+      "POST /api/v1/chats/{id}/typing": "Typing indicator",
+      "POST /api/v1/chats/{id}/read": "Mark as read",
+      "POST /api/v1/chats/{id}/members": "Add members to group",
+      "DELETE /api/v1/chats/{id}/members/{userId}": "Remove member"
+    },
+    "groups": {
+      "POST /api/v1/groups": "Create group/community",
+      "GET /api/v1/groups": "Discover groups",
+      "GET /api/v1/groups/{id}": "Get group details",
+      "PUT /api/v1/groups/{id}": "Update group settings",
+      "DELETE /api/v1/groups/{id}": "Delete group",
+      "POST /api/v1/groups/{id}/join": "Join/Request to join group",
+      "POST /api/v1/groups/{id}/leave": "Leave group"
+    },
+    "notifications": {
+      "GET /api/v1/notifications": "List notifications",
+      "PATCH /api/v1/notifications/{id}": "Mark notification read",
+      "POST /api/v1/notifications/read-all": "Mark all as read",
+      "PUT /api/v1/notifications/settings": "Update notification preferences"
+    },
+    "admin": {
+      "GET /api/v1/admin/dashboard": "Platform metrics (DAU, MAU, content stats)",
+      "GET /api/v1/admin/reports": "Reported content queue",
+      "PUT /api/v1/admin/reports/{id}": "Resolve report (remove/dismiss)",
+      "GET /api/v1/admin/users": "User management",
+      "PUT /api/v1/admin/users/{id}": "Suspend/Ban/Restrict user",
+      "GET /api/v1/admin/trending": "Manage trending topics",
+      "PUT /api/v1/admin/posts/{id}": "Remove/hide content",
+      "GET /api/v1/admin/analytics": "Platform analytics"
+    },
+    "profile": {
+      "GET /api/v1/profile": "Get my profile (full details)",
+      "PUT /api/v1/profile": "Update profile",
+      "POST /api/v1/profile/avatar": "Upload avatar",
+      "POST /api/v1/profile/cover": "Upload cover photo",
+      "GET /api/v1/profile/posts": "My posts",
+      "GET /api/v1/profile/saved": "Saved/bookmarked posts",
+      "GET /api/v1/profile/activity-log": "My activity history",
+      "PUT /api/v1/profile/privacy": "Update privacy settings"
+    }
+  }
+}

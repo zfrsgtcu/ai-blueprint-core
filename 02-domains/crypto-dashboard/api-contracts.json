@@ -1,0 +1,79 @@
+{
+  "_meta": {
+    "description": "Kripto Portföy Dashboard API Sözleşmeleri. Public piyasa verileri, auth portföy yönetimi, admin sistem izleme endpoint'lerini kapsar.",
+    "error_format": "{ status: number, code: string, message: string, details?: any }",
+    "rate_limiting": "Public: 500/dk | Auth: 100/dk | Hassas: 10/dk | Admin: 200/dk",
+    "global_rules": {
+      "decimal_precision": "Tüm finansal değerler string olarak serialize edilir (JSON number precision loss önlemi).",
+      "websocket": "Gerçek zamanlı veri için WS endpoint: wss://api.cryptodash.com/ws?token=JWT (auth bağlantı). Public ticker: wss://api.cryptodash.com/ws/public.",
+      "idempotency": "POST /api/v1/transactions ve POST /api/v1/exchanges/connect endpoint'leri Idempotency-Key header'ı gerektirir."
+    }
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/market/prices": "Güncel piyasa fiyatlarını döndürür. Query: ?symbols=BTC,ETH,SOL (virgülle ayrılmış, maksimum 50).",
+      "GET /api/v1/market/prices/{symbol}": "Tek sembol detayını döndürür: fiyat, 24s değişim, hacim, market cap, ATH, ATL.",
+      "GET /api/v1/market/top": "En çok işlem gören/top kripto paraları listeler. Query: ?sort=volume|gainers|losers&limit=20.",
+      "GET /api/v1/market/history/{symbol}": "Fiyat geçmişini döndürür. Query: ?interval=1h|4h|1d|1w&from=timestamp&to=timestamp.",
+      "GET /api/v1/market/search": "Sembol veya isim ile arama. Query: ?q=btc.",
+      "GET /api/v1/market/exchange-rate": "Fiat çevrim kurlarını döndürür. Query: ?base=USD&targets=TRY,EUR,GBP.",
+      "GET /api/v1/health": "Sistem ve borsa bağlantı sağlık durumunu döndürür."
+    },
+    "auth": {
+      "POST /api/v1/auth/register": "Kullanıcı kaydı. Body: { email, password, firstName, lastName, baseCurrency }.",
+      "POST /api/v1/auth/login": "Giriş. Body: { email, password, totpCode? }. JWT token çifti döndürür.",
+      "POST /api/v1/auth/refresh": "Token yenileme. Body: { refreshToken }.",
+      "POST /api/v1/auth/logout": "Çıkış ve refresh token geçersizleştirme.",
+      "GET /api/v1/auth/me": "Kullanıcı profilini döndürür.",
+      "PUT /api/v1/auth/me": "Profil güncelleme: { firstName, lastName, baseCurrency, notificationPreferences }.",
+      "POST /api/v1/auth/2fa/setup": "2FA kurulumu başlatır. QR kod URL'i ve manuel anahtar döndürür.",
+      "POST /api/v1/auth/2fa/verify": "2FA kurulumunu tamamlar. Body: { totpCode }. 2FA'yı aktifleştirir.",
+      "POST /api/v1/auth/2fa/disable": "2FA'yı devre dışı bırakır. Body: { password, totpCode }.",
+      "PUT /api/v1/auth/password": "Şifre değiştirir. Body: { currentPassword, newPassword }.",
+      "GET /api/v1/portfolio": "Konsolide portföy dökümünü döndürür: varlıklar, güncel değerler, P&L, dağılım %.",
+      "GET /api/v1/portfolio/summary": "Portföy özeti: toplam değer, günlük/haftalık/aylık değişim %, en iyi/en kötü varlık.",
+      "GET /api/v1/portfolio/performance": "Portföy performans geçmişi. Query: ?period=1d|1w|1m|3m|6m|1y|all&interval=1h|1d|1w.",
+      "GET /api/v1/portfolio/snapshots": "Portföy snapshot geçmişini listeler. Query: ?from=date&to=date.",
+      "GET /api/v1/portfolio/holdings": "Tüm varlık bakiyelerini borsa bazında listeler.",
+      "POST /api/v1/portfolio/holdings": "Manuel varlık girişi. Body: { symbol, amount, exchangeName? }. Watchlist'e otomatik eklenir.",
+      "PUT /api/v1/portfolio/holdings/{id}": "Manuel varlığı günceller (miktar, notlar).",
+      "DELETE /api/v1/portfolio/holdings/{id}": "Manuel varlığı siler. Senkronize varlıklar silinemez.",
+      "GET /api/v1/portfolio/fiat": "Fiat bakiyelerini listeler.",
+      "POST /api/v1/portfolio/fiat": "Fiat bakiye ekler/günceller. Body: { currency, amount }.",
+      "DELETE /api/v1/portfolio/fiat/{id}": "Fiat bakiyeyi siler.",
+      "GET /api/v1/transactions": "İşlem geçmişini listeler. Query: ?symbol=BTC&type=buy|sell&source=manual|binance|...&from=date&to=date&page=&limit=.",
+      "POST /api/v1/transactions": "Manuel işlem girişi. Body: { symbol, type, amount, price, fee?, timestamp, notes? }.",
+      "PUT /api/v1/transactions/{id}": "Manuel işlemi günceller.",
+      "DELETE /api/v1/transactions/{id}": "Manuel işlemi siler.",
+      "POST /api/v1/transactions/import": "CSV dosyası ile toplu işlem içe aktarma. Multipart: { file (CSV) }. Sonuç: { imported, skipped, errors }.",
+      "GET /api/v1/exchanges": "Bağlı borsa hesaplarını listeler.",
+      "POST /api/v1/exchanges/connect": "Borsa hesabı bağlar. Body: { exchangeName, apiKey, apiSecret }. 2FA zorunlu.",
+      "DELETE /api/v1/exchanges/{id}": "Borsa hesabını kaldırır. İlişkili senkronize veriler silinir. 2FA zorunlu.",
+      "POST /api/v1/exchanges/{id}/validate": "API anahtarı bağlantı testi yapar.",
+      "POST /api/v1/exchanges/{id}/sync": "Borsa hesabını manuel senkronize eder (bakiyeler + son işlemler).",
+      "GET /api/v1/exchanges/{id}/health": "Borsa API sağlık durumunu döndürür (latency, son hata varsa).",
+      "GET /api/v1/watchlist": "Watchlist'teki sembolleri canlı fiyat ve 24s değişim ile listeler.",
+      "POST /api/v1/watchlist": "Sembol ekler. Body: { symbol }. Maksimum 50 sembol.",
+      "DELETE /api/v1/watchlist/{symbol}": "Sembolü watchlist'ten çıkarır.",
+      "PUT /api/v1/watchlist/reorder": "Watchlist sıralamasını günceller. Body: { symbols: ['BTC', 'ETH', ...] }.",
+      "GET /api/v1/alerts": "Alert kurallarını listeler.",
+      "POST /api/v1/alerts": "Alert kuralı oluşturur. Body: { symbol, condition, targetPrice, notificationChannels?: ['in_app', 'email', 'push'] }.",
+      "PUT /api/v1/alerts/{id}": "Alert kuralını günceller.",
+      "DELETE /api/v1/alerts/{id}": "Alert kuralını siler.",
+      "GET /api/v1/alerts/history": "Tetiklenen alert geçmişini listeler.",
+      "GET /api/v1/tax/reports": "Vergi raporlarını listeler.",
+      "POST /api/v1/tax/reports": "Vergi raporu oluşturur. Body: { year, calculationMethod: 'FIFO'|'LIFO'|'HIFO', taxRate?: number }.",
+      "GET /api/v1/tax/reports/{id}": "Rapor detayını döndürür.",
+      "GET /api/v1/tax/reports/{id}/download": "Raporu PDF veya CSV olarak indirir. Query: ?format=pdf|csv.",
+      "GET /api/v1/dashboard/config": "Dashboard widget yapılandırmasını döndürür.",
+      "PUT /api/v1/dashboard/config": "Dashboard düzenini kaydeder. Body: { widgets: [{ type, position: { x, y, w, h } }] }."
+    },
+    "admin": {
+      "GET /api/v1/admin/users": "Kullanıcı listesi. Query: ?q=arama, ?role=user|admin.",
+      "PUT /api/v1/admin/users/{id}/status": "Kullanıcı aktifleştirme/devre dışı bırakma.",
+      "GET /api/v1/admin/exchanges/health": "Tüm borsa bağlantılarının durum panosu.",
+      "GET /api/v1/admin/stats": "Sistem istatistikleri: toplam kullanıcı, portföy değeri, WS bağlantı sayısı, API hacmi.",
+      "GET /api/v1/admin/audit-logs": "Denetim günlüğü. Query: ?userId, ?action, ?fromDate, ?toDate."
+    }
+  }
+}

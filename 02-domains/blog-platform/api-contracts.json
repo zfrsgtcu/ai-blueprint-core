@@ -1,0 +1,77 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Blog Platformu API Sözleşmeleri. Public içerik keşfi ve yorum okuma, auth yorum yazma ve profil, author içerik yönetimi, admin tam yönetim.",
+    "error_format": "{ status: number, code: string, message: string, details?: any }",
+    "rate_limiting": "Public: 1000/dk | Auth: 100/dk | Admin: 50/dk",
+    "global_rules": {
+      "pagination": "Tüm liste endpoint'leri ?page=&limit= (default 20, max 100) destekler.",
+      "locale": "Tüm GET endpoint'leri ?locale= (default: tr) parametresi ile içerik dili seçimini destekler.",
+      "draft_visibility": "Taslak (draft) içerikler sadece yazar ve admin tarafından görülebilir. Public endpoint'ler sadece published içerik döndürür.",
+      "comment_moderation": "Yorumlar varsayılan olarak admin onayı bekler (pre-moderation). Onaylanmamış yorumlar public endpoint'lerde görünmez."
+    }
+  },
+  "endpoints": {
+    "public": {
+      "POST /api/auth/register": "Kullanıcı kaydı. Body: { email, password, displayName }. Varsayılan rol: subscriber.",
+      "POST /api/auth/login": "Giriş. Body: { email, password }. JWT token çifti döndürür.",
+      "GET /api/posts": "Blog yazı listesi. Filtreler: ?categoryId, ?tag, ?search, ?authorId, ?sort=recent|popular|featured, ?featured=true.",
+      "GET /api/posts/{slug}": "Blog yazısı detayı (yazar bilgisi, kategoriler, etiketler, SEO meta, okuma süresi ile). Görüntülenme sayısı artırılır.",
+      "GET /api/posts/{id}/related": "İlgili/benzer blog yazıları (aynı kategori/etiket, max 6).",
+      "GET /api/search": "Tam metin arama. Query: ?q, ?categoryId, ?sort=relevance|recent. Yazı, etiket ve kategori kapsar.",
+      "GET /api/posts/{id}/comments": "Blog yazısı yorumları. Sadece onaylı yorumlar. İç içe (threaded) yapı: parentId ile yanıt zinciri. Sayfalı.",
+      "GET /api/categories": "Kategori listesi (post sayısı ile).",
+      "GET /api/tags": "Etiket bulutu. Query: ?limit=50.",
+      "GET /api/authors": "Yazar listesi.",
+      "GET /api/authors/{id}": "Yazar profili ve yazıları.",
+      "GET /api/sitemap": "SEO site haritası (son 1000 yazı)."
+    },
+    "auth": {
+      "POST /api/auth/refresh": "Token yenileme.",
+      "POST /api/auth/logout": "Çıkış.",
+      "GET /api/auth/me": "Kullanıcı profili.",
+      "PUT /api/auth/me": "Profil güncelleme. Body: { displayName?, avatar?, bio? }.",
+      "POST /api/posts/{id}/comments": "Yorum ekler. Body: { content, parentId? }. Yanıt zinciri için parentId. Onay bekler (isApproved: false).",
+      "GET /api/my/comments": "Kullanıcının yorumları listesi.",
+      "PUT /api/my/comments/{id}": "Yorum günceller (sadece kendi yorumu).",
+      "DELETE /api/my/comments/{id}": "Yorum siler.",
+      "POST /api/posts/{id}/like": "Yazıyı beğenir. Tekrar çağrılırsa unlike.",
+      "GET /api/my/bookmarks": "Yer imi listesi.",
+      "POST /api/posts/{id}/bookmark": "Yazıyı yer imlerine ekler.",
+      "DELETE /api/posts/{id}/bookmark": "Yer iminden çıkarır.",
+      "POST /api/newsletter/subscribe": "Bültene abone olur. Body: { email }.",
+      "DELETE /api/newsletter/unsubscribe": "Bülten aboneliğinden çıkar. Body: { email, token }."
+    },
+    "author": {
+      "GET /api/author/posts": "Yazarın kendi yazıları. Filtreler: ?status=draft|published|archived.",
+      "POST /api/author/posts": "Yeni yazı oluşturur. Body: { title, slug?, content (markdown/HTML), excerpt?, categoryIds?: [], tags?: [], coverImage?, status: 'draft'|'published', metaTitle?, metaDescription?, scheduledAt? }.",
+      "PUT /api/author/posts/{id}": "Yazı günceller.",
+      "DELETE /api/author/posts/{id}": "Yazıyı arşivler (soft-delete).",
+      "PATCH /api/author/posts/{id}/publish": "Taslağı yayınlar. scheduledAt varsa zamanlanmış yayın.",
+      "PATCH /api/author/posts/{id}/unpublish": "Yayını geri çeker.",
+      "GET /api/author/posts/{id}/stats": "Yazı istatistikleri: görüntülenme, beğeni, yorum sayısı, okuma süresi ortalaması.",
+      "POST /api/author/upload": "Medya yükleme. Multipart: { file, altText? }. Max 5 MB, sadece image/*. Döndürür: { url, width, height, size }."
+    },
+    "admin": {
+      "GET /api/admin/posts": "Tüm yazılar (yönetim). Filtreler: ?status, ?authorId, ?categoryId, ?search.",
+      "PUT /api/admin/posts/{id}": "Herhangi bir yazıyı düzenler.",
+      "DELETE /api/admin/posts/{id}": "Yazıyı kalıcı siler.",
+      "PATCH /api/admin/posts/{id}/feature": "Yazıyı öne çıkarır/çıkarır. Body: { featured: boolean }.",
+      "GET /api/admin/categories": "Kategori listesi (yönetim).",
+      "POST /api/admin/categories": "Kategori ekler. Body: { name, slug?, description?, parentId? }.",
+      "PUT /api/admin/categories/{id}": "Kategori günceller.",
+      "DELETE /api/admin/categories/{id}": "Kategori siler (bağlı yazı varsa taşıma seçeneği: ?moveToCategoryId).",
+      "GET /api/admin/comments": "Tüm yorumlar. Filtreler: ?isApproved, ?postId, ?search.",
+      "PATCH /api/admin/comments/{id}/approve": "Yorumu onaylar.",
+      "PATCH /api/admin/comments/{id}/reject": "Yorumu reddeder (spam). Body: { reason? }.",
+      "DELETE /api/admin/comments/{id}": "Yorumu siler.",
+      "GET /api/admin/tags": "Etiket yönetimi.",
+      "POST /api/admin/tags/merge": "Etiketleri birleştirir. Body: { sourceTagId, targetTagId }.",
+      "DELETE /api/admin/tags/{id}": "Etiketi siler.",
+      "GET /api/admin/users": "Kullanıcı listesi. Filtreler: ?role, ?search.",
+      "PUT /api/admin/users/{id}/role": "Kullanıcı rolünü değiştirir. Body: { role: 'subscriber'|'author'|'admin' }.",
+      "GET /api/admin/stats": "Platform istatistikleri: toplam yazı, yorum, kullanıcı, görüntülenme.",
+      "GET /api/admin/audit-logs": "Denetim günlüğü."
+    }
+  }
+}

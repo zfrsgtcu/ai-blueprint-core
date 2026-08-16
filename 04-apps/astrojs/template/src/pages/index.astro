@@ -1,0 +1,60 @@
+---
+// {{ProjectName}} — Ana Sayfa
+// Bu sayfa {{DomainName}} domain'inin ana sayfasıdır.
+// AI: Domain gereksinimlerine göre içeriği özelleştir.
+---
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Content Collections kullanılıyorsa:
+// import { getCollection } from 'astro:content';
+// const {{model_names}} = await getCollection('{{model_names}}');
+---
+
+<BaseLayout title="{{HumanReadableName}} — Ana Sayfa">
+  <!-- Hero Bölümü -->
+  <section class="relative">
+    <div class="container mx-auto px-4 py-20">
+      <h1 class="text-4xl md:text-6xl font-bold">
+        {{Description}}'e Hoş Geldiniz
+      </h1>
+      <p class="mt-4 text-lg text-gray-600 max-w-2xl">
+        {{Description}} için modern, hızlı ve SEO dostu web sitesi.
+      </p>
+      <div class="mt-8 flex gap-4">
+        <a href="/about" class="rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700">
+          Daha Fazla Bilgi
+        </a>
+        <a href="/contact" class="rounded-lg border border-gray-300 px-6 py-3 hover:bg-gray-50">
+          İletişime Geç
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Öne Çıkan {{HumanReadableName}} -->
+  <!-- AI: Bu bölümü domain entity'lerine göre özelleştir -->
+  <section class="py-16 bg-gray-50">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold mb-8">Öne Çıkan {{HumanReadableName}}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- AI: Content Collections veya statik veriden döngü ile doldur -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-semibold text-lg">Örnek Kart</h3>
+          <p class="text-gray-600 mt-2">Bu bir örnek içerik kartıdır. AI tarafından değiştirilmelidir.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Bölümü -->
+  <section class="py-16">
+    <div class="container mx-auto px-4 text-center">
+      <h2 class="text-3xl font-bold">Hazır mısınız?</h2>
+      <p class="mt-4 text-gray-600">Hemen bizimle iletişime geçin.</p>
+      <a href="/contact" class="mt-6 inline-block rounded-lg bg-blue-600 px-8 py-3 text-white hover:bg-blue-700">
+        Başlayın
+      </a>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,358 @@
+{
+  "_meta": {
+    "description": "CRM veritabanı şeması. Lead, Contact, Account, Deal, Pipeline, Task, Activity, Custom Field, Webhook ve Audit Log modellerini kapsar."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "firstName": "String",
+        "lastName": "String",
+        "avatar": "String (Nullable)",
+        "role": "Enum (admin, manager, sales_rep, viewer)",
+        "teamId": "UUID (Nullable, Foreign Key → Team.id)",
+        "isActive": "Boolean (Default: true)",
+        "emailVerified": "Boolean (Default: false)",
+        "totpSecret": "String (Nullable, AES-256-GCM encrypted)",
+        "is2faEnabled": "Boolean (Default: false)",
+        "notificationPreferences": "JSONB (Default: { in_app: true, email: true, push: false })",
+        "lastLoginAt": "DateTime (Nullable)",
+        "lastLoginIp": "String (Nullable)",
+        "deletedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "role", "teamId", "isActive"],
+      "note": "Manager rolü kendi ekibinin verilerini görür. Sales rep sadece kendi kayıtlarını. 2FA admin ve manager için zorunlu."
+    },
+    "Team": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "description": "Text (Nullable)",
+        "managerId": "UUID (Foreign Key → User.id, Index)",
+        "parentTeamId": "UUID (Nullable, Foreign Key → Team.id, hiyerarşi)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["managerId", "parentTeamId", "isActive"],
+      "note": "Ekip hiyerarşisi: parentTeamId ile alt-üst ilişkisi. Manager kendi ve alt ekiplerinin verilerini görür."
+    },
+    "Lead": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index)",
+        "teamId": "UUID (Nullable, Foreign Key → Team.id, otomatik atanır)",
+        "firstName": "String",
+        "lastName": "String",
+        "email": "String (Index)",
+        "phone": "String (Nullable)",
+        "company": "String (Nullable)",
+        "source": "Enum (website, referral, social_media, trade_show, cold_call, email_campaign, advertisement, partner, other)",
+        "status": "Enum (new, contacted, qualified, unqualified, converted, archived)",
+        "score": "Int (Default: 0, lead scoring puanı)",
+        "scoreHistory": "JSONB (Nullable, [{ score, reason, createdAt }])",
+        "customFields": "JSONB (Nullable, { fieldDefinitionId: value })",
+        "notes": "Text (Nullable)",
+        "convertedAt": "DateTime (Nullable)",
+        "convertedContactId": "UUID (Nullable, Foreign Key → Contact.id)",
+        "convertedDealId": "UUID (Nullable, Foreign Key → Deal.id)",
+        "deletedAt": "DateTime (Nullable, soft delete)",
+        "deletedBy": "UUID (Nullable, Foreign Key → User.id)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "ownerId", "teamId", "status", "source", "score DESC", "createdAt DESC", "deletedAt"],
+      "note": "Lead skoru: otomatik (source, activity) + manuel güncelleme. Convert işlemi: Lead → Contact + Deal. Mükerrer e-posta kontrolü."
+    },
+    "Contact": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index)",
+        "teamId": "UUID (Nullable, Foreign Key → Team.id)",
+        "firstName": "String",
+        "lastName": "String",
+        "email": "String (Index)",
+        "alternateEmails": "JSONB (Nullable, [{ email, label }])",
+        "phones": "JSONB (Nullable, [{ type: 'mobile'|'work'|'home', number, isPrimary }])",
+        "socialProfiles": "JSONB (Nullable, { linkedin, twitter, facebook, instagram })",
+        "jobTitle": "String (Nullable)",
+        "department": "String (Nullable)",
+        "address": "JSONB (Nullable, { street, city, state, postalCode, country })",
+        "lifecycleStage": "Enum (lead, prospect, customer, churned, reactivated)",
+        "customFields": "JSONB (Nullable, { fieldDefinitionId: value })",
+        "avatar": "String (Nullable)",
+        "notes": "Text (Nullable)",
+        "marketingConsent": "Boolean (Default: false, GDPR)",
+        "processingConsent": "Boolean (Default: false, GDPR)",
+        "consentDate": "DateTime (Nullable)",
+        "consentSource": "String (Nullable)",
+        "deletedAt": "DateTime (Nullable, soft delete)",
+        "deletedBy": "UUID (Nullable, Foreign Key → User.id)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "ownerId", "teamId", "lifecycleStage", "deletedAt", "createdAt DESC"],
+      "note": "Contact, lead dönüşümü veya manuel oluşturma ile oluşur. GDPR consent alanları zorunludur. Birden fazla Account'a bağlanabilir (many-to-many)."
+    },
+    "Account": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index)",
+        "teamId": "UUID (Nullable, Foreign Key → Team.id)",
+        "name": "String",
+        "industry": "String (Nullable, Enum: technology, finance, healthcare, manufacturing, retail, education, government, other)",
+        "employees": "Int (Nullable, Enum: 1-10, 11-50, 51-200, 201-1000, 1001-5000, 5000+)",
+        "annualRevenue": "Decimal (15, 2) (Nullable)",
+        "type": "Enum (customer, partner, vendor, competitor, investor, other)",
+        "parentAccountId": "UUID (Nullable, Foreign Key → Account.id, firma hiyerarşisi)",
+        "website": "String (Nullable)",
+        "phone": "String (Nullable)",
+        "address": "JSONB (Nullable, { street, city, state, postalCode, country })",
+        "logo": "String (Nullable)",
+        "customFields": "JSONB (Nullable, { fieldDefinitionId: value })",
+        "notes": "Text (Nullable)",
+        "deletedAt": "DateTime (Nullable, soft delete)",
+        "deletedBy": "UUID (Nullable, Foreign Key → User.id)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["ownerId", "teamId", "type", "industry", "parentAccountId", "deletedAt", "name"],
+      "note": "Firma hiyerarşisi: parentAccountId ile holding-alt şirket ilişkisi. Bir firma birden fazla contact'a sahip olabilir."
+    },
+    "AccountContact": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "accountId": "UUID (Foreign Key → Account.id, ON DELETE CASCADE, Index)",
+        "contactId": "UUID (Foreign Key → Contact.id, ON DELETE CASCADE, Index)",
+        "role": "String (Nullable, contact'ın firmadaki rolü)",
+        "isPrimary": "Boolean (Default: false, birincil irtibat kişisi)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(accountId, contactId) UNIQUE", "contactId"],
+      "note": "Many-to-many junction table. Bir contact birden fazla firmaya, bir firma birden fazla contact'a bağlanabilir."
+    },
+    "Deal": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index)",
+        "teamId": "UUID (Nullable, Foreign Key → Team.id)",
+        "title": "String",
+        "value": "Decimal (15, 2)",
+        "currency": "String (Default: 'TRY')",
+        "pipelineId": "UUID (Foreign Key → Pipeline.id, Index)",
+        "stageId": "UUID (Foreign Key → PipelineStage.id, Index)",
+        "status": "Enum (open, won, lost, on_hold)",
+        "probability": "Int (Default: 0, 0-100 arası %)",
+        "expectedCloseDate": "DateTime (Nullable)",
+        "closedAt": "DateTime (Nullable)",
+        "wonReason": "Text (Nullable)",
+        "lostReason": "Enum (Nullable, price, competition, budget, timing, need_changed, other)",
+        "lostNotes": "Text (Nullable)",
+        "contactId": "UUID (Nullable, Foreign Key → Contact.id, birincil contact)",
+        "accountId": "UUID (Nullable, Foreign Key → Account.id, birincil firma)",
+        "customFields": "JSONB (Nullable, { fieldDefinitionId: value })",
+        "deletedAt": "DateTime (Nullable, soft delete)",
+        "deletedBy": "UUID (Nullable, Foreign Key → User.id)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["ownerId", "teamId", "pipelineId", "stageId", "status", "expectedCloseDate", "deletedAt", "(stageId, status)"],
+      "note": "Aşama değişikliğinde: hedef aşamanın requiredFields kontrolü yapılır. PipelineStage.allowedTransitions ile geçiş yetkisi kontrol edilir. Her aşama değişikliği AuditLog'a kaydedilir."
+    },
+    "Pipeline": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (örn: 'Kurumsal Satış', 'KOBİ Satışı')",
+        "description": "Text (Nullable)",
+        "isDefault": "Boolean (Default: false)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["isDefault", "isActive"],
+      "note": "Birden fazla pipeline tanımlanabilir. isDefault=true olan pipeline yeni deal'ler için varsayılandır."
+    },
+    "PipelineStage": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "pipelineId": "UUID (Foreign Key → Pipeline.id, ON DELETE CASCADE, Index)",
+        "name": "String (örn: 'Prospecting', 'Qualification', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost')",
+        "orderIndex": "Int (Sıralama, 0'dan başlar)",
+        "probability": "Int (Nullable, bu aşamadaki deal için varsayılan kazanma olasılığı %)",
+        "requiredFields": "JSONB (Nullable, bu aşamaya geçiş için zorunlu alanlar: ['value', 'expectedCloseDate', 'contactId'])",
+        "allowedTransitions": "JSONB (Nullable, bu aşamadan geçiş yapılabilecek aşama ID'leri: [uuid1, uuid2])",
+        "color": "String (Nullable, UI'da gösterim rengi: '#FF5733')",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(pipelineId, orderIndex) UNIQUE", "(pipelineId, isActive)"],
+      "note": "requiredFields: entity alan adları array olarak saklanır. allowedTransitions: null = tüm aşamalara geçiş serbest. Aşama validasyonu API seviyesinde enforce edilir."
+    },
+    "CustomFieldDefinition": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "entityType": "Enum (lead, contact, account, deal)",
+        "name": "String (Alan adı)",
+        "slug": "String (Programatik kullanım için, entityType ile birlikte unique)",
+        "fieldType": "Enum (text, number, date, datetime, dropdown, multi_select, checkbox, url, email, phone, currency, textarea)",
+        "options": "JSONB (Nullable, dropdown/multi_select için: [{ label, value, color? }])",
+        "isRequired": "Boolean (Default: false)",
+        "defaultValue": "String (Nullable, JSON olarak serialize edilmiş)",
+        "placeholder": "String (Nullable)",
+        "helpText": "String (Nullable)",
+        "orderIndex": "Int (Default: 0, formda gösterim sırası)",
+        "minLength": "Int (Nullable, text/textarea için)",
+        "maxLength": "Int (Nullable)",
+        "minValue": "Decimal (15, 4) (Nullable, number/currency için)",
+        "maxValue": "Decimal (15, 4) (Nullable)",
+        "regex": "String (Nullable, format validasyonu için regex pattern)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(entityType, slug) UNIQUE", "(entityType, orderIndex)", "isActive"],
+      "note": "Özel alan değerleri entity'lerin customFields JSONB alanında { fieldDefinitionId: value } formatında saklanır. Alan silindiğinde tüm entity'lerden ilgili key temizlenir."
+    },
+    "Task": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "ownerId": "UUID (Foreign Key → User.id, Index, görevi oluşturan)",
+        "assignedToId": "UUID (Foreign Key → User.id, Index, görevin atandığı kişi)",
+        "entityType": "Enum (Null|lead, contact, account, deal, Polymorphic)",
+        "entityId": "UUID (Nullable)",
+        "title": "String",
+        "description": "Text (Nullable)",
+        "type": "Enum (call, email, meeting, follow_up, proposal, demo, other)",
+        "priority": "Enum (low, medium, high, urgent, Default: medium)",
+        "status": "Enum (pending, in_progress, completed, cancelled, deferred)",
+        "dueDate": "DateTime (Nullable)",
+        "completedAt": "DateTime (Nullable)",
+        "reminderAt": "DateTime (Nullable, hatırlatma zamanı)",
+        "isRecurring": "Boolean (Default: false)",
+        "recurrenceRule": "String (Nullable, RFC 5545 RRULE formatı: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO')",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["assignedToId", "ownerId", "status", "dueDate", "priority", "(entityType, entityId)", "(assignedToId, dueDate)"],
+      "note": "Polymorphic entity bağlantısı: (entityType, entityId). Hatırlatıcılar reminderAt zamanında bildirim oluşturur. Günlük e-posta özeti: gecikmiş + bugünkü görevler."
+    },
+    "Activity": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "entityType": "Enum (lead, contact, account, deal)",
+        "entityId": "UUID",
+        "type": "Enum (call, email, meeting, note, task_completed, stage_changed, file_uploaded)",
+        "subject": "String (Nullable, kısa başlık)",
+        "content": "Text (Nullable, detaylı içerik)",
+        "callDirection": "Enum (Nullable, inbound, outbound, sadece type=call için)",
+        "callDuration": "Int (Nullable, saniye, sadece type=call için)",
+        "callResult": "Enum (Nullable, connected, voicemail, no_answer, callback_requested)",
+        "meetingDate": "DateTime (Nullable, sadece type=meeting için)",
+        "meetingLocation": "String (Nullable)",
+        "createdById": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(entityType, entityId, createdAt DESC)", "createdById", "type", "createdAt"],
+      "note": "Polymorphic aktivite kaydı. Entity sayfasında kronolojik timeline olarak gösterilir. stage_changed tipi audit log'dan bağımsız, kullanıcı dostu aktivite akışı içindir."
+    },
+    "EmailTemplate": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (Şablon adı)",
+        "subject": "String (Değişken destekler: {{contact.firstName}}, {{deal.title}})",
+        "body": "Text (HTML veya düz metin, değişken destekler)",
+        "entityType": "Enum (Null|lead, contact, deal, Hepsi için ortak)",
+        "isSystem": "Boolean (Default: false, sistem şablonları silinemez)",
+        "createdById": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["entityType", "createdById", "isSystem"],
+      "note": "E-posta şablonları aktivite oluşturma sırasında kullanılabilir. Değişkenler render edilirken HTML escape yapılır."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (deal_stage_changed, task_assigned, task_reminder, lead_assigned, meeting_reminder, task_overdue, deal_won, deal_lost)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'deal', 'task', 'lead')",
+        "entityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)"],
+      "note": "Bildirimler tetikleyici olaylarda otomatik oluşturulur. Dashboard'da okunmamış bildirim sayısı gösterilir."
+    },
+    "WebhookSubscription": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "url": "String (Webhook teslimat URL'i)",
+        "events": "JSONB (Dinlenecek olaylar: ['deal.created', 'deal.stage_changed', 'deal.won', 'deal.lost', 'contact.created', 'contact.updated', 'task.completed'])",
+        "secret": "String (HMAC-SHA256 imza anahtarı, auto-generated)",
+        "isActive": "Boolean (Default: true)",
+        "retryCount": "Int (Default: 3, maksimum yeniden deneme sayısı)",
+        "lastDeliveryAt": "DateTime (Nullable)",
+        "lastDeliveryStatus": "Enum (Nullable, success, failed)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["isActive", "lastDeliveryStatus"],
+      "note": "Outbound webhook. Her teslimat WebhookDelivery tablosunda loglanır. Başarısız teslimatlar exponential backoff ile yeniden denenir."
+    },
+    "WebhookDelivery": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "subscriptionId": "UUID (Foreign Key → WebhookSubscription.id, ON DELETE CASCADE, Index)",
+        "event": "String (Tetkleyici olay tipi)",
+        "requestBody": "Text (Gönderilen payload, JSON)",
+        "responseBody": "Text (Nullable, dönen yanıt)",
+        "responseStatus": "Int (Nullable, HTTP status kodu)",
+        "durationMs": "Int (Nullable, teslimat süresi ms)",
+        "status": "Enum (success, failed, retrying)",
+        "attemptNumber": "Int (Default: 1)",
+        "errorMessage": "Text (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(subscriptionId, createdAt DESC)", "status", "event"],
+      "note": "Her webhook teslimat denemesi burada loglanır. Maksimum 90 gün saklanır."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id)",
+        "entityType": "String (Lead, Contact, Account, Deal, Task)",
+        "entityId": "UUID",
+        "action": "String (created, updated, deleted, restored, stage_changed, bulk_updated, bulk_deleted, assigned, exported)",
+        "changes": "JSONB (Değişiklik deltası: { fieldName: { old: ..., new: ... } })",
+        "metadata": "JSONB (Nullable, ek bağlam: { bulkCount, importFileName })",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(entityType, entityId, createdAt DESC)", "userId", "action", "createdAt DESC"],
+      "note": "CRITICAL: Tüm veri değiştiren işlemler otomatik loglanır. changes JSONB'de sadece değişen alanların eski/yeni değerleri saklanır. metadata: toplu işlemler için ek bağlam."
+    },
+    "Attachment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "entityType": "Enum (lead, contact, account, deal)",
+        "entityId": "UUID",
+        "fileName": "String (Orijinal dosya adı)",
+        "fileSize": "Int (Byte cinsinden)",
+        "mimeType": "String",
+        "storageKey": "String (S3/Blob storage key)",
+        "uploadedById": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(entityType, entityId)", "uploadedById", "createdAt"],
+      "note": "Dosya yükleme. Maksimum dosya boyutu: 25MB. storageKey: cloud storage referansı."
+    }
+  }
+}

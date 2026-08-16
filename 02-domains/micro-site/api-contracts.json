@@ -1,0 +1,1447 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Micro-Site Builder",
+    "version": "1.0.0",
+    "error_format": {
+      "envelope": {
+        "status": "number (HTTP status code)",
+        "code": "string (machine-readable error code)",
+        "message": "string (human-readable summary)",
+        "details": "object | array | null (additional context)"
+      },
+      "example": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Request body validation failed",
+        "details": [
+          { "field": "title", "constraint": "required", "message": "Title is required" }
+        ]
+      }
+    },
+    "rate_limiting": "Public: 2000/min (CDN) | Auth: 200/min | Admin: 100/min",
+    "auth_scheme": "Bearer <JWT> — Header: Authorization: Bearer eyJ..."
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/sites/{slug}": {
+        "description": "Yayinlanmis mikro siteyi render eder. CDN katmanindan servis edilir. / Render a published micro-site. Served from CDN edge.",
+        "method": "GET",
+        "path": "/api/v1/sites/{slug}",
+        "auth": "none",
+        "pathParams": {
+          "slug": {
+            "type": "string",
+            "required": true,
+            "description": "Site slug / unique subdomain identifier",
+            "example": "john-doe-bio"
+          }
+        },
+        "statusCodes": {
+          "200": "Site rendered successfully",
+          "404": "Site not found or not published",
+          "410": "Site has been archived/deleted"
+        },
+        "response": {
+          "200": {
+            "description": "Full site render data including pages, theme, and media",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "title": "string",
+              "slug": "string",
+              "siteType": "string (bio | event | product | business_card | link_in_bio | coming_soon | resume | podcast | custom)",
+              "status": "string (published)",
+              "isPasswordProtected": "boolean",
+              "theme": {
+                "colors": "object { primary, secondary, background, text, accent }",
+                "fonts": "object { heading, body }",
+                "layout": "string"
+              },
+              "pages": [
+                {
+                  "id": "string (UUID)",
+                  "title": "string",
+                  "slug": "string",
+                  "isHome": "boolean",
+                  "orderIndex": "integer",
+                  "sections": "array (ordered list of section configurations)",
+                  "seo": {
+                    "metaTitle": "string",
+                    "metaDescription": "string",
+                    "ogImage": "string (URL)"
+                  }
+                }
+              ],
+              "publishedAt": "string (ISO 8601 DateTime)"
+            },
+            "example": {
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "title": "John Doe — Portfolio",
+              "slug": "john-doe-bio",
+              "siteType": "bio",
+              "status": "published",
+              "isPasswordProtected": false,
+              "theme": {
+                "colors": { "primary": "#2563EB", "secondary": "#7C3AED", "background": "#FFFFFF", "text": "#111827", "accent": "#F59E0B" },
+                "fonts": { "heading": "Inter", "body": "Inter" },
+                "layout": "single-column"
+              },
+              "pages": [
+                {
+                  "id": "660e8400-e29b-41d4-a716-446655440001",
+                  "title": "Home",
+                  "slug": "home",
+                  "isHome": true,
+                  "orderIndex": 1,
+                  "sections": [{ "type": "hero", "content": { "headline": "Hi, I'm John" } }],
+                  "seo": { "metaTitle": "John Doe — Portfolio", "metaDescription": "Full-stack developer portfolio", "ogImage": "https://cdn.example.com/og-john.png" }
+                }
+              ],
+              "publishedAt": "2026-07-15T10:30:00Z"
+            }
+          }
+        }
+      },
+      "POST /api/v1/sites/{id}/contact": {
+        "description": "Iletisim formu gonderimi. Spam korumali. / Submit a contact form. Spam-protected (reCAPTCHA / honeypot).",
+        "method": "POST",
+        "path": "/api/v1/sites/{id}/contact",
+        "auth": "none",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "contentType": "application/json",
+          "schema": {
+            "name": { "type": "string", "required": true, "maxLength": 120, "description": "Gonderici adi / Sender name", "example": "Jane Smith" },
+            "email": { "type": "string", "required": true, "format": "email", "maxLength": 254, "description": "Gonderici e-posta / Sender email", "example": "jane@example.com" },
+            "message": { "type": "string", "required": true, "minLength": 10, "maxLength": 5000, "description": "Mesaj icerigi / Message body", "example": "Hi, I'd like to discuss a project opportunity." },
+            "recaptchaToken": { "type": "string", "required": true, "description": "reCAPTCHA v3 token", "example": "03AGdBq25..." },
+            "honeypot": { "type": "string", "required": false, "description": "Honeypot field — must be empty for valid submission", "example": "" }
+          }
+        },
+        "statusCodes": {
+          "201": "Contact form submitted successfully",
+          "400": "Invalid request body / missing required fields",
+          "422": "Validation error (message too short, invalid email)",
+          "429": "Too many submissions from this IP"
+        },
+        "response": {
+          "201": {
+            "description": "Confirmation of submission receipt",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "status": "string (received)",
+              "receivedAt": "string (ISO 8601 DateTime)"
+            },
+            "example": {
+              "id": "770e8400-e29b-41d4-a716-446655440002",
+              "status": "received",
+              "receivedAt": "2026-07-20T14:22:00Z"
+            }
+          }
+        }
+      },
+      "GET /api/v1/sites/{slug}/qr": {
+        "description": "Site URL'si icin QR kod gorseli dondurur. / Returns a QR code image for the site URL.",
+        "method": "GET",
+        "path": "/api/v1/sites/{slug}/qr",
+        "auth": "none",
+        "pathParams": {
+          "slug": {
+            "type": "string",
+            "required": true,
+            "description": "Site slug",
+            "example": "john-doe-bio"
+          }
+        },
+        "queryParams": {
+          "size": { "type": "integer", "required": false, "default": 256, "min": 128, "max": 1024, "description": "QR kod boyutu (px) / QR code size in pixels", "example": "?size=512" },
+          "format": { "type": "string", "required": false, "default": "png", "enum": ["png", "svg"], "description": "Cikti formati / Output format", "example": "?format=svg" },
+          "fgColor": { "type": "string", "required": false, "default": "#000000", "description": "On plan rengi / Foreground color (hex)", "example": "?fgColor=%23000000" },
+          "bgColor": { "type": "string", "required": false, "default": "#FFFFFF", "description": "Arka plan rengi / Background color (hex)", "example": "?bgColor=%23FFFFFF" }
+        },
+        "statusCodes": {
+          "200": "QR code image returned",
+          "404": "Site not found",
+          "400": "Invalid size or format parameter"
+        },
+        "response": {
+          "200": {
+            "description": "QR code image binary",
+            "contentType": "image/png or image/svg+xml"
+          }
+        }
+      }
+    },
+    "auth": {
+      "POST /api/v1/sites": {
+        "description": "Sablon kullanarak yeni mikro site olusturur. / Create a new micro-site from a template.",
+        "method": "POST",
+        "path": "/api/v1/sites",
+        "auth": "bearer",
+        "requestBody": {
+          "required": true,
+          "contentType": "application/json",
+          "schema": {
+            "title": { "type": "string", "required": true, "minLength": 1, "maxLength": 120, "description": "Site basligi / Site title", "example": "John's Portfolio" },
+            "slug": { "type": "string", "required": true, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "minLength": 3, "maxLength": 63, "description": "Unique subdomain tanimlayici / Unique subdomain identifier", "example": "john-portfolio" },
+            "siteType": { "type": "string", "required": true, "enum": ["bio", "event", "product", "business_card", "link_in_bio", "coming_soon", "resume", "podcast", "custom"], "description": "Site tipi / Type of micro-site", "example": "bio" },
+            "templateId": { "type": "string (UUID)", "required": false, "nullable": true, "description": "Sablon ID'si (bos birakilabilir) / Template ID (nullable)", "example": "880e8400-e29b-41d4-a716-446655440003" },
+            "isPasswordProtected": { "type": "boolean", "required": false, "default": false, "description": "Sifre korumali mi / Whether password-protected", "example": false },
+            "password": { "type": "string", "required": false, "nullable": true, "minLength": 6, "maxLength": 128, "description": "Site sifresi (isPasswordProtected = true ise zorunlu) / Site password", "example": "myp@ss123" },
+            "noIndex": { "type": "boolean", "required": false, "default": false, "description": "Arama motorlarina dizinlenmesin mi / Disallow search engine indexing", "example": false }
+          }
+        },
+        "statusCodes": {
+          "201": "Site created successfully",
+          "400": "Invalid request body",
+          "409": "Slug already taken",
+          "422": "Validation error"
+        },
+        "response": {
+          "201": {
+            "description": "Yeni olusturulan site / Newly created site",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "ownerId": "string (UUID)",
+              "title": "string",
+              "slug": "string",
+              "siteType": "string",
+              "templateId": "string (UUID) | null",
+              "status": "string (draft)",
+              "isPasswordProtected": "boolean",
+              "noIndex": "boolean",
+              "customDomain": "null",
+              "sslStatus": "string (none)",
+              "publishedAt": "null",
+              "createdAt": "string (ISO 8601 DateTime)",
+              "updatedAt": "string (ISO 8601 DateTime)",
+              "pages": "array (empty or template defaults)"
+            },
+            "example": {
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "ownerId": "110e8400-e29b-41d4-a716-446655440010",
+              "title": "John's Portfolio",
+              "slug": "john-portfolio",
+              "siteType": "bio",
+              "templateId": "880e8400-e29b-41d4-a716-446655440003",
+              "status": "draft",
+              "isPasswordProtected": false,
+              "noIndex": false,
+              "customDomain": null,
+              "sslStatus": "none",
+              "publishedAt": null,
+              "createdAt": "2026-07-20T09:15:00Z",
+              "updatedAt": "2026-07-20T09:15:00Z",
+              "pages": [
+                {
+                  "id": "660e8400-e29b-41d4-a716-446655440001",
+                  "title": "Home",
+                  "slug": "home",
+                  "isHome": true,
+                  "orderIndex": 1,
+                  "sections": [],
+                  "seo": { "metaTitle": "John's Portfolio", "metaDescription": "", "ogImage": "" }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "GET /api/v1/sites": {
+        "description": "Kullanicinin mikro sitelerini listeler. / List the authenticated user's micro-sites.",
+        "method": "GET",
+        "path": "/api/v1/sites",
+        "auth": "bearer",
+        "queryParams": {
+          "page": { "type": "integer", "required": false, "default": 1, "min": 1, "description": "Sayfa numarasi / Page number", "example": "?page=2" },
+          "limit": { "type": "integer", "required": false, "default": 20, "min": 1, "max": 100, "description": "Sayfa basina kayit / Items per page", "example": "?limit=10" },
+          "sort": { "type": "string", "required": false, "default": "-updatedAt", "enum": ["createdAt", "-createdAt", "updatedAt", "-updatedAt", "title", "-title", "status", "-status"], "description": "Siralama ( - prefix = descending ) / Sort field", "example": "?sort=-createdAt" },
+          "status": { "type": "string", "required": false, "enum": ["draft", "published", "archived"], "description": "Duruma gore filtrele / Filter by status", "example": "?status=published" },
+          "siteType": { "type": "string", "required": false, "enum": ["bio", "event", "product", "business_card", "link_in_bio", "coming_soon", "resume", "podcast", "custom"], "description": "Site tipine gore filtrele / Filter by site type", "example": "?siteType=bio" },
+          "search": { "type": "string", "required": false, "maxLength": 100, "description": "Baslik veya slug'da ara / Search in title or slug", "example": "?search=portfolio" }
+        },
+        "statusCodes": {
+          "200": "Sites listed successfully",
+          "401": "Authentication required"
+        },
+        "response": {
+          "200": {
+            "description": "Paginated list of user's micro-sites",
+            "contentType": "application/json",
+            "schema": {
+              "data": [
+                {
+                  "id": "string (UUID)",
+                  "title": "string",
+                  "slug": "string",
+                  "siteType": "string",
+                  "status": "string",
+                  "isPasswordProtected": "boolean",
+                  "thumbnailUrl": "string | null",
+                  "publishedAt": "string (ISO 8601) | null",
+                  "createdAt": "string (ISO 8601)",
+                  "updatedAt": "string (ISO 8601)"
+                }
+              ],
+              "pagination": {
+                "page": "integer",
+                "limit": "integer",
+                "totalItems": "integer",
+                "totalPages": "integer"
+              }
+            },
+            "example": {
+              "data": [
+                {
+                  "id": "550e8400-e29b-41d4-a716-446655440000",
+                  "title": "John's Portfolio",
+                  "slug": "john-portfolio",
+                  "siteType": "bio",
+                  "status": "published",
+                  "isPasswordProtected": false,
+                  "thumbnailUrl": "https://cdn.example.com/thumbs/john-portfolio.png",
+                  "publishedAt": "2026-07-15T10:30:00Z",
+                  "createdAt": "2026-07-10T08:00:00Z",
+                  "updatedAt": "2026-07-19T16:45:00Z"
+                }
+              ],
+              "pagination": {
+                "page": 1,
+                "limit": 20,
+                "totalItems": 5,
+                "totalPages": 1
+              }
+            }
+          }
+        }
+      },
+      "GET /api/v1/sites/{id}": {
+        "description": "Site icerigini ve ayarlarini getirir. Sahip veya collaborator erisimi. / Get full site content and settings. Owner or collaborator access.",
+        "method": "GET",
+        "path": "/api/v1/sites/{id}",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "statusCodes": {
+          "200": "Site retrieved successfully",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner or collaborator",
+          "404": "Site not found"
+        },
+        "response": {
+          "200": {
+            "description": "Complete site data with pages, collaborators, and media",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "ownerId": "string (UUID)",
+              "title": "string",
+              "slug": "string",
+              "siteType": "string",
+              "templateId": "string (UUID) | null",
+              "status": "string",
+              "isPasswordProtected": "boolean",
+              "noIndex": "boolean",
+              "customDomain": "string | null",
+              "sslStatus": "string",
+              "publishedAt": "string (ISO 8601) | null",
+              "createdAt": "string (ISO 8601)",
+              "updatedAt": "string (ISO 8601)",
+              "pages": [
+                {
+                  "id": "string (UUID)",
+                  "title": "string",
+                  "slug": "string",
+                  "isHome": "boolean",
+                  "orderIndex": "integer",
+                  "sections": "array",
+                  "seo": "object { metaTitle, metaDescription, ogImage }",
+                  "createdAt": "string (ISO 8601)"
+                }
+              ],
+              "collaborators": [
+                {
+                  "id": "string (UUID)",
+                  "userId": "string (UUID)",
+                  "email": "string",
+                  "role": "string (editor | viewer)",
+                  "createdAt": "string (ISO 8601)"
+                }
+              ],
+              "media": [
+                {
+                  "id": "string (UUID)",
+                  "fileName": "string",
+                  "originalUrl": "string",
+                  "thumbnailUrl": "string",
+                  "type": "string",
+                  "fileSize": "integer",
+                  "altText": "string",
+                  "createdAt": "string (ISO 8601)"
+                }
+              ],
+              "backupCount": "integer"
+            },
+            "example": {
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "ownerId": "110e8400-e29b-41d4-a716-446655440010",
+              "title": "John's Portfolio",
+              "slug": "john-portfolio",
+              "siteType": "bio",
+              "templateId": "880e8400-e29b-41d4-a716-446655440003",
+              "status": "published",
+              "isPasswordProtected": false,
+              "noIndex": false,
+              "customDomain": "john.dev",
+              "sslStatus": "active",
+              "publishedAt": "2026-07-15T10:30:00Z",
+              "createdAt": "2026-07-10T08:00:00Z",
+              "updatedAt": "2026-07-19T16:45:00Z",
+              "pages": [
+                {
+                  "id": "660e8400-e29b-41d4-a716-446655440001",
+                  "title": "Home",
+                  "slug": "home",
+                  "isHome": true,
+                  "orderIndex": 1,
+                  "sections": [{ "type": "hero", "content": { "headline": "Hi, I'm John" } }],
+                  "seo": { "metaTitle": "John's Portfolio", "metaDescription": "Full-stack developer", "ogImage": "https://cdn.example.com/og-john.png" },
+                  "createdAt": "2026-07-10T08:00:00Z"
+                }
+              ],
+              "collaborators": [
+                {
+                  "id": "990e8400-e29b-41d4-a716-446655440020",
+                  "userId": "220e8400-e29b-41d4-a716-446655440022",
+                  "email": "editor@example.com",
+                  "role": "editor",
+                  "createdAt": "2026-07-12T11:00:00Z"
+                }
+              ],
+              "media": [
+                {
+                  "id": "aa0e8400-e29b-41d4-a716-446655440030",
+                  "fileName": "hero-bg.png",
+                  "originalUrl": "https://cdn.example.com/media/hero-bg.png",
+                  "thumbnailUrl": "https://cdn.example.com/media/thumb_hero-bg.png",
+                  "type": "image",
+                  "fileSize": 245760,
+                  "altText": "Hero background image",
+                  "createdAt": "2026-07-10T09:00:00Z"
+                }
+              ],
+              "backupCount": 3
+            }
+          }
+        }
+      },
+      "PUT /api/v1/sites/{id}": {
+        "description": "Site icerigini ve ayarlarini gunceller. / Update site content and settings (title, slug, pages, password, noIndex).",
+        "method": "PUT",
+        "path": "/api/v1/sites/{id}",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "contentType": "application/json",
+          "schema": {
+            "title": { "type": "string", "required": false, "minLength": 1, "maxLength": 120, "description": "Site basligi / Site title", "example": "John's Updated Portfolio" },
+            "slug": { "type": "string", "required": false, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "minLength": 3, "maxLength": 63, "description": "Unique subdomain tanimlayici / Unique subdomain identifier", "example": "john-updated-portfolio" },
+            "siteType": { "type": "string", "required": false, "enum": ["bio", "event", "product", "business_card", "link_in_bio", "coming_soon", "resume", "podcast", "custom"], "description": "Site tipi / Site type", "example": "bio" },
+            "isPasswordProtected": { "type": "boolean", "required": false, "description": "Sifre korumali mi / Whether password-protected", "example": true },
+            "password": { "type": "string", "required": false, "nullable": true, "minLength": 6, "maxLength": 128, "description": "Site sifresi / Site password", "example": "newp@ss456" },
+            "noIndex": { "type": "boolean", "required": false, "description": "Arama motoru dizinlemesi / Search engine indexing", "example": false },
+            "pages": {
+              "type": "array",
+              "required": false,
+              "description": "Sayfa listesi (full replace) / Pages array (full replace)",
+              "items": {
+                "id": { "type": "string (UUID)", "required": false, "description": "Existing page ID (omit for new pages)" },
+                "title": { "type": "string", "required": true, "minLength": 1, "maxLength": 120 },
+                "slug": { "type": "string", "required": true, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+                "isHome": { "type": "boolean", "required": false, "default": false },
+                "orderIndex": { "type": "integer", "required": true },
+                "sections": { "type": "array", "required": false },
+                "seo": {
+                  "type": "object",
+                  "required": false,
+                  "properties": {
+                    "metaTitle": { "type": "string", "maxLength": 120 },
+                    "metaDescription": { "type": "string", "maxLength": 300 },
+                    "ogImage": { "type": "string", "format": "uri" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "statusCodes": {
+          "200": "Site updated successfully",
+          "400": "Invalid request body",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner or editor collaborator",
+          "404": "Site not found",
+          "409": "Slug already taken",
+          "422": "Validation error"
+        },
+        "response": {
+          "200": {
+            "description": "Updated site data",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "ownerId": "string (UUID)",
+              "title": "string",
+              "slug": "string",
+              "siteType": "string",
+              "status": "string",
+              "isPasswordProtected": "boolean",
+              "noIndex": "boolean",
+              "customDomain": "string | null",
+              "sslStatus": "string",
+              "publishedAt": "string (ISO 8601) | null",
+              "updatedAt": "string (ISO 8601)",
+              "pages": "array"
+            },
+            "example": {
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "ownerId": "110e8400-e29b-41d4-a716-446655440010",
+              "title": "John's Updated Portfolio",
+              "slug": "john-updated-portfolio",
+              "siteType": "bio",
+              "status": "draft",
+              "isPasswordProtected": true,
+              "noIndex": false,
+              "customDomain": null,
+              "sslStatus": "none",
+              "publishedAt": null,
+              "updatedAt": "2026-07-20T15:00:00Z",
+              "pages": []
+            }
+          }
+        }
+      },
+      "DELETE /api/v1/sites/{id}": {
+        "description": "Mikro siteyi siler. Iliskili sayfalar, medya ve yedekler de silinir. / Delete a micro-site. Cascades to pages, media, and backups.",
+        "method": "DELETE",
+        "path": "/api/v1/sites/{id}",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "statusCodes": {
+          "200": "Site deleted successfully",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner",
+          "404": "Site not found"
+        },
+        "response": {
+          "200": {
+            "description": "Deletion confirmation",
+            "contentType": "application/json",
+            "schema": {
+              "deleted": "boolean",
+              "id": "string (UUID)",
+              "message": "string"
+            },
+            "example": {
+              "deleted": true,
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "message": "Site and all associated data deleted successfully"
+            }
+          }
+        }
+      },
+      "POST /api/v1/sites/{id}/publish": {
+        "description": "Siteyi CDN'de yayinlar. / Publish site to CDN. Moves status from draft to published.",
+        "method": "POST",
+        "path": "/api/v1/sites/{id}/publish",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "contentType": "application/json",
+          "schema": {
+            "invalidateCache": { "type": "boolean", "required": false, "default": true, "description": "CDN on bellegini temizle / Invalidate CDN cache", "example": true }
+          }
+        },
+        "statusCodes": {
+          "200": "Site published successfully",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner or editor collaborator",
+          "404": "Site not found",
+          "409": "Site is already published",
+          "422": "Site has no pages / validation error"
+        },
+        "response": {
+          "200": {
+            "description": "Publish confirmation with CDN URL",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "status": "string (published)",
+              "url": "string (CDN URL)",
+              "publishedAt": "string (ISO 8601 DateTime)",
+              "cdnInvalidated": "boolean"
+            },
+            "example": {
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "status": "published",
+              "url": "https://john-portfolio.example.com",
+              "publishedAt": "2026-07-20T15:30:00Z",
+              "cdnInvalidated": true
+            }
+          }
+        }
+      },
+      "POST /api/v1/sites/{id}/duplicate": {
+        "description": "Siteyi kopyalar. Yeni slug otomatik olusturulur. / Duplicate a site. A new slug is auto-generated (original-slug-copy-N).",
+        "method": "POST",
+        "path": "/api/v1/sites/{id}/duplicate",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Source site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "contentType": "application/json",
+          "schema": {
+            "title": { "type": "string", "required": false, "maxLength": 120, "description": "Yeni site basligi (belirtilmezse Copy of {title}) / New site title", "example": "John's Portfolio V2" },
+            "slug": { "type": "string", "required": false, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 63, "description": "Yeni slug (belirtilmezse otomatik) / New slug (auto if omitted)", "example": "john-portfolio-v2" }
+          }
+        },
+        "statusCodes": {
+          "201": "Site duplicated successfully",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner or editor collaborator",
+          "404": "Source site not found",
+          "409": "Slug already taken"
+        },
+        "response": {
+          "201": {
+            "description": "Newly duplicated site",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "title": "string",
+              "slug": "string",
+              "status": "string (draft)",
+              "duplicatedFrom": "string (UUID — source site ID)",
+              "createdAt": "string (ISO 8601)"
+            },
+            "example": {
+              "id": "bb0e8400-e29b-41d4-a716-446655440040",
+              "title": "John's Portfolio V2",
+              "slug": "john-portfolio-v2",
+              "status": "draft",
+              "duplicatedFrom": "550e8400-e29b-41d4-a716-446655440000",
+              "createdAt": "2026-07-20T16:00:00Z"
+            }
+          }
+        }
+      },
+      "PUT /api/v1/sites/{id}/theme": {
+        "description": "Temayi gunceller (renkler, fontlar, layout). / Update theme settings (colors, fonts, layout).",
+        "method": "PUT",
+        "path": "/api/v1/sites/{id}/theme",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "contentType": "application/json",
+          "schema": {
+            "colors": {
+              "type": "object",
+              "required": false,
+              "description": "Renk paleti / Color palette",
+              "properties": {
+                "primary": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Primary brand color (hex)", "example": "#2563EB" },
+                "secondary": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Secondary brand color (hex)", "example": "#7C3AED" },
+                "background": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Background color (hex)", "example": "#FFFFFF" },
+                "text": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Text color (hex)", "example": "#111827" },
+                "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Accent color (hex)", "example": "#F59E0B" }
+              }
+            },
+            "fonts": {
+              "type": "object",
+              "required": false,
+              "description": "Font ayarlari / Font settings",
+              "properties": {
+                "heading": { "type": "string", "description": "Heading font family", "example": "Inter" },
+                "body": { "type": "string", "description": "Body font family", "example": "Inter" }
+              }
+            },
+            "layout": { "type": "string", "required": false, "enum": ["single-column", "two-column", "full-width", "sidebar"], "description": "Sayfa duzeni / Page layout", "example": "single-column" }
+          }
+        },
+        "statusCodes": {
+          "200": "Theme updated successfully",
+          "400": "Invalid color format or layout value",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner or editor collaborator",
+          "404": "Site not found"
+        },
+        "response": {
+          "200": {
+            "description": "Updated theme configuration",
+            "contentType": "application/json",
+            "schema": {
+              "siteId": "string (UUID)",
+              "theme": {
+                "colors": "object { primary, secondary, background, text, accent }",
+                "fonts": "object { heading, body }",
+                "layout": "string"
+              },
+              "updatedAt": "string (ISO 8601)"
+            },
+            "example": {
+              "siteId": "550e8400-e29b-41d4-a716-446655440000",
+              "theme": {
+                "colors": { "primary": "#2563EB", "secondary": "#7C3AED", "background": "#FFFFFF", "text": "#111827", "accent": "#F59E0B" },
+                "fonts": { "heading": "Inter", "body": "Inter" },
+                "layout": "single-column"
+              },
+              "updatedAt": "2026-07-20T16:15:00Z"
+            }
+          }
+        }
+      },
+      "POST /api/v1/sites/{id}/media": {
+        "description": "Siteye medya dosyasi yukler. / Upload a media file to the site.",
+        "method": "POST",
+        "path": "/api/v1/sites/{id}/media",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "contentType": "multipart/form-data",
+          "schema": {
+            "file": { "type": "binary", "required": true, "description": "Medya dosyasi / Media file", "constraints": "Max 50 MB. Allowed MIME types: image/*, video/mp4, video/webm, application/pdf" },
+            "altText": { "type": "string", "required": false, "maxLength": 255, "description": "Alternatif metin (accessibility) / Alt text", "example": "Hero background image" },
+            "fileName": { "type": "string", "required": false, "description": "Ozel dosya adi (belirtilmezse orijinal ad kullanilir) / Custom file name", "example": "hero-bg.png" }
+          }
+        },
+        "statusCodes": {
+          "201": "Media uploaded successfully",
+          "400": "Invalid file type or size exceeds limit",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner or editor collaborator",
+          "404": "Site not found",
+          "413": "File too large (over 50 MB)"
+        },
+        "response": {
+          "201": {
+            "description": "Uploaded media metadata",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "siteId": "string (UUID)",
+              "fileName": "string",
+              "originalUrl": "string",
+              "thumbnailUrl": "string",
+              "type": "string (image | video | document | other)",
+              "fileSize": "integer (bytes)",
+              "altText": "string",
+              "createdAt": "string (ISO 8601)"
+            },
+            "example": {
+              "id": "aa0e8400-e29b-41d4-a716-446655440030",
+              "siteId": "550e8400-e29b-41d4-a716-446655440000",
+              "fileName": "hero-bg.png",
+              "originalUrl": "https://cdn.example.com/media/hero-bg.png",
+              "thumbnailUrl": "https://cdn.example.com/media/thumb_hero-bg.png",
+              "type": "image",
+              "fileSize": 245760,
+              "altText": "Hero background image",
+              "createdAt": "2026-07-20T16:30:00Z"
+            }
+          }
+        }
+      },
+      "DELETE /api/v1/sites/{id}/media/{mediaId}": {
+        "description": "Medya dosyasini siler (storage'dan da kaldirilir). / Delete a media file (also removed from storage).",
+        "method": "DELETE",
+        "path": "/api/v1/sites/{id}/media/{mediaId}",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "mediaId": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Media ID",
+            "example": "aa0e8400-e29b-41d4-a716-446655440030"
+          }
+        },
+        "statusCodes": {
+          "200": "Media deleted successfully",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner or editor collaborator",
+          "404": "Site or media not found"
+        },
+        "response": {
+          "200": {
+            "description": "Deletion confirmation",
+            "contentType": "application/json",
+            "schema": {
+              "deleted": "boolean",
+              "id": "string (UUID)",
+              "message": "string"
+            },
+            "example": {
+              "deleted": true,
+              "id": "aa0e8400-e29b-41d4-a716-446655440030",
+              "message": "Media file deleted successfully"
+            }
+          }
+        }
+      },
+      "GET /api/v1/sites/{id}/analytics": {
+        "description": "Site analitik verilerini getirir. / Get site analytics data (views, visitors, referrers, devices).",
+        "method": "GET",
+        "path": "/api/v1/sites/{id}/analytics",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "queryParams": {
+          "from": { "type": "string (ISO 8601 date)", "required": false, "description": "Baslangic tarihi / Start date (default: 30 days ago)", "example": "?from=2026-06-20" },
+          "to": { "type": "string (ISO 8601 date)", "required": false, "description": "Bitis tarihi / End date (default: today)", "example": "?to=2026-07-20" },
+          "granularity": { "type": "string", "required": false, "default": "day", "enum": ["day", "week", "month"], "description": "Zaman araligi / Time granularity", "example": "?granularity=week" }
+        },
+        "statusCodes": {
+          "200": "Analytics data retrieved",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner or editor collaborator",
+          "404": "Site not found"
+        },
+        "response": {
+          "200": {
+            "description": "Site analytics with time-series and aggregate data",
+            "contentType": "application/json",
+            "schema": {
+              "summary": {
+                "totalViews": "integer",
+                "totalUniqueVisitors": "integer",
+                "avgDailyViews": "number",
+                "period": "object { from, to }"
+              },
+              "timeSeries": [
+                {
+                  "date": "string (date)",
+                  "views": "integer",
+                  "uniqueVisitors": "integer"
+                }
+              ],
+              "referrers": [
+                { "source": "string", "count": "integer" }
+              ],
+              "devices": [
+                { "type": "string (desktop | mobile | tablet | other)", "count": "integer", "percentage": "number" }
+              ]
+            },
+            "example": {
+              "summary": {
+                "totalViews": 15230,
+                "totalUniqueVisitors": 8742,
+                "avgDailyViews": 507.67,
+                "period": { "from": "2026-06-20", "to": "2026-07-20" }
+              },
+              "timeSeries": [
+                { "date": "2026-07-19", "views": 520, "uniqueVisitors": 310 },
+                { "date": "2026-07-20", "views": 480, "uniqueVisitors": 290 }
+              ],
+              "referrers": [
+                { "source": "google.com", "count": 4200 },
+                { "source": "twitter.com", "count": 1800 },
+                { "source": "direct", "count": 5600 }
+              ],
+              "devices": [
+                { "type": "desktop", "count": 8200, "percentage": 53.8 },
+                { "type": "mobile", "count": 6100, "percentage": 40.1 },
+                { "type": "tablet", "count": 930, "percentage": 6.1 }
+              ]
+            }
+          }
+        }
+      },
+      "POST /api/v1/sites/{id}/export": {
+        "description": "Siteyi statik HTML/ZIP olarak disa aktarir. / Export site as a static HTML/ZIP archive.",
+        "method": "POST",
+        "path": "/api/v1/sites/{id}/export",
+        "auth": "bearer",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Site ID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "contentType": "application/json",
+          "schema": {
+            "format": { "type": "string", "required": false, "default": "zip", "enum": ["zip", "html"], "description": "Disa aktarma formati / Export format", "example": "zip" },
+            "includeMedia": { "type": "boolean", "required": false, "default": true, "description": "Medya dosyalari dahil edilsin mi / Include media files", "example": true },
+            "minifyAssets": { "type": "boolean", "required": false, "default": true, "description": "CSS/JS minimize edilsin mi / Minify CSS and JS", "example": true }
+          }
+        },
+        "statusCodes": {
+          "200": "Export ready for download",
+          "202": "Export processing — check back with download URL",
+          "401": "Authentication required",
+          "403": "Forbidden — not owner",
+          "404": "Site not found"
+        },
+        "response": {
+          "200": {
+            "description": "Download URL for the exported archive",
+            "contentType": "application/json",
+            "schema": {
+              "downloadUrl": "string (pre-signed URL)",
+              "format": "string",
+              "fileSize": "integer (bytes)",
+              "expiresAt": "string (ISO 8601 — URL expiry)",
+              "generatedAt": "string (ISO 8601)"
+            },
+            "example": {
+              "downloadUrl": "https://cdn.example.com/exports/john-portfolio-20260720.zip?token=xyz",
+              "format": "zip",
+              "fileSize": 5242880,
+              "expiresAt": "2026-07-20T17:30:00Z",
+              "generatedAt": "2026-07-20T16:30:00Z"
+            }
+          },
+          "202": {
+            "description": "Export is being processed asynchronously",
+            "contentType": "application/json",
+            "schema": {
+              "status": "string (processing)",
+              "estimatedSeconds": "integer",
+              "checkUrl": "string (poll this URL for status)"
+            },
+            "example": {
+              "status": "processing",
+              "estimatedSeconds": 30,
+              "checkUrl": "/api/v1/sites/550e8400-e29b-41d4-a716-446655440000/export/status"
+            }
+          }
+        }
+      }
+    },
+    "templates": {
+      "GET /api/v1/templates": {
+        "description": "Kullanilabilir sablonlari listeler. / List available templates, filtered by site type.",
+        "method": "GET",
+        "path": "/api/v1/templates",
+        "auth": "optional (bearer optional; public templates are always visible)",
+        "queryParams": {
+          "page": { "type": "integer", "required": false, "default": 1, "min": 1, "description": "Sayfa numarasi / Page number", "example": "?page=1" },
+          "limit": { "type": "integer", "required": false, "default": 20, "min": 1, "max": 50, "description": "Sayfa basina kayit / Items per page", "example": "?limit=10" },
+          "siteType": { "type": "string", "required": false, "enum": ["bio", "event", "product", "business_card", "link_in_bio", "coming_soon", "resume", "podcast", "custom"], "description": "Site tipine gore filtrele / Filter by site type", "example": "?siteType=bio" },
+          "sort": { "type": "string", "required": false, "default": "name", "enum": ["name", "-name", "createdAt", "-createdAt"], "description": "Siralama / Sort order", "example": "?sort=-createdAt" }
+        },
+        "statusCodes": {
+          "200": "Templates listed successfully"
+        },
+        "response": {
+          "200": {
+            "description": "Paginated list of available templates",
+            "contentType": "application/json",
+            "schema": {
+              "data": [
+                {
+                  "id": "string (UUID)",
+                  "name": "string",
+                  "siteType": "string",
+                  "description": "string",
+                  "thumbnailUrl": "string",
+                  "previewUrl": "string",
+                  "isActive": "boolean",
+                  "createdAt": "string (ISO 8601)"
+                }
+              ],
+              "pagination": {
+                "page": "integer",
+                "limit": "integer",
+                "totalItems": "integer",
+                "totalPages": "integer"
+              }
+            },
+            "example": {
+              "data": [
+                {
+                  "id": "880e8400-e29b-41d4-a716-446655440003",
+                  "name": "Minimal Bio",
+                  "siteType": "bio",
+                  "description": "Clean and minimal personal bio page with hero, about, and contact sections.",
+                  "thumbnailUrl": "https://cdn.example.com/templates/minimal-bio-thumb.png",
+                  "previewUrl": "https://preview.example.com/templates/minimal-bio",
+                  "isActive": true,
+                  "createdAt": "2026-06-01T00:00:00Z"
+                }
+              ],
+              "pagination": {
+                "page": 1,
+                "limit": 20,
+                "totalItems": 12,
+                "totalPages": 1
+              }
+            }
+          }
+        }
+      },
+      "GET /api/v1/templates/{id}": {
+        "description": "Sablon onizleme verisini, varsayilan temayi ve bolum sablonlarini getirir. / Get template preview data including default theme and section presets.",
+        "method": "GET",
+        "path": "/api/v1/templates/{id}",
+        "auth": "optional (bearer optional; public templates are always visible)",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Template ID",
+            "example": "880e8400-e29b-41d4-a716-446655440003"
+          }
+        },
+        "statusCodes": {
+          "200": "Template details retrieved",
+          "404": "Template not found or inactive"
+        },
+        "response": {
+          "200": {
+            "description": "Full template data with theme defaults and section presets",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "name": "string",
+              "siteType": "string",
+              "description": "string",
+              "thumbnailUrl": "string",
+              "previewUrl": "string",
+              "themeDefaults": {
+                "colors": "object { primary, secondary, background, text, accent }",
+                "fonts": "object { heading, body }",
+                "layout": "string"
+              },
+              "sectionPresets": "array (ordered list of default section configurations)",
+              "isActive": "boolean",
+              "createdAt": "string (ISO 8601)"
+            },
+            "example": {
+              "id": "880e8400-e29b-41d4-a716-446655440003",
+              "name": "Minimal Bio",
+              "siteType": "bio",
+              "description": "Clean and minimal personal bio page with hero, about, and contact sections.",
+              "thumbnailUrl": "https://cdn.example.com/templates/minimal-bio-thumb.png",
+              "previewUrl": "https://preview.example.com/templates/minimal-bio",
+              "themeDefaults": {
+                "colors": { "primary": "#0F172A", "secondary": "#334155", "background": "#FFFFFF", "text": "#1E293B", "accent": "#3B82F6" },
+                "fonts": { "heading": "Inter", "body": "Inter" },
+                "layout": "single-column"
+              },
+              "sectionPresets": [
+                { "type": "hero", "defaults": { "headline": "Hi, I'm [Name]", "subheadline": "[Tagline]", "showPhoto": true } },
+                { "type": "about", "defaults": { "title": "About Me", "showSocialLinks": true } },
+                { "type": "contact", "defaults": { "title": "Get in Touch", "showEmail": true } }
+              ],
+              "isActive": true,
+              "createdAt": "2026-06-01T00:00:00Z"
+            }
+          }
+        }
+      }
+    },
+    "admin": {
+      "POST /api/v1/admin/domains": {
+        "description": "Site icin ozel alan adi ekler. SSL sertifikasi otomatik baslatilir. / Add a custom domain for a site. SSL provisioning starts automatically.",
+        "method": "POST",
+        "path": "/api/v1/admin/domains",
+        "auth": "bearer (admin role required)",
+        "requestBody": {
+          "required": true,
+          "contentType": "application/json",
+          "schema": {
+            "siteId": { "type": "string (UUID)", "required": true, "description": "Site ID", "example": "550e8400-e29b-41d4-a716-446655440000" },
+            "domain": { "type": "string", "required": true, "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}$", "description": "Ozel alan adi (FQDN) / Custom domain (FQDN)", "example": "john.dev" }
+          }
+        },
+        "statusCodes": {
+          "201": "Domain added successfully — SSL provisioning started",
+          "400": "Invalid domain format",
+          "401": "Authentication required",
+          "403": "Forbidden — admin role required",
+          "404": "Site not found",
+          "409": "Domain already assigned to another site"
+        },
+        "response": {
+          "201": {
+            "description": "Added domain with SSL status",
+            "contentType": "application/json",
+            "schema": {
+              "id": "string (UUID)",
+              "siteId": "string (UUID)",
+              "domain": "string",
+              "sslStatus": "string (pending)",
+              "dnsVerified": "boolean",
+              "dnsInstructions": {
+                "recordType": "string (CNAME)",
+                "name": "string",
+                "value": "string",
+                "ttl": "integer"
+              },
+              "createdAt": "string (ISO 8601)"
+            },
+            "example": {
+              "id": "cc0e8400-e29b-41d4-a716-446655440050",
+              "siteId": "550e8400-e29b-41d4-a716-446655440000",
+              "domain": "john.dev",
+              "sslStatus": "pending",
+              "dnsVerified": false,
+              "dnsInstructions": {
+                "recordType": "CNAME",
+                "name": "john.dev",
+                "value": "sites.example.com",
+                "ttl": 3600
+              },
+              "createdAt": "2026-07-20T17:00:00Z"
+            }
+          }
+        }
+      },
+      "GET /api/v1/admin/domains": {
+        "description": "Tum ozel alan adlarini SSL durumlariyla listeler. / List all custom domains with SSL status.",
+        "method": "GET",
+        "path": "/api/v1/admin/domains",
+        "auth": "bearer (admin role required)",
+        "queryParams": {
+          "page": { "type": "integer", "required": false, "default": 1, "min": 1, "description": "Sayfa numarasi / Page number", "example": "?page=1" },
+          "limit": { "type": "integer", "required": false, "default": 50, "min": 1, "max": 200, "description": "Sayfa basina kayit / Items per page", "example": "?limit=50" },
+          "sslStatus": { "type": "string", "required": false, "enum": ["pending", "active", "failed"], "description": "SSL durumuna gore filtrele / Filter by SSL status", "example": "?sslStatus=pending" },
+          "dnsVerified": { "type": "boolean", "required": false, "description": "DNS dogrulama durumuna gore filtrele / Filter by DNS verification status", "example": "?dnsVerified=false" },
+          "search": { "type": "string", "required": false, "description": "Alan adinda ara / Search in domain name", "example": "?search=john" },
+          "sort": { "type": "string", "required": false, "default": "-createdAt", "enum": ["createdAt", "-createdAt", "domain", "-domain", "sslStatus", "-sslStatus"], "description": "Siralama / Sort order", "example": "?sort=domain" }
+        },
+        "statusCodes": {
+          "200": "Domains listed successfully",
+          "401": "Authentication required",
+          "403": "Forbidden — admin role required"
+        },
+        "response": {
+          "200": {
+            "description": "Paginated list of custom domains",
+            "contentType": "application/json",
+            "schema": {
+              "data": [
+                {
+                  "id": "string (UUID)",
+                  "siteId": "string (UUID)",
+                  "siteTitle": "string",
+                  "siteSlug": "string",
+                  "domain": "string",
+                  "sslStatus": "string (pending | active | failed)",
+                  "dnsVerified": "boolean",
+                  "createdAt": "string (ISO 8601)"
+                }
+              ],
+              "pagination": {
+                "page": "integer",
+                "limit": "integer",
+                "totalItems": "integer",
+                "totalPages": "integer"
+              }
+            },
+            "example": {
+              "data": [
+                {
+                  "id": "cc0e8400-e29b-41d4-a716-446655440050",
+                  "siteId": "550e8400-e29b-41d4-a716-446655440000",
+                  "siteTitle": "John's Portfolio",
+                  "siteSlug": "john-portfolio",
+                  "domain": "john.dev",
+                  "sslStatus": "active",
+                  "dnsVerified": true,
+                  "createdAt": "2026-07-20T17:00:00Z"
+                }
+              ],
+              "pagination": {
+                "page": 1,
+                "limit": 50,
+                "totalItems": 28,
+                "totalPages": 1
+              }
+            }
+          }
+        }
+      },
+      "DELETE /api/v1/admin/domains/{id}": {
+        "description": "Ozel alan adini kaldirir ve SSL sertifikasini iptal eder. / Remove a custom domain and revoke its SSL certificate.",
+        "method": "DELETE",
+        "path": "/api/v1/admin/domains/{id}",
+        "auth": "bearer (admin role required)",
+        "pathParams": {
+          "id": {
+            "type": "string (UUID)",
+            "required": true,
+            "description": "Domain record ID",
+            "example": "cc0e8400-e29b-41d4-a716-446655440050"
+          }
+        },
+        "statusCodes": {
+          "200": "Domain removed successfully",
+          "401": "Authentication required",
+          "403": "Forbidden — admin role required",
+          "404": "Domain record not found"
+        },
+        "response": {
+          "200": {
+            "description": "Removal confirmation",
+            "contentType": "application/json",
+            "schema": {
+              "deleted": "boolean",
+              "id": "string (UUID)",
+              "domain": "string",
+              "message": "string"
+            },
+            "example": {
+              "deleted": true,
+              "id": "cc0e8400-e29b-41d4-a716-446655440050",
+              "domain": "john.dev",
+              "message": "Custom domain removed and SSL certificate revoked"
+            }
+          }
+        }
+      },
+      "GET /api/v1/admin/sites": {
+        "description": "Tum siteleri admin genel gorunumuyle listeler. / List all sites for admin overview — includes owner info and aggregated stats.",
+        "method": "GET",
+        "path": "/api/v1/admin/sites",
+        "auth": "bearer (admin role required)",
+        "queryParams": {
+          "page": { "type": "integer", "required": false, "default": 1, "min": 1, "description": "Sayfa numarasi / Page number", "example": "?page=1" },
+          "limit": { "type": "integer", "required": false, "default": 50, "min": 1, "max": 200, "description": "Sayfa basina kayit / Items per page", "example": "?limit=100" },
+          "sort": { "type": "string", "required": false, "default": "-createdAt", "enum": ["createdAt", "-createdAt", "updatedAt", "-updatedAt", "title", "-title", "status", "-status"], "description": "Siralama / Sort order", "example": "?sort=-updatedAt" },
+          "status": { "type": "string", "required": false, "enum": ["draft", "published", "archived"], "description": "Duruma gore filtrele / Filter by status", "example": "?status=published" },
+          "siteType": { "type": "string", "required": false, "enum": ["bio", "event", "product", "business_card", "link_in_bio", "coming_soon", "resume", "podcast", "custom"], "description": "Site tipine gore filtrele / Filter by site type", "example": "?siteType=bio" },
+          "ownerEmail": { "type": "string", "required": false, "description": "Sahip e-postasina gore filtrele / Filter by owner email", "example": "?ownerEmail=john@example.com" },
+          "search": { "type": "string", "required": false, "maxLength": 100, "description": "Baslik, slug veya alan adinda ara / Search in title, slug, or domain", "example": "?search=portfolio" }
+        },
+        "statusCodes": {
+          "200": "Sites listed successfully",
+          "401": "Authentication required",
+          "403": "Forbidden — admin role required"
+        },
+        "response": {
+          "200": {
+            "description": "Paginated list of all sites with owner and stats",
+            "contentType": "application/json",
+            "schema": {
+              "data": [
+                {
+                  "id": "string (UUID)",
+                  "owner": {
+                    "id": "string (UUID)",
+                    "email": "string"
+                  },
+                  "title": "string",
+                  "slug": "string",
+                  "siteType": "string",
+                  "status": "string",
+                  "customDomain": "string | null",
+                  "sslStatus": "string",
+                  "pageCount": "integer",
+                  "mediaCount": "integer",
+                  "hasCustomDomain": "boolean",
+                  "publishedAt": "string (ISO 8601) | null",
+                  "createdAt": "string (ISO 8601)",
+                  "updatedAt": "string (ISO 8601)"
+                }
+              ],
+              "pagination": {
+                "page": "integer",
+                "limit": "integer",
+                "totalItems": "integer",
+                "totalPages": "integer"
+              }
+            },
+            "example": {
+              "data": [
+                {
+                  "id": "550e8400-e29b-41d4-a716-446655440000",
+                  "owner": {
+                    "id": "110e8400-e29b-41d4-a716-446655440010",
+                    "email": "john@example.com"
+                  },
+                  "title": "John's Portfolio",
+                  "slug": "john-portfolio",
+                  "siteType": "bio",
+                  "status": "published",
+                  "customDomain": "john.dev",
+                  "sslStatus": "active",
+                  "pageCount": 3,
+                  "mediaCount": 12,
+                  "hasCustomDomain": true,
+                  "publishedAt": "2026-07-15T10:30:00Z",
+                  "createdAt": "2026-07-10T08:00:00Z",
+                  "updatedAt": "2026-07-19T16:45:00Z"
+                }
+              ],
+              "pagination": {
+                "page": 1,
+                "limit": 50,
+                "totalItems": 482,
+                "totalPages": 10
+              }
+            }
+          }
+        }
+      },
+      "GET /api/v1/admin/analytics": {
+        "description": "Platform genel kullanim metriklerini getirir. / Get platform-wide usage metrics (total sites, users, views, etc.).",
+        "method": "GET",
+        "path": "/api/v1/admin/analytics",
+        "auth": "bearer (admin role required)",
+        "queryParams": {
+          "from": { "type": "string (ISO 8601 date)", "required": false, "description": "Baslangic tarihi / Start date (default: 30 days ago)", "example": "?from=2026-06-20" },
+          "to": { "type": "string (ISO 8601 date)", "required": false, "description": "Bitis tarihi / End date (default: today)", "example": "?to=2026-07-20" },
+          "granularity": { "type": "string", "required": false, "default": "day", "enum": ["day", "week", "month"], "description": "Zaman araligi / Time granularity", "example": "?granularity=week" }
+        },
+        "statusCodes": {
+          "200": "Platform analytics retrieved",
+          "401": "Authentication required",
+          "403": "Forbidden — admin role required"
+        },
+        "response": {
+          "200": {
+            "description": "Platform-wide analytics data",
+            "contentType": "application/json",
+            "schema": {
+              "period": { "from": "string (date)", "to": "string (date)" },
+              "totals": {
+                "totalSites": "integer",
+                "totalUsers": "integer",
+                "totalPublishedSites": "integer",
+                "totalPageViews": "integer",
+                "totalUniqueVisitors": "integer",
+                "totalCustomDomains": "integer",
+                "activeSSLCount": "integer"
+              },
+              "siteByType": [
+                { "siteType": "string", "count": "integer", "percentage": "number" }
+              ],
+              "siteByStatus": [
+                { "status": "string", "count": "integer" }
+              ],
+              "viewsTimeSeries": [
+                { "date": "string (date)", "views": "integer", "uniqueVisitors": "integer" }
+              ],
+              "newSitesTimeSeries": [
+                { "date": "string (date)", "count": "integer" }
+              ],
+              "topSites": [
+                { "id": "string (UUID)", "title": "string", "slug": "string", "views": "integer" }
+              ]
+            },
+            "example": {
+              "period": { "from": "2026-06-20", "to": "2026-07-20" },
+              "totals": {
+                "totalSites": 2482,
+                "totalUsers": 3150,
+                "totalPublishedSites": 1890,
+                "totalPageViews": 1423500,
+                "totalUniqueVisitors": 487200,
+                "totalCustomDomains": 342,
+                "activeSSLCount": 328
+              },
+              "siteByType": [
+                { "siteType": "bio", "count": 1200, "percentage": 48.3 },
+                { "siteType": "product", "count": 450, "percentage": 18.1 },
+                { "siteType": "link_in_bio", "count": 380, "percentage": 15.3 }
+              ],
+              "siteByStatus": [
+                { "status": "published", "count": 1890 },
+                { "status": "draft", "count": 420 },
+                { "status": "archived", "count": 172 }
+              ],
+              "viewsTimeSeries": [
+                { "date": "2026-07-19", "views": 48200, "uniqueVisitors": 16500 },
+                { "date": "2026-07-20", "views": 45100, "uniqueVisitors": 15800 }
+              ],
+              "newSitesTimeSeries": [
+                { "date": "2026-07-19", "count": 28 },
+                { "date": "2026-07-20", "count": 22 }
+              ],
+              "topSites": [
+                { "id": "550e8400-e29b-41d4-a716-446655440000", "title": "John's Portfolio", "slug": "john-portfolio", "views": 15230 }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

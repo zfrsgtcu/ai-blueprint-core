@@ -1,0 +1,475 @@
+{
+  "_meta": {
+    "description": "Kurumsal Web Sitesi (Corporate Website) veritabanı şeması. Blok tabanlı sayfa yönetimi, çoklu dil (i18n), navigasyon, çalışan dizini, hizmet vitrini, kariyer başvuruları ve lead yönetimi modellerini içerir."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "hashedPassword": "String",
+        "firstName": "String",
+        "lastName": "String",
+        "role": "Enum (super_admin, admin, editor, author, translator, viewer)",
+        "isActive": "Boolean (Default: true)",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["email", "role"],
+      "note": "Admin panel kullanıcıları. Public ziyaretçiler User tablosunda tutulmaz."
+    },
+    "Page": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "translationGroupId": "UUID (Index — aynı sayfanın farklı dil versiyonlarını gruplar)",
+        "locale": "String (örn: 'tr-TR', 'en-US', Index)",
+        "title": "String",
+        "slug": "String",
+        "type": "Enum (page, landing, legal, system)",
+        "status": "Enum (draft, review, published)",
+        "parentId": "UUID (Nullable, Foreign Key → Page.id, breadcrumb için)",
+        "metaTitle": "String (Nullable, SEO başlığı)",
+        "metaDescription": "Text (Nullable, SEO açıklaması)",
+        "ogImage": "String (Nullable, Open Graph görsel URL'i)",
+        "canonicalUrl": "String (Nullable, override)",
+        "scheduledAt": "DateTime (Nullable, zamanlanmış yayın)",
+        "publishedAt": "DateTime (Nullable)",
+        "deletedAt": "DateTime (Nullable, soft-delete)",
+        "createdBy": "UUID (Foreign Key → User.id)",
+        "updatedBy": "UUID (Foreign Key → User.id, Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(translationGroupId, locale)", "slug", "status", "type", "parentId"],
+      "note": "Her locale'de slug benzersiz olmalıdır (composite unique: locale + slug + deletedAt IS NULL)."
+    },
+    "PageBlock": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "pageId": "UUID (Foreign Key → Page.id, ON DELETE CASCADE, Index)",
+        "type": "Enum (hero, text, image, video, slider, cards, cta, form, testimonials, team_members, stats_counter, faq_accordion, embed_code, custom_html)",
+        "content": "JSONB (Blok tipine özel içerik: başlık, metin, görsel URL'leri, butonlar, liste öğeleri vb.)",
+        "settings": "JSONB (Nullable, görsel ayarlar: arka plan rengi, padding, animation, visibility kuralları)",
+        "sortOrder": "Int (Default: 0)",
+        "isVisible": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(pageId, sortOrder)"],
+      "note": "Her sayfa, sıralanabilir bloklardan oluşur. Bloklar drag-and-drop ile yeniden sıralanabilir."
+    },
+    "PageVersion": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "pageId": "UUID (Foreign Key → Page.id, ON DELETE CASCADE, Index)",
+        "versionNumber": "Int",
+        "title": "String (Snapshot)",
+        "blocksSnapshot": "JSONB (Tüm PageBlock'ların o anki içeriği)",
+        "metaSnapshot": "JSONB (metaTitle, metaDescription, ogImage snapshot)",
+        "changeDescription": "String (Nullable, değişiklik açıklaması)",
+        "createdBy": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(pageId, versionNumber DESC)"],
+      "note": "Her sayfa kaydında otomatik versiyon oluşturulur. Geri dönüş için kullanılır."
+    },
+    "Menu": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "location": "Enum (header_main, header_top, footer_primary, footer_secondary, sidebar, mobile)",
+        "locale": "String (Index)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(location, locale)"],
+      "note": "Her lokasyon + locale kombinasyonu için bir menü tanımlanabilir."
+    },
+    "MenuItem": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "menuId": "UUID (Foreign Key → Menu.id, ON DELETE CASCADE, Index)",
+        "parentId": "UUID (Nullable, Foreign Key → MenuItem.id, maksimum 3 seviye)",
+        "type": "Enum (page, url, anchor, category, dropdown)",
+        "title": "String",
+        "url": "String (Nullable, type=url veya anchor ise zorunlu)",
+        "pageId": "UUID (Nullable, Foreign Key → Page.id, type=page ise)",
+        "categoryId": "UUID (Nullable, Foreign Key → ArticleCategory.id, type=category ise)",
+        "cssClass": "String (Nullable, özel stil sınıfı)",
+        "icon": "String (Nullable, ikon adı)",
+        "openInNewTab": "Boolean (Default: false)",
+        "sortOrder": "Int (Default: 0)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(menuId, parentId)", "(menuId, sortOrder)"],
+      "note": "Maksimum 3 seviye derinlik: root → çocuk → torun. pageId ile bağlı sayfa slug'ı değiştiğinde url otomatik güncellenir."
+    },
+    "Department": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text (Nullable)",
+        "sortOrder": "Int (Default: 0)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "sortOrder"]
+    },
+    "Employee": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "firstName": "String",
+        "lastName": "String",
+        "title": "String (Unvan/pozisyon)",
+        "bio": "Text (Nullable)",
+        "photo": "String (Nullable, profil fotoğrafı URL'i)",
+        "email": "String (Nullable)",
+        "phone": "String (Nullable)",
+        "linkedin": "String (Nullable)",
+        "twitter": "String (Nullable)",
+        "isManagement": "Boolean (Default: false, yönetim kurulunda gösterilir)",
+        "isActive": "Boolean (Default: true)",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(lastName, firstName)", "isActive", "isManagement", "sortOrder"]
+    },
+    "EmployeeDepartment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "employeeId": "UUID (Foreign Key → Employee.id, ON DELETE CASCADE)",
+        "departmentId": "UUID (Foreign Key → Department.id, ON DELETE CASCADE)",
+        "isPrimary": "Boolean (Default: false)"
+      },
+      "indexes": ["(employeeId, departmentId) UNIQUE", "departmentId"],
+      "note": "Bir çalışan birden fazla departmanda gösterilebilir."
+    },
+    "ServiceCategory": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text (Nullable)",
+        "icon": "String (Nullable)",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "sortOrder"]
+    },
+    "Service": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "translationGroupId": "UUID (Index)",
+        "locale": "String (Index)",
+        "categoryId": "UUID (Foreign Key → ServiceCategory.id, Index)",
+        "title": "String",
+        "slug": "String",
+        "description": "Text",
+        "detailBlocks": "JSONB (Nullable, detay sayfası blokları)",
+        "icon": "String (Nullable)",
+        "image": "String (Nullable)",
+        "ctaText": "String (Nullable)",
+        "ctaUrl": "String (Nullable)",
+        "isFeatured": "Boolean (Default: false)",
+        "sortOrder": "Int (Default: 0)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(translationGroupId, locale)", "slug", "categoryId", "isFeatured", "sortOrder"]
+    },
+    "CaseStudy": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "serviceId": "UUID (Foreign Key → Service.id, ON DELETE CASCADE, Index)",
+        "title": "String",
+        "clientName": "String",
+        "clientLogo": "String (Nullable)",
+        "challenge": "Text",
+        "solution": "Text",
+        "results": "Text",
+        "metrics": "JSONB (Nullable, [{ label: string, value: string }])",
+        "image": "String (Nullable)",
+        "sortOrder": "Int (Default: 0)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(serviceId, sortOrder)"]
+    },
+    "ArticleCategory": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text (Nullable)",
+        "createdAt": "DateTime"
+      }
+    },
+    "ArticleTag": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Article": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "translationGroupId": "UUID (Index)",
+        "locale": "String (Index)",
+        "title": "String",
+        "slug": "String",
+        "excerpt": "Text (Nullable, özet)",
+        "body": "JSONB (Blok tabanlı gövde veya markdown string)",
+        "coverImage": "String (Nullable)",
+        "authorId": "UUID (Foreign Key → Employee.id)",
+        "status": "Enum (draft, review, published, archived)",
+        "isFeatured": "Boolean (Default: false)",
+        "featuredUntil": "DateTime (Nullable)",
+        "metaTitle": "String (Nullable)",
+        "metaDescription": "Text (Nullable)",
+        "ogImage": "String (Nullable)",
+        "canonicalUrl": "String (Nullable)",
+        "readingTime": "Int (Nullable, dakika cinsinden otomatik hesaplanır)",
+        "publishedAt": "DateTime (Nullable)",
+        "deletedAt": "DateTime (Nullable, soft-delete)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(translationGroupId, locale)", "slug", "status", "authorId", "isFeatured", "publishedAt DESC"],
+      "note": "readingTime = body metin uzunluğu / 1500 (ortalama okuma hızı) + görsel sayısı * 12 saniye."
+    },
+    "ArticleCategoryRelation": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "articleId": "UUID (Foreign Key → Article.id, ON DELETE CASCADE)",
+        "categoryId": "UUID (Foreign Key → ArticleCategory.id, ON DELETE CASCADE)"
+      },
+      "indexes": ["(articleId, categoryId) UNIQUE", "categoryId"],
+      "note": "Çoka-çok ilişki: bir makale birden fazla kategoride olabilir."
+    },
+    "ArticleTagRelation": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "articleId": "UUID (Foreign Key → Article.id, ON DELETE CASCADE)",
+        "tagId": "UUID (Foreign Key → ArticleTag.id, ON DELETE CASCADE)"
+      },
+      "indexes": ["(articleId, tagId) UNIQUE", "tagId"],
+      "note": "Çoka-çok ilişki: bir makaleye maksimum 10 etiket atanabilir (business logic validasyonu)."
+    },
+    "Testimonial": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "clientName": "String",
+        "company": "String (Nullable)",
+        "title": "String (Nullable, unvan)",
+        "photo": "String (Nullable)",
+        "text": "Text",
+        "rating": "Int (1-5)",
+        "isFeatured": "Boolean (Default: false)",
+        "sortOrder": "Int (Default: 0)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["isFeatured", "isActive", "sortOrder"]
+    },
+    "JobPosting": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "translationGroupId": "UUID (Index)",
+        "locale": "String (Index)",
+        "title": "String",
+        "slug": "String",
+        "department": "String (Departman adı)",
+        "location": "String (Şehir/ülke veya 'Remote')",
+        "workType": "Enum (remote, hybrid, onsite)",
+        "employmentType": "Enum (full_time, part_time, contract, intern)",
+        "description": "JSONB (Blok tabanlı açıklama)",
+        "requirements": "JSONB (Gereksinimler listesi, string array)",
+        "benefits": "JSONB (Nullable, yan haklar listesi, string array)",
+        "status": "Enum (draft, published, closed)",
+        "expiresAt": "DateTime (Nullable)",
+        "publishedAt": "DateTime (Nullable)",
+        "createdBy": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(translationGroupId, locale)", "slug", "status", "department", "employmentType", "expiresAt"],
+      "note": "expiresAt geçen published ilanlar cron job ile otomatik closed yapılır."
+    },
+    "JobApplication": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "jobId": "UUID (Foreign Key → JobPosting.id, Index)",
+        "firstName": "String",
+        "lastName": "String",
+        "email": "String",
+        "phone": "String (Nullable)",
+        "coverLetter": "Text (Nullable)",
+        "cvPath": "String (CV dosya yolu, PDF/DOCX)",
+        "cvOriginalName": "String (Orijinal dosya adı)",
+        "portfolioUrl": "String (Nullable)",
+        "linkedinUrl": "String (Nullable)",
+        "status": "Enum (new, reviewed, contacted, interview, offered, hired, rejected)",
+        "statusNotes": "Text (Nullable, durum değişikliği notları)",
+        "kvkkConsent": "Boolean (Zorunlu: true)",
+        "anonymizedAt": "DateTime (Nullable, 6 ay sonra otomatik anonimleştirme)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["jobId", "status", "email", "createdAt DESC"],
+      "note": "Reddedilen başvurular 6 ay sonra anonimleştirilir: firstName/lastName/email/phone/coverLetter/cvPath/portfolioUrl/linkedinUrl NULL yapılır."
+    },
+    "ContactSubmission": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "firstName": "String",
+        "lastName": "String",
+        "email": "String",
+        "phone": "String (Nullable)",
+        "company": "String (Nullable)",
+        "subject": "String (Dropdown: genel, destek, satis, isbirligi, medya)",
+        "message": "Text",
+        "kvkkConsent": "Boolean (Zorunlu: true)",
+        "ipAddress": "String (Rate limiting ve spam tespiti için)",
+        "userAgent": "String (Nullable)",
+        "leadScore": "Int (Default: 0, otomatik hesaplanır)",
+        "isRead": "Boolean (Default: false)",
+        "isSpam": "Boolean (Default: false)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["email", "isRead", "leadScore", "createdAt DESC"],
+      "note": "leadScore: company dolu (+10), phone dolu (+5), message > 100 karakter (+3). Aynı IP'den 5dk içinde max 3 gönderim."
+    },
+    "NewsletterSubscriber": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique)",
+        "isConfirmed": "Boolean (Default: false, double opt-in)",
+        "confirmationToken": "String (Unique)",
+        "subscribedAt": "DateTime",
+        "confirmedAt": "DateTime (Nullable)",
+        "unsubscribedAt": "DateTime (Nullable)"
+      },
+      "indexes": ["email", "isConfirmed"]
+    },
+    "Media": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "folderId": "UUID (Nullable, Foreign Key → MediaFolder.id, Index)",
+        "fileName": "String (Orijinal dosya adı)",
+        "storagePath": "String (Sunucu/cloud depolama yolu)",
+        "mimeType": "String (örn: image/jpeg, application/pdf)",
+        "type": "Enum (image, video, document)",
+        "size": "BigInt (Byte cinsinden)",
+        "width": "Int (Nullable, görsel/video genişliği)",
+        "height": "Int (Nullable, görsel/video yüksekliği)",
+        "alt": "String (Nullable, erişilebilirlik metni)",
+        "title": "String (Nullable, açıklayıcı başlık)",
+        "thumbnailPath": "String (Nullable, otomatik oluşturulan thumbnail)",
+        "webpPath": "String (Nullable, otomatik WebP dönüşümü — görseller için)",
+        "uploadedBy": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["folderId", "type", "mimeType", "createdAt DESC"],
+      "note": "Görseller otomatik WebP'ye dönüştürülür ve thumbnail oluşturulur. Kullanılan medya silinemez (referans kontrolü)."
+    },
+    "MediaFolder": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "parentId": "UUID (Nullable, Foreign Key → MediaFolder.id, iç içe klasör)",
+        "createdBy": "UUID (Foreign Key → User.id)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["parentId"],
+      "note": "Boş olmayan klasör silinemez."
+    },
+    "Redirect": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "sourcePath": "String (Unique, yönlendirme kaynağı, örn: '/eski-sayfa')",
+        "targetUrl": "String (Hedef URL, tam veya göreli)",
+        "type": "Enum (301, 302)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["sourcePath", "isActive"],
+      "note": "Sayfa slug'ı değiştiğinde eski slug için otomatik 301 yönlendirmesi oluşturulur."
+    },
+    "Translation": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "key": "String (Çeviri anahtarı, örn: 'site.footer.copyright')",
+        "locale": "String (örn: 'tr-TR', 'en-US')",
+        "value": "Text (Çeviri metni)",
+        "group": "String (Nullable, gruplama: site, menu, form, email)",
+        "updatedBy": "UUID (Nullable, Foreign Key → User.id)",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["(key, locale) UNIQUE", "locale", "group"],
+      "note": "Statik metinlerin çevirileri. UI string'leri, buton metinleri, form etiketleri burada tutulur."
+    },
+    "SiteLanguage": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "locale": "String (Unique, örn: 'tr-TR', 'en-US', 'de-DE')",
+        "name": "String (örn: 'Türkçe', 'English', 'Deutsch')",
+        "flag": "String (Nullable, bayrak emoji veya ikon kodu)",
+        "isDefault": "Boolean (Default: false, sadece bir dil default olabilir)",
+        "isActive": "Boolean (Default: true)",
+        "sortOrder": "Int (Default: 0)"
+      },
+      "indexes": ["locale", "isDefault", "sortOrder"]
+    },
+    "SiteSetting": {
+      "fields": {
+        "id": "UUID (Primary Key, her zaman tek kayıt — singleton pattern)",
+        "siteName": "String",
+        "tagline": "String (Nullable)",
+        "logo": "String (Nullable, logo URL'i — light tema)",
+        "logoDark": "String (Nullable, logo URL'i — dark tema)",
+        "favicon": "String (Nullable)",
+        "primaryColor": "String (Nullable, HEX: '#1a73e8')",
+        "secondaryColor": "String (Nullable, HEX: '#34a853')",
+        "fontFamily": "String (Nullable, Google Fonts adı veya font stack)",
+        "socialLinks": "JSONB (Nullable, { linkedin, twitter, instagram, youtube, github })",
+        "footerConfig": "JSONB (Nullable, { columns: [{ title, links: [{ label, url }] }], copyright, bottomLinks: [{ label, url }] })",
+        "cookieConsent": "JSONB (Nullable, { enabled, privacyUrl, termsUrl })",
+        "analyticsId": "String (Nullable, Google Analytics Measurement ID)",
+        "searchConsoleCode": "String (Nullable, GSC doğrulama kodu)",
+        "maintenanceMode": "Boolean (Default: false)",
+        "maintenanceWhitelistIPs": "JSONB (Nullable, string array — IP'ler)",
+        "contactEmail": "String (İletişim formu bildirim e-posta adresi)",
+        "contactWebhookUrl": "String (Nullable, CRM webhook URL'i)",
+        "updatedBy": "UUID (Foreign Key → User.id)",
+        "updatedAt": "DateTime"
+      },
+      "note": "Singleton tablo: her zaman tek bir kayıt (id = '00000000-0000-0000-0000-000000000001'). UPDATE only, INSERT/DELETE yok."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "entityType": "String (örn: 'Page', 'Article', 'Service', 'Employee')",
+        "entityId": "UUID",
+        "action": "Enum (create, update, delete, publish, restore, login)",
+        "oldValues": "JSONB (Nullable, eski değerler)",
+        "newValues": "JSONB (Nullable, yeni değerler)",
+        "ipAddress": "String (Nullable)",
+        "userAgent": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "entityType", "entityId", "action", "createdAt DESC"]
+    }
+  }
+}

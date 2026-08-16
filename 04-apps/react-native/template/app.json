@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "description": "Expo konfigürasyonu — app name, slug, bundle identifiers, icon, splash, plugins."
+  },
+  "expo": {
+    "name": "{{ProjectName}}",
+    "slug": "{{project-name}}",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "{{project-name}}",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2563EB"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "{{BUNDLE_ID}}"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2563EB"
+      },
+      "package": "{{PACKAGE_NAME}}"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "{{EAS_PROJECT_ID}}"
+      }
+    }
+  }
+}

@@ -1,0 +1,68 @@
+<!-- PURPOSE OF THIS FILE: {{ModelName}} detay sayfası — entity detaylarını gösterir, düzenle butonu. -->
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:{{ProjectName}}.ViewModels"
+             x:Class="{{ProjectName}}.Views.{{ModelName}}DetailPage"
+             x:DataType="vm:{{ModelName}}DetailViewModel"
+             Title="{{ModelName}} Detay">
+
+    <ScrollView Padding="16">
+        <VerticalStackLayout Spacing="16">
+
+            <!-- Loading -->
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                               IsVisible="{Binding IsLoading}"
+                               Color="{StaticResource Primary}" />
+
+            <!-- Detail Card -->
+            <Frame Style="{StaticResource Card}" IsVisible="{Binding IsLoaded}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="{Binding Item.Name}"
+                           Style="{StaticResource Heading1}" />
+
+                    <BoxView HeightRequest="1"
+                             Color="{StaticResource Border}" />
+
+                    <Label Text="{Binding Item.Description}"
+                           Style="{StaticResource Body}" />
+
+                    <BoxView HeightRequest="1"
+                             Color="{StaticResource Border}" />
+
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
+                        <Label Text="Oluşturulma:"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextSecondary}" />
+                        <Label Grid.Column="1"
+                               Text="{Binding Item.CreatedAt, StringFormat='{0:dd.MM.yyyy HH:mm}'}"
+                               TextColor="{StaticResource TextSecondary}" />
+
+                        <Label Grid.Row="1"
+                               Text="Güncellenme:"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextSecondary}" />
+                        <Label Grid.Row="1" Grid.Column="1"
+                               Text="{Binding Item.UpdatedAt, StringFormat='{0:dd.MM.yyyy HH:mm}'}"
+                               TextColor="{StaticResource TextSecondary}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Aksiyon Butonları -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding IsLoaded}">
+                <Button Text="Düzenle"
+                        Style="{StaticResource PrimaryButton}"
+                        Command="{Binding EditCommand}" />
+                <Button Grid.Column="1"
+                        Text="Sil"
+                        BackgroundColor="{StaticResource Error}"
+                        TextColor="White"
+                        CornerRadius="8"
+                        Command="{Binding DeleteCommand}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

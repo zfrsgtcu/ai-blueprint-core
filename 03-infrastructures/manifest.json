@@ -1,0 +1,187 @@
+{
+  "_meta": {
+    "description": "03-infrastructures katmanı ana manifesti. Production-Ready altyapı katmanının tüm alt bileşenlerini tanımlar. AI ajanları bu manifest'i okuyarak hangi alt katmanların mevcut olduğunu ve nasıl kullanılacağını anlar.",
+    "layer": "03-infrastructures",
+    "layer_name": "Production-Ready Infrastructure",
+    "approach": "Blueprint-as-Code",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "layer_description": {
+    "purpose": "Uygulamaların işletim ortamının (Runtime Environment) kodudur — kodun değil, sistemin kodudur. Bu katman, uygulamanın nasıl paketleneceğini, dağıtılacağını, izleneceğini, ağa bağlanacağını ve gizli verilerinin nasıl korunacağını tanımlar.",
+    "approach_detail": "Blueprint-as-Code: Projeyi tanımlayan manifest dosyaları ve bu tanıma göre içerik üreten template mekanizması. AI, bu klasördeki kuralları okuyarak ürettiği kodun sistemle uyumlu olmasını sağlar."
+  },
+
+  "sub_layers": {
+    "docker": {
+      "name": "Docker",
+      "path": "./docker/",
+      "description": "Uygulama ortamlarını paketlemek ve izole etmek",
+      "goal": "docker-compose up ile tüm projenin çalışır hale gelmesi",
+      "files": [
+        "manifest.json",
+        "production-constraints.md",
+        "dockerfile-template.md",
+        "docker-compose-template.yaml"
+      ]
+    },
+    "ci-cd": {
+      "name": "CI/CD",
+      "path": "./ci-cd/",
+      "description": "Manuel iş yükünü sıfırlamak — Build, Test, Push, Deploy otomasyonu",
+      "goal": "Merge Request açıldığında testlerin otomatik çalışması, merge sonrası staging'e, onayla production'a deploy",
+      "files": [
+        "manifest.json",
+        "pipeline-rules.md",
+        "github-actions-templates.md",
+        "gitlab-ci-template.md"
+      ]
+    },
+    "monitoring": {
+      "name": "Monitoring & Observability",
+      "path": "./monitoring/",
+      "description": "Görünürlük sağlamak — sistemde sorun çıkmadan veya çıktığında haberdar olmak",
+      "goal": ".NET web API hata fırlattığında veya Nuxt.js uygulaması yavaşladığında, bunu merkezi bir dashboard üzerinde görebilmek",
+      "files": [
+        "manifest.json",
+        "monitoring-rules.md",
+        "monitoring-templates.md"
+      ]
+    },
+    "networking": {
+      "name": "Networking",
+      "path": "./networking/",
+      "description": "Trafik yönetimi ve güvenlik — reverse proxy, SSL/TLS, CORS, rate limiting",
+      "goal": "Tüm dış trafiğin güvenli ve kontrollü şekilde uygulamalara yönlendirilmesi",
+      "files": [
+        "manifest.json",
+        "networking-rules.md",
+        "networking-templates.md"
+      ]
+    },
+    "secrets": {
+      "name": "Secrets Management",
+      "path": "./secrets/",
+      "description": "Kritik veri güvenliği — environment variables, Vault, gizli yönetim scriptleri",
+      "goal": "Hiçbir secret'ın kodda veya repoda bulunmaması, tüm gizli verilerin güvenli yönetimi",
+      "files": [
+        "manifest.json",
+        "secrets-rules.md",
+        "secrets-templates.md"
+      ]
+    }
+  },
+
+  "ai_workflow": {
+    "description": "AI ajanlarının 03-infrastructures katmanını nasıl kullanacağını tanımlar",
+    "steps": [
+      {
+        "step": 1,
+        "action": "Manifest'leri oku",
+        "detail": "Her alt katmanın manifest.json dosyasını oku, hangi seçeneklerin ve kısıtların olduğunu anla"
+      },
+      {
+        "step": 2,
+        "action": "Proje bağlamını değerlendir",
+        "detail": "Projenin stack'ini, deployment target'ını, ölçeğini belirle ve uygun manifest seçeneklerini seç"
+      },
+      {
+        "step": 3,
+        "action": "Kuralları uygula",
+        "detail": "Her katmanın *-rules.md dosyasındaki ZORUNLU kuralları kesinlikle uygula, YASAK ihlallerinden kaçın"
+      },
+      {
+        "step": 4,
+        "action": "Template'leri doldur",
+        "detail": "*-templates.md dosyalarındaki {PLACEHOLDER} değerlerini proje bilgileriyle değiştir"
+      },
+      {
+        "step": 5,
+        "action": "Dosyaları oluştur",
+        "detail": "Doldurulan template'leri projeye yaz. Her template'in başında belirtilen dosya yolunu kullan"
+      },
+      {
+        "step": 6,
+        "action": "Tutarlılığı kontrol et",
+        "detail": "Oluşturulan dosyaların birbiriyle tutarlı olduğunu doğrula (örn: docker-compose'daki port ile nginx.conf'taki port aynı mı?)"
+      }
+    ]
+  },
+
+  "cross_cutting_rules": {
+    "description": "Tüm alt katmanlarda geçerli olan kesişen kurallar",
+    "rules": [
+      {
+        "id": "CC-001",
+        "rule": "Tüm {PLACEHOLDER} değerleri değiştirilmelidir",
+        "severity": "ZORUNLU",
+        "detail": "Hiçbir template dosyası placeholder ile projeye yazılmamalıdır"
+      },
+      {
+        "id": "CC-002",
+        "rule": "Docker image tag'lerinde :latest KULLANILMAZ",
+        "severity": "ZORUNLU",
+        "detail": "Tüm image'lar belirli version tag ile kullanılır (manifest.json'daki version'lar)"
+      },
+      {
+        "id": "CC-003",
+        "rule": "Tüm servislerde healthcheck tanımlanmalıdır",
+        "severity": "ZORUNLU",
+        "detail": "docker-compose.yaml'daki her serviste healthcheck olmalı"
+      },
+      {
+        "id": "CC-004",
+        "rule": "Production'da HTTPS zorunludur",
+        "severity": "ZORUNLU",
+        "detail": "HTTP → HTTPS redirect ve geçerli SSL sertifikası olmadan production'a çıkılmaz"
+      },
+      {
+        "id": "CC-005",
+        "rule": "Secret'lar ASLA dosyada veya kodda olmaz",
+        "severity": "ZORUNLU",
+        "detail": "Tüm gizli veriler environment variable veya secret manager üzerinden gelir"
+      },
+      {
+        "id": "CC-006",
+        "rule": "Log'lar JSON formatında ve stdout/stderr'e yazılmalıdır",
+        "severity": "ZORUNLU",
+        "detail": "Yapılandırılmış loglama, merkezi log toplama sistemlerine entegrasyon için"
+      },
+      {
+        "id": "CC-007",
+        "rule": "Non-root user ile container çalıştırılmalıdır",
+        "severity": "ZORUNLU",
+        "detail": "Production container'ları root olarak çalışmaz"
+      }
+    ]
+  },
+
+  "stack_specific_defaults": {
+    "nodejs_frontend_static": {
+      "dockerfile": "dockerfile-template.md → Template 3 (Nginx Static)",
+      "ci_cd": "github-actions-templates.md → CI + Vercel Deploy",
+      "monitoring": "lightweight → Prometheus + Grafana + Loki",
+      "networking": "Nginx reverse proxy"
+    },
+    "nodejs_frontend_ssr": {
+      "dockerfile": "dockerfile-template.md → Template 1 (Node.js SSR)",
+      "ci_cd": "github-actions-templates.md → CI + Vercel Deploy",
+      "monitoring": "lightweight → Prometheus + Grafana + Loki",
+      "networking": "Nginx reverse proxy"
+    },
+    "dotnet_backend": {
+      "dockerfile": "dockerfile-template.md → Template 2 (.NET Web API)",
+      "ci_cd": "github-actions-templates.md → CI + Azure App Service",
+      "monitoring": "lightweight → Prometheus + Grafana + Loki",
+      "networking": "Nginx reverse proxy"
+    },
+    "fullstack": {
+      "dockerfile": "İki ayrı Dockerfile (frontend + backend)",
+      "ci_cd": "İki ayrı deploy workflow (Vercel + Azure)",
+      "monitoring": "lightweight veya enterprise",
+      "networking": "Nginx reverse proxy (tüm servisler tek nginx.conf'ta)"
+    }
+  }
+}

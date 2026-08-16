@@ -1,0 +1,55 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Dokümantasyon Merkezi API Sözleşmeleri. Public çoklu dil ve sürümlü içerik erişimi, admin CMS yönetimi ve arama analitiği.",
+    "error_format": "{ status: number, code: string, message: string, details?: any }",
+    "rate_limiting": "Public: 1000/dk | Auth: 100/dk | Admin: 50/dk",
+    "global_rules": {
+      "pagination": "Tüm liste endpoint'leri ?page=&limit= (default 20, max 100) destekler.",
+      "locale": "Tüm GET endpoint'leri ?locale= (default: en) kabul eder. İçerikler locale'e göre filtrelenir. Desteklenen: en, tr, de, fr, es.",
+      "versioning": "Dokümanlar semver (v1, v2, v2.3) ile sürümlendirilir. ?version=latest ile en son sürüm getirilir.",
+      "search_index": "İçerik değişikliklerinde (create/update/delete) arama indeksi otomatik olarak yeniden oluşturulur (async queue)."
+    }
+  },
+  "endpoints": {
+    "public": {
+      "POST /api/auth/login": "Admin girişi. Body: { email, password }. JWT token çifti döndürür. Sadece admin rolü giriş yapabilir.",
+      "POST /api/auth/refresh": "Token yenileme.",
+      "GET /api/docs/navigation": "Dokümantasyon ağaç yapısı (sidebar navigasyon). Query: ?version, ?locale. Response: { tree: [{ id, title, slug, children: [] }] }.",
+      "GET /api/docs/{version}/{slug}": "Makale detayı. Response: { title, content (HTML/markdown), toc (içindekiler), meta: { description, keywords, lastUpdated }, prevArticle?, nextArticle? }. Görüntülenme sayısı artırılır.",
+      "GET /api/docs/search": "Tam metin arama. Query: ?q, ?version, ?locale, ?category. Response: { results: [{ title, slug, excerpt, score, category }], total, took }.",
+      "GET /api/docs/search/suggest": "Otomatik tamamlama önerileri. Query: ?q, ?version, ?locale, ?limit=5.",
+      "GET /api/docs/popular": "En çok görüntülenen 10 makale. Query: ?version, ?locale, ?period=7d|30d|all.",
+      "POST /api/docs/page-view": "Anonim sayfa görüntüleme takibi. Body: { articleId, version, locale, referrer? }. Rate limit: IP başına 60/dk.",
+      "POST /api/docs/feedback": "Makale fayda geri bildirimi. Body: { articleId, version, helpful: boolean, comment? }. IP başına günde 1.",
+      "GET /api/docs/{version}/changelog": "Sürüm değişiklik günlüğü. Response: { entries: [{ version, date, changes: [] }] }.",
+      "GET /api/redirects": "Aktif yönlendirme kuralları. Query: ?version. Response: { redirects: [{ from, to, type: 301|302 }] }."
+    },
+    "admin": {
+      "POST /api/auth/logout": "Çıkış.",
+      "GET /api/auth/me": "Admin profili.",
+      "GET /api/admin/articles": "Makale listesi (yönetim). Filtreler: ?version, ?locale, ?status=draft|published|archived, ?category, ?search.",
+      "POST /api/admin/articles": "Makale oluşturur/günceller. Body: { title, slug, version, locale, content (markdown), category?, orderIndex?, status: 'draft'|'published', metaTitle?, metaDescription?, metaKeywords?: [], tags?: [] }. Slug + version + locale kombinasyonu unique. Güncellemede arama indeksi tetiklenir.",
+      "PUT /api/admin/articles/{id}": "Makale günceller.",
+      "GET /api/admin/articles/{id}": "Makale detayı (yönetim, taslak içerik dahil).",
+      "DELETE /api/admin/articles/{id}/archive": "Makaleyi arşivler (soft delete). Arama indeksinden kaldırılır.",
+      "POST /api/admin/articles/{id}/restore": "Arşivlenmiş makaleyi geri yükler. Arama indeksine eklenir.",
+      "PATCH /api/admin/articles/{id}/publish": "Taslağı yayınlar.",
+      "PATCH /api/admin/articles/{id}/unpublish": "Yayını geri çeker (taslağa döndürür).",
+      "POST /api/admin/articles/reorder": "Makale sıralamasını günceller. Body: { items: [{ id, orderIndex }] }.",
+      "POST /api/admin/upload": "Medya yükleme. Multipart: { file, altText? }. Döndürür: { url, width, height, size }.",
+      "GET /api/admin/categories": "Kategori listesi (yönetim).",
+      "POST /api/admin/categories": "Kategori ekler. Body: { name, slug, version, locale, parentId?, orderIndex? }.",
+      "PUT /api/admin/categories/{id}": "Kategori günceller.",
+      "DELETE /api/admin/categories/{id}": "Kategori siler (bağlı makale varsa taşıma: ?moveToCategoryId).",
+      "GET /api/admin/search-analytics": "Arama analitiği: popüler aramalar, sonuçsuz aramalar, ortalama tıklama oranı. Query: ?from, ?to, ?version, ?locale.",
+      "GET /api/admin/feedback": "Geri bildirim istatistikleri. Query: ?from, ?to, ?version. Response: { helpful: number, notHelpful: number, rate: number, byArticle: [] }.",
+      "GET /api/admin/page-views": "Sayfa görüntüleme istatistikleri. Query: ?from, ?to, ?version, ?groupBy=day|week|month.",
+      "GET /api/admin/redirects": "Yönlendirme yönetimi.",
+      "POST /api/admin/redirects": "Yönlendirme ekler. Body: { from, to, type: 301|302, version }.",
+      "DELETE /api/admin/redirects/{id}": "Yönlendirme siler.",
+      "POST /api/admin/versions": "Yeni doküman sürümü oluşturur. Body: { version, basedOnVersion }. Mevcut sürümdeki tüm makaleler yeni sürüme kopyalanır.",
+      "GET /api/admin/audit-logs": "Denetim günlüğü."
+    }
+  }
+}

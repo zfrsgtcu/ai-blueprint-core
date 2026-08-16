@@ -1,0 +1,77 @@
+<!-- PURPOSE OF THIS FILE: MongoDB bağlantı konfigürasyonu şablonu — AI tarafından projeye enjekte edilir -->
+/* ═══════════════════════════════════════════════════════════════════
+   MongoDB Bağlantı Konfigürasyonu
+   Seçenek: Mongoose (ODM) / Native MongoDB Driver
+   ═══════════════════════════════════════════════════════════════════ */
+
+// ============================================================
+// Seçenek A: Mongoose (ÖNERİLEN)
+// Dosya: src/config/database.js
+// ============================================================
+const mongoose = require('mongoose');
+
+async function connectDatabase() {
+  const uri = process.env.DATABASE_URL || 'mongodb://{{DB_USER}}:{{DB_PASSWORD}}@{{DB_HOST}}:{{DB_PORT}}/{{DB_NAME}}?authSource=admin';
+
+  try {
+    await mongoose.connect(uri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('MongoDB bağlantısı başarılı');
+  } catch (err) {
+    console.error('MongoDB bağlantı hatası:', err.message);
+    process.exit(1);
+  }
+
+  mongoose.connection.on('error', (err) => {
+    console.error('MongoDB bağlantı hatası:', err.message);
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.warn('MongoDB bağlantısı kesildi, yeniden bağlanılıyor...');
+  });
+}
+
+module.exports = { connectDatabase };
+
+// ============================================================
+// Seçenek B: Native MongoDB Driver
+// Dosya: src/config/db.js
+// ============================================================
+#if NATIVE
+const { MongoClient } = require('mongodb');
+
+const uri = process.env.DATABASE_URL || 'mongodb://{{DB_USER}}:{{DB_PASSWORD}}@{{DB_HOST}}:{{DB_PORT}}/?authSource=admin';
+const client = new MongoClient(uri, {
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+});
+
+let db;
+
+async function connectDatabase() {
+  try {
+    await client.connect();
+    db = client.db(process.env.DB_NAME || '{{DB_NAME}}');
+    console.log('MongoDB bağlantısı başarılı');
+  } catch (err) {
+    console.error('MongoDB bağlantı hatası:', err.message);
+    process.exit(1);
+  }
+}
+
+function getDb() {
+  if (!db) throw new Error('Veritabanı bağlantısı henüz kurulmadı');
+  return db;
+}
+
+module.exports = { connectDatabase, getDb };
+#endif
+
+/* ═══════════════════════════════════════════════════════════════════
+   .env formatı:
+   DATABASE_URL=mongodb://{{DB_USER}}:{{DB_PASSWORD}}@{{DB_HOST}}:{{DB_PORT}}/{{DB_NAME}}?authSource=admin
+   DB_NAME={{DB_NAME}}
+   ═══════════════════════════════════════════════════════════════════ */

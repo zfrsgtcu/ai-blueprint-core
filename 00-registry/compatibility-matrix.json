@@ -1,0 +1,249 @@
+{
+  "_meta": {
+    "description": "Strict integration rules and compatibility matrices between infrastructures and frameworks. AI agents MUST follow these instructions to prevent build errors and architectural mismatches.",
+    "policy": "strict",
+    "last_updated": "2026-07-19"
+  },
+  "matrices": [
+    {
+      "infrastructure": "nextjs",
+      "framework": "zustand",
+      "rule": "In Next.js App Router, any component accessing Zustand stores MUST include the 'use client' directive at the very top of the file. Server Components cannot read Zustand state."
+    },
+    {
+      "infrastructure": "nextjs",
+      "framework": "zustand",
+      "rule": "For Zustand stores that need to be shared across the application, create a store provider pattern in a client component to avoid multiple store instances during SSR."
+    },
+    {
+      "infrastructure": "nextjs",
+      "framework": "gsap",
+      "rule": "When using GSAP in Next.js (App Router), the component MUST be marked with 'use client'. Use React 'useRef' for DOM elements and wrap all animations inside the '@gsap/react' hook 'useGSAP()' which handles cleanup automatically."
+    },
+    {
+      "infrastructure": "nextjs",
+      "framework": "gsap",
+      "rule": "For ScrollTrigger or ScrollSmoother plugins in Next.js, register them inside a 'use client' component and check for 'window' object existence before registration to prevent SSR errors."
+    },
+    {
+      "infrastructure": "nextjs",
+      "framework": "framer-motion",
+      "rule": "Framer Motion components MUST be used within a 'use client' directive in Next.js App Router. Re-export motion components from a client component file to use them in Server Components."
+    },
+    {
+      "infrastructure": "nextjs",
+      "framework": "react-three-fiber",
+      "rule": "For React Three Fiber in Next.js, the Canvas component and all 3D components MUST be marked with 'use client'. Use Next.js dynamic imports with '{ ssr: false }' to prevent 'document is not defined' errors during server-side rendering."
+    },
+    {
+      "infrastructure": "nextjs",
+      "framework": "react-three-fiber",
+      "rule": "When using Three.js add-ons (like three/examples/jsm), configure Next.js to handle CommonJS/ESM mismatches in the webpack config or use a compatible version."
+    },
+    {
+      "infrastructure": "astrojs",
+      "framework": "react",
+      "rule": "React components imported into Astro (Islands) MUST be rendered with a client directive (e.g., 'client:load', 'client:visible', 'client:idle') for interactivity. Without directives, they render as static HTML and state will not work."
+    },
+    {
+      "infrastructure": "astrojs",
+      "framework": "react",
+      "rule": "For React components that should only render on the client (e.g., those using 'window' or 'document'), use 'client:only=\"react\"' directive to skip server-side rendering."
+    },
+    {
+      "infrastructure": "astrojs",
+      "framework": "vue",
+      "rule": "Vue components in Astro MUST use client directives (e.g., 'client:load', 'client:visible') to become interactive islands. Without directives, they render as static HTML."
+    },
+    {
+      "infrastructure": "astrojs",
+      "framework": "svelte",
+      "rule": "Svelte components in Astro MUST use client directives (e.g., 'client:load', 'client:visible') to become interactive islands. Without directives, they render as static HTML."
+    },
+    {
+      "infrastructure": "astrojs",
+      "framework": "tailwindcss",
+      "rule": "For Tailwind CSS v4 in Astro, the preferred method is using the official Vite plugin from Tailwind. The '@astrojs/tailwind' integration is deprecated for Tailwind 4 and should only be used for Tailwind 3 projects."
+    },
+    {
+      "infrastructure": "nuxtjs",
+      "framework": "gsap",
+      "rule": "In Nuxt 3, to prevent memory leaks, GSAP animations MUST be initialized inside the 'onMounted' lifecycle hook. The GSAP context MUST be reverted (ctx.revert() or useGSAP cleanup) inside 'onBeforeUnmount'."
+    },
+    {
+      "infrastructure": "nuxtjs",
+      "framework": "gsap",
+      "rule": "For Nuxt 3, create a client-side plugin (e.g., 'plugins/gsap.client.ts') to register GSAP plugins globally and make them available throughout the application."
+    },
+    {
+      "infrastructure": "nuxtjs",
+      "framework": "pinia",
+      "rule": "In Nuxt 3, Pinia MUST be installed via '@pinia/nuxt' module (npx nuxi@latest module add pinia). Pinia v3 only supports Vue 3 and Nuxt 3+ and requires TypeScript 5+."
+    },
+    {
+      "infrastructure": "nuxtjs",
+      "framework": "pinia",
+      "rule": "For SSR with Pinia in Nuxt 3, avoid storing non-serializable data (like class instances, functions) in stores. Pinia handles SSR serialization/hydration automatically when using the '@pinia/nuxt' module."
+    },
+    {
+      "infrastructure": "nuxtjs",
+      "framework": "vue",
+      "rule": "Nuxt 3+ is based on Vue 3. Use Composition API as the recommended way to write components. Vuex is deprecated; Pinia is the official state management solution."
+    },
+    {
+      "infrastructure": "svelte",
+      "framework": "tailwindcss",
+      "rule": "For SvelteKit projects, install Tailwind CSS via '@tailwindcss/vite' plugin. Add the Vite plugin to your 'vite.config.js' and import the Tailwind CSS file in your app's CSS entry."
+    },
+    {
+      "infrastructure": "svelte",
+      "framework": "gsap",
+      "rule": "In Svelte/SvelteKit, GSAP animations MUST be initialized inside the 'onMount' lifecycle hook to ensure the DOM is available. Use 'onDestroy' to clean up GSAP contexts and prevent memory leaks."
+    },
+    {
+      "infrastructure": "svelte",
+      "framework": "gsap",
+      "rule": "Avoid using $effect for GSAP animations in Svelte 5 as it can cause infinite re-renders. Use onMount instead for animations that should only run once."
+    },
+    {
+      "infrastructure": "react",
+      "framework": "three",
+      "rule": "Do NOT manipulate the DOM directly with vanilla Three.js methods in a React environment. You MUST use '@react-three/fiber' (Canvas) and '@react-three/drei' hooks declaratively."
+    },
+    {
+      "infrastructure": "react",
+      "framework": "swiperjs",
+      "rule": "Use the official React integration for Swiper (import { Swiper, SwiperSlide } from 'swiper/react'). Do NOT import core modules directly into the DOM."
+    },
+    {
+      "infrastructure": "react",
+      "framework": "zustand",
+      "rule": "For Zustand with React, the store can be a global singleton. To avoid unnecessary re-renders, use selectors to subscribe only to specific state slices."
+    },
+    {
+      "infrastructure": "vue",
+      "framework": "pinia",
+      "rule": "Pinia v3 only supports Vue 3 and requires TypeScript 5+. Vuex is maintenance-only and should not be used in new projects."
+    },
+    {
+      "infrastructure": "vue",
+      "framework": "gsap",
+      "rule": "In Vue 3, GSAP animations MUST be initialized inside the 'onMounted' lifecycle hook. Use 'onBeforeUnmount' to clean up GSAP contexts and prevent memory leaks."
+    },
+    {
+      "infrastructure": "netwebapi",
+      "framework": "mssql",
+      "rule": "For .NET 8.0 Web API with SQL Server, use Entity Framework Core Design packages. Employ Code-First approach for migrations. DbContext MUST be configured in 'Program.cs' using 'builder.Services.AddDbContext'."
+    },
+    {
+      "infrastructure": "netwebapi",
+      "framework": "mssql",
+      "rule": "To prevent N+1 query problems and performance issues, use 'Include()' for eager loading or 'Select()' for projection. Be cautious with lazy loading as it can cause multiple database round-trips."
+    },
+    {
+      "infrastructure": "netwebapi",
+      "framework": "mongodb",
+      "rule": "For MongoDB with .NET 8, use the official 'MongoDB.EntityFrameworkCore' provider (version 8.0+) which is fully compatible with Entity Framework Core 8 and .NET 8."
+    },
+    {
+      "infrastructure": "netwebapi",
+      "framework": "redis",
+      "rule": "For Redis caching in .NET 8 Web API, use 'Microsoft.Extensions.Caching.StackExchangeRedis' package. Implement cache-aside pattern: check Redis first, fallback to database, and cache results with appropriate expiration."
+    },
+    {
+      "infrastructure": "nodejs",
+      "framework": "mongodb",
+      "rule": "For Node.js with MongoDB, use Mongoose ODM for schema-based modeling. Define clear schemas with validation, type casting, and business logic hooks."
+    },
+    {
+      "infrastructure": "nodejs",
+      "framework": "mongoose",
+      "rule": "For Mongoose with Express, define schemas before models. Use 'mongoose.connect()' with connection options for proper error handling and connection management."
+    },
+    {
+      "infrastructure": "nodejs",
+      "framework": "prisma",
+      "rule": "For Prisma with Node.js, generate the Prisma Client after defining the schema. Use 'npx prisma generate' and 'npx prisma migrate dev' for database migrations."
+    },
+    {
+      "infrastructure": "nodejs",
+      "framework": "socketio",
+      "rule": "For Socket.io with Node.js, initialize the Socket.io server with CORS options configured. Use 'socket.io-client' on the frontend with the same version as the server."
+    },
+    {
+      "infrastructure": "nextjs",
+      "framework": "tailwindcss",
+      "rule": "Next.js 15 varsayılan olarak Tailwind CSS v4 kurar. tailwind.config.js dosyası artık kullanılmaz, tema token'ları @theme ile CSS içinde tanımlanır. Eski projelerde tailwind.config.ts varsa, Tailwind v3'e downgrade yap veya konfigürasyonu CSS tabanlı yapıya migrate et."
+    },
+    {
+      "infrastructure": "nextjs",
+      "framework": "react-three-fiber",
+      "rule": "@react-three/fiber v8, React 19 ile çalışmaz. React 19 ve Next.js 15 için @react-three/fiber@rc (v9 RC) sürümünü kullan."
+    },
+    {
+      "infrastructure": "astrojs",
+      "framework": "tailwindcss",
+      "rule": "@astrojs/tailwind eklentisi Tailwind CSS v4 için deprecated durumundadır. Tailwind v4 için resmi Vite plugin'ini (@tailwindcss/vite) kullan. Astro 5.2+ üzerinde 'npx astro add tailwind' çalıştır."
+    },
+    {
+      "infrastructure": "astrojs",
+      "framework": "react",
+      "rule": "client:only directive'i, React component'ini sadece client'ta render eder ve SSR'ı tamamen bypass eder. Sadece client'ta çalışması gereken component'ler için client:only=\"react\" kullan."
+    },
+    {
+      "infrastructure": "nuxtjs",
+      "framework": "pinia",
+      "rule": "Pinia store'larını modül seviyesinde çağırma (global singleton pattern). SSR'de store'ları fonksiyon içinde çağır ve pinia instance'ını geç. @pinia/nuxt modülü SSR serialization/hydration'ı otomatik yönetir."
+    },
+    {
+      "infrastructure": "nuxtjs",
+      "framework": "pinia",
+      "rule": "CDN ile birlikte Nuxt 3 kullanırken, Pinia state'i __NUXT_DATA__ içinde serialized olur. CDN bu sayfayı cache'lerse, diğer kullanıcılar başkasının state'ini görebilir (cache poisoning). Bu durumda CDN cache'ini devre dışı bırak veya kullanıcıya özel cache stratejisi uygula."
+    },
+    {
+      "infrastructure": "sveltekit",
+      "framework": "tailwindcss",
+      "rule": "Tailwind CSS v4'te tailwind.config.js dosyası kullanılmaz. SvelteKit'te @tailwindcss/vite eklentisini kullan ve src/app.css'ye '@import \"tailwindcss\";' ekle."
+    },
+    {
+      "infrastructure": "sveltekit",
+      "framework": "gsap",
+      "rule": "GSAP kodlarını asla modül seviyesinde veya load() fonksiyonu içinde çalıştırma (SSR hatası verir). Tüm animasyonları onMount içinde başlat ve onDestroy'de GSAP Context'i temizle (ctx.revert())."
+    },
+    {
+      "infrastructure": "solidjs",
+      "framework": "tailwindcss",
+      "rule": "Solid.js projesinde Tailwind CSS'i PostCSS eklentisi olarak entegre et. postcss.config.js içinde @tailwind/postcss'i ekle. SolidStart'te ise Vite plugin'ini kullan."
+    },
+    {
+      "infrastructure": "qwik",
+      "framework": "tailwindcss",
+      "rule": "@tailwindcss/vite sürüm 4.0.8 ve üzerinde Qwik projelerinde sınıfların düzgün render olmaması sorunu var. Sürümü 4.0.7'ye sabitle."
+    },
+    {
+      "infrastructure": "fresh",
+      "framework": "tailwindcss",
+      "rule": "Deno Fresh için resmi @fresh/plugin-tailwind paketi sadece Tailwind CSS v3'ü destekliyor. Tailwind v4 için @pakornv/fresh-plugin-tailwindcss gibi community çözümlerine ihtiyaç var."
+    },
+    {
+      "infrastructure": "vue",
+      "framework": "pinia",
+      "rule": "Pinia setup store'larında tüm state property'lerini setup fonksiyonundan return et. Return edilmeyen state'ler SSR'de çalışmaz, Vue DevTools'ta görünmez ve Pinia plugin'leri ile uyumlu olmaz."
+    },
+    {
+      "infrastructure": "vue",
+      "framework": "pinia",
+      "rule": "SSR'de Date, Set, Map gibi non-serializable veri tiplerini Pinia store'unda tutma. Bu tipler serialization hatasına yol açar. devalue veya benzeri bir kütüphane ile güvenli serialization yap."
+    },
+    {
+      "infrastructure": "react",
+      "framework": "three",
+      "rule": "@react-three/fiber v8, React 19 ile uyumlu değil. React 19 kullanıyorsan @react-three/fiber@rc (v9 RC) sürümüne geç. R3F v9, async initialization gerektirir."
+    },
+    {
+      "infrastructure": "react",
+      "framework": "tailwindcss",
+      "rule": "React 19 ile Tailwind CSS v4 kullanılıyorsa, PostCSS üzerinden entegrasyon yap. tailwind.config.js dosyası yok, tema @theme ile CSS'de tanımlanır."
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "description": "PostgreSQL Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. Kurumsal seviye ilişkisel veritabanı.",
+    "resource_type": "data-layer",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "postgresql",
+  "category": "data-layer",
+  "display_name": "PostgreSQL",
+  "description": "ACID uyumlu, açık kaynak, kurumsal seviye ilişkisel veritabanı. JSONB, full-text search, window functions, CTE (Common Table Expressions) ile gelişmiş sorgu yetenekleri.",
+
+  "installation_context": {
+    "netwebapi": {
+      "nuget": ["Npgsql.EntityFrameworkCore.PostgreSQL", "Npgsql"],
+      "connection_string_format": "Host={{DB_HOST}};Port={{DB_PORT}};Database={{DB_NAME}};Username={{DB_USER}};Password={{DB_PASSWORD}}",
+      "orm": "Entity Framework Core",
+      "entry_point": "Program.cs (builder.Services.AddDbContext<AppDbContext>())"
+    },
+    "node-express": {
+      "npm": ["pg", "pg-hstore"],
+      "npm_dev": ["@types/pg"],
+      "connection_string_format": "postgresql://{{DB_USER}}:{{DB_PASSWORD}}@{{DB_HOST}}:{{DB_PORT}}/{{DB_NAME}}",
+      "orm_options": ["Prisma (npm: prisma @prisma/client)", "Drizzle ORM (npm: drizzle-orm pg drizzle-kit)", "Sequelize (npm: sequelize pg pg-hstore)"],
+      "entry_point": "src/config/database.js veya prisma/schema.prisma"
+    },
+    "nodejs": {
+      "npm": ["pg"],
+      "connection_string_format": "postgresql://{{DB_USER}}:{{DB_PASSWORD}}@{{DB_HOST}}:{{DB_PORT}}/{{DB_NAME}}",
+      "orm": "none (raw pg driver)",
+      "entry_point": "src/config/db.js"
+    }
+  },
+
+  "config_template": "integration_template/db-config.template",
+  "usage_pattern": "Tüm veritabanı erişimleri Repository Pattern üzerinden yapılır. Handler/Controller katmanı ASLA doğrudan bağlantı kullanmaz. Bağlantı bilgileri environment variable'dan okunur, ASLA hardcoded yazılmaz.",
+
+  "verification_steps": [
+    "connection_string environment variable'dan okunuyor mu?",
+    "Repository Pattern uygulanmış mı?",
+    "Connection pooling aktif mi?",
+    "03-infrastructures'da docker-compose postgres servisi tanımlanmış mı?",
+    "Migration'lar var mı? (EF Core: .csproj'da Microsoft.EntityFrameworkCore.Design + dotnet ef migrations)",
+    "Production'da sensitive data loglanmıyor mu?"
+  ],
+
+  "docker_compose_requirement": {
+    "service_name": "postgres",
+    "image": "postgres:16-alpine",
+    "environment": ["POSTGRES_DB={{DB_NAME}}", "POSTGRES_USER={{DB_USER}}", "POSTGRES_PASSWORD={{DB_PASSWORD}}"],
+    "volumes": ["postgres_data:/var/lib/postgresql/data"],
+    "ports": ["{{DB_PORT}}:5432"]
+  }
+}

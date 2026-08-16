@@ -1,0 +1,140 @@
+{
+  "_meta": {
+    "description": ".NET MAUI 8.0 stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. .NET MAUI: C# ile iOS, Android, Windows ve macOS cross-platform native mobil uygulamalar.",
+    "stack": "netmaui",
+    "display_name": ".NET MAUI",
+    "type": "cross_platform_mobile",
+    "language": "C# 12 (.NET 8)",
+    "version": "net8.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": ".NET MAUI 8.0",
+    "description": "C# ile iOS, Android, Windows ve macOS için tek kod tabanından native cross-platform mobil uygulama geliştirme. XAML UI, MVVM mimarisi, platform-specific API erişimi. Xamarin.Forms'un halefidir.",
+    "use_cases": [
+      "Kurumsal mobil uygulama",
+      "Saha satış uygulaması",
+      "E-Ticaret mobil uygulaması",
+      "Envanter yönetimi mobil",
+      "Lojistik takip uygulaması"
+    ],
+    "paired_backend": "netwebapi",
+    "not_suitable_for": [
+      "Basit prototip (React Native + Expo daha hızlı)",
+      "Sadece iOS hedefli (SwiftUI daha native)",
+      "Ağır 3D/oyun (Unity/Unreal daha uygun)"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceMobile" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "ecommerce-mobile" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Mobil e-ticaret uygulaması" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "api_integration": [
+      { "key": "{{API_BASE_URL}}", "description": "Backend API base URL", "example": "https://api.example.com" }
+    ],
+    "deployment": [
+      { "key": "{{BUNDLE_ID}}", "description": "iOS bundle identifier", "example": "com.company.ecommerce" },
+      { "key": "{{PACKAGE_NAME}}", "description": "Android package name", "example": "com.company.ecommerce" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": ".NET MAUI projesinin zorunlu dizin yapısı",
+    "directories": {
+      "Views/": "XAML sayfaları (.xaml + .xaml.cs)",
+      "ViewModels/": "MVVM ViewModel sınıfları",
+      "Models/": "Domain model ve DTO sınıfları",
+      "Services/": "API client, local storage, platform servisleri",
+      "Controls/": "Custom UI kontrolleri",
+      "Converters/": "IValueConverter implementasyonları",
+      "Platforms/": "Platform-specific kod (Android, iOS, Windows, MacCatalyst)",
+      "Resources/": "Resimler, fontlar, icon'lar, renkler"
+    },
+    "files": {
+      "App.xaml": "Uygulama root — Resources, Styles",
+      "AppShell.xaml": "Shell navigasyon — TabBar, Flyout, Route kaydı",
+      "MauiProgram.cs": "Uygulama giriş noktası — DI, MAUI builder",
+      "{{ProjectName}}.csproj": "Proje dosyası"
+    }
+  },
+
+  "entry_point": "MauiProgram.cs",
+  "config_file": "MauiProgram.cs / {{ProjectName}}.csproj",
+
+  "dependencies": {
+    "core": [
+      { "package": "Microsoft.Maui.Controls", "version": "8.0.*" },
+      { "package": "Microsoft.Maui.Controls.Compatibility", "version": "8.0.*" }
+    ],
+    "http": [
+      { "package": "System.Net.Http.Json", "version": "8.0.*" }
+    ],
+    "local_db": [
+      { "package": "sqlite-net-pcl", "version": "1.9.*", "use_case": "Offline SQLite database" },
+      { "package": "SQLitePCLRaw.bundle_green", "version": "2.1.*" }
+    ],
+    "mvvm": [
+      { "package": "CommunityToolkit.Mvvm", "version": "8.2.*", "use_case": "MVVM toolkit — ObservableObject, RelayCommand" },
+      { "package": "CommunityToolkit.Maui", "version": "7.0.*", "use_case": "MAUI UI toolkit" }
+    ],
+    "optional": [
+      { "package": "Microsoft.Extensions.Http", "version": "8.0.*", "use_case": "Typed HttpClient" },
+      { "package": "Newtonsoft.Json", "version": "13.0.*", "use_case": "JSON (opsiyonel, System.Text.Json tercih edilir)" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "mvvm": {
+      "description": "Model-View-ViewModel — CommunityToolkit.Mvvm ile",
+      "rule": "View (.xaml) ↔ ViewModel (.cs) ↔ Model. View'da code-behind minimal olmalı"
+    },
+    "shell_navigation": {
+      "description": "AppShell ile route-based navigasyon",
+      "rule": "Route'lar ShellContent veya Routing.RegisterRoute ile tanımlanır"
+    },
+    "dependency_injection": {
+      "description": "MauiProgram.cs'te DI konteyner kaydı",
+      "rule": "Tüm servisler, ViewModel'ler, HttpClient'lar DI ile kaydedilir"
+    },
+    "offline_first": {
+      "description": "SQLite ile offline veri depolama, API'den senkronizasyon",
+      "rule": "Veri önce SQLite'a yazılır, sonra API'ye gönderilir (offline-first)"
+    }
+  },
+
+  "deployment": {
+    "android": "Google Play Store (.aab)",
+    "ios": "Apple App Store (.ipa)",
+    "build_command": "dotnet publish -f net8.0-android -c Release",
+    "health_check": "N/A — mobil uygulama"
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "MauiProgram.cs DI yapısını koru",
+      "App.xaml ve AppShell.xaml yapısını koru",
+      "MVVM pattern'ini (View/ViewModel/Model) koru",
+      "Core NuGet paketlerini .csproj'a ekle"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Örnek View/ViewModel'ları aynen bırakma — domain logic'e göre uyarla",
+      "API base URL'i varsayılan değerde bırakma"
+    ],
+    "customize_for_domain": [
+      "Views/ → her entity için XAML sayfaları (ListPage, DetailPage, EditPage)",
+      "ViewModels/ → CommunityToolkit.Mvvm ile ViewModel'ler",
+      "Models/ → domain entity ve DTO sınıfları",
+      "Services/ → API client, local DB service, auth service",
+      "AppShell.xaml → TabBar/Flyout ile navigation yapısı",
+      "Resources/ → ikon, renk, font özelleştirme"
+    ]
+  }
+}

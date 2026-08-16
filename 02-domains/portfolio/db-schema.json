@@ -1,0 +1,149 @@
+{
+  "_meta": { "description": "Enterprise Portfolio Schema (Profile, Projects, Media, Testimonials, Skills)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "role": "Enum (user, admin)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Portfolio": {
+      "fields": {
+        "id": "UUID",
+        "userId": "UUID (FK User, Unique)",
+        "fullName": "String",
+        "title": "String (Professional headline)",
+        "slug": "String (Unique, for public URL)",
+        "bio": "Text (Markdown)",
+        "avatarUrl": "String",
+        "location": "String",
+        "availability": "Enum (available, open_to_offers, not_available)",
+        "socialLinks": "JSON (Platform URLs)",
+        "serviceOfferings": "JSON Array ({ title, description, startingPrice })",
+        "themeConfig": "JSON (Colors, fonts, layout preferences)",
+        "customDomain": "String (Nullable)",
+        "isPublished": "Boolean",
+        "isPasswordProtected": "Boolean",
+        "password": "String (Hashed, nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "projects": "One-to-Many with Project",
+        "skills": "One-to-Many with Skill"
+      }
+    },
+    "Skill": {
+      "fields": {
+        "id": "UUID",
+        "portfolioId": "UUID (FK Portfolio)",
+        "name": "String",
+        "category": "Enum (frontend, backend, design, tools, language, other)",
+        "proficiency": "Int (1-100)",
+        "orderIndex": "Int"
+      }
+    },
+    "Project": {
+      "fields": {
+        "id": "UUID",
+        "portfolioId": "UUID (FK Portfolio)",
+        "title": "String",
+        "slug": "String",
+        "description": "Text",
+        "role": "String (e.g., Lead Developer, UI Designer)",
+        "timeline": "String (e.g., Jan 2024 - Mar 2024)",
+        "client": "String (Optional company/client name)",
+        "url": "String (Live project URL)",
+        "sourceUrl": "String (Source code URL)",
+        "technologies": "String Array",
+        "projectType": "Enum (web_app, mobile_app, design, branding, photography, writing, art, video, research, open_source, side_project)",
+        "content": "JSON (Case study sections: challenge, approach, solution, results)",
+        "metrics": "JSON (Result metrics, e.g., { conversion_rate: '+30%' })",
+        "featuredImageUrl": "String",
+        "orderIndex": "Int",
+        "isFeatured": "Boolean",
+        "tags": "String Array",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "media": "One-to-Many with ProjectMedia",
+        "testimonials": "One-to-Many with Testimonial"
+      }
+    },
+    "ProjectMedia": {
+      "fields": {
+        "id": "UUID",
+        "projectId": "UUID (FK Project)",
+        "type": "Enum (image, video, document, embed)",
+        "url": "String",
+        "thumbnailUrl": "String",
+        "caption": "String",
+        "altText": "String",
+        "orderIndex": "Int",
+        "fileSize": "Int (Bytes)"
+      }
+    },
+    "Testimonial": {
+      "fields": {
+        "id": "UUID",
+        "portfolioId": "UUID (FK Portfolio)",
+        "projectId": "UUID (FK Project, nullable)",
+        "clientName": "String",
+        "company": "String",
+        "position": "String",
+        "photoUrl": "String",
+        "content": "Text",
+        "rating": "Int (1-5)",
+        "videoUrl": "String (Optional video testimonial)",
+        "isVerified": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "Experience": {
+      "fields": {
+        "id": "UUID",
+        "portfolioId": "UUID (FK Portfolio)",
+        "type": "Enum (work, education, certification)",
+        "title": "String (Position/Degree)",
+        "organization": "String (Company/School)",
+        "location": "String",
+        "startDate": "Date",
+        "endDate": "Date (Nullable for current)",
+        "description": "Text",
+        "orderIndex": "Int"
+      }
+    },
+    "ContactInquiry": {
+      "fields": {
+        "id": "UUID",
+        "portfolioId": "UUID (FK Portfolio)",
+        "name": "String",
+        "email": "String",
+        "subject": "String",
+        "message": "Text",
+        "budget": "String (Optional)",
+        "timeline": "String (Optional)",
+        "isRead": "Boolean",
+        "isReplied": "Boolean",
+        "isSpam": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "PortfolioView": {
+      "fields": {
+        "id": "UUID",
+        "portfolioId": "UUID (FK Portfolio)",
+        "projectId": "UUID (FK Project, nullable)",
+        "sessionId": "String",
+        "referrer": "String",
+        "ipAddress": "String (Anonymized)",
+        "viewedAt": "DateTime"
+      },
+      "indexes": ["portfolioId", "viewedAt"]
+    }
+  }
+}

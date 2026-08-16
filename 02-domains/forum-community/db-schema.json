@@ -1,0 +1,268 @@
+{
+  "_meta": {
+    "description": "Enterprise Forum Community Database Schema. Covers users, categories, threads, replies, voting, moderation, notifications, and reputation systems."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "username": "String (Unique)",
+        "displayName": "String",
+        "email": "String (Unique)",
+        "emailVerified": "Boolean (Default: false)",
+        "hashedPassword": "String",
+        "role": "Enum (admin, global_mod, category_mod, trusted_member, member, restricted)",
+        "bio": "Text (Nullable)",
+        "avatarUrl": "String (Nullable)",
+        "coverUrl": "String (Nullable)",
+        "signature": "Text (Nullable, shown below posts)",
+        "website": "String (Nullable)",
+        "location": "String (Nullable)",
+        "karma": "Int (Default: 0, aggregated from received upvotes)",
+        "rank": "Enum (new_member, regular, veteran, elder, legend, auto-assigned by karma threshold)",
+        "postCount": "Int (Denormalized, Default: 0)",
+        "threadCount": "Int (Denormalized, Default: 0)",
+        "isBanned": "Boolean (Default: false)",
+        "isShadowBanned": "Boolean (Default: false)",
+        "lastActiveAt": "DateTime (Nullable)",
+        "settings": "JSON (Notification prefs, digest frequency, privacy settings)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["username", "email", "role"]
+    },
+    "Badge": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "String",
+        "iconUrl": "String",
+        "category": "Enum (participation, quality, moderation, special)",
+        "createdAt": "DateTime"
+      }
+    },
+    "UserBadge": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "badgeId": "UUID (FK Badge)",
+        "awardedAt": "DateTime"
+      },
+      "indexes": ["userId", "badgeId (unique composite)"]
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "Text (Nullable)",
+        "parentId": "UUID (Self-referencing FK, nullable, for nested categories)",
+        "sortOrder": "Int (Default: 0)",
+        "threadCount": "Int (Denormalized, Default: 0)",
+        "postCount": "Int (Denormalized, Default: 0)",
+        "isPrivate": "Boolean (Default: false, restricts access to specific roles)",
+        "allowedRoles": "Enum Array (Roles that can access if private)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["slug", "parentId", "sortOrder"]
+    },
+    "CategoryModerator": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "categoryId": "UUID (FK Category)",
+        "userId": "UUID (FK User)",
+        "assignedAt": "DateTime"
+      },
+      "indexes": ["categoryId", "userId (unique composite)"]
+    },
+    "Thread": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "categoryId": "UUID (FK Category)",
+        "authorId": "UUID (FK User)",
+        "title": "String",
+        "slug": "String (Unique, Indexed)",
+        "content": "Text (Markdown formatted)",
+        "contentHtml": "Text (Rendered HTML cache)",
+        "type": "Enum (discussion, question, poll, announcement)",
+        "status": "Enum (open, closed, archived, pinned, hidden)",
+        "isSolved": "Boolean (Default: false, for Q&A threads)",
+        "acceptedReplyId": "UUID (Nullable, FK to Reply, marks accepted answer)",
+        "viewCount": "Int (Default: 0)",
+        "replyCount": "Int (Denormalized, Default: 0)",
+        "voteScore": "Int (Denormalized, Default: 0, upvotes - downvotes)",
+        "isLocked": "Boolean (Default: false)",
+        "lockedReason": "String (Nullable)",
+        "flair": "String (Nullable, e.g. 'SOLVED', 'NSFW', 'SPOILER')",
+        "lastReplyAt": "DateTime (Nullable)",
+        "lastReplyById": "UUID (Nullable, FK User)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "categoryId", ["status", "createdAt"], ["type", "isSolved"], "authorId"]
+    },
+    "ThreadTag": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "threadId": "UUID (FK Thread)",
+        "tagId": "UUID (FK Tag)",
+        "addedAt": "DateTime"
+      },
+      "indexes": ["threadId", "tagId (unique composite)"]
+    },
+    "Tag": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String",
+        "slug": "String (Unique)",
+        "description": "String (Nullable)",
+        "threadCount": "Int (Denormalized, Default: 0)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["slug"]
+    },
+    "Reply": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "threadId": "UUID (FK Thread)",
+        "authorId": "UUID (FK User)",
+        "parentReplyId": "UUID (Self-referencing FK, nullable, for nested replies, max 5 levels deep)",
+        "depth": "Int (Default: 0, nesting level)",
+        "content": "Text (Markdown formatted)",
+        "contentHtml": "Text (Rendered HTML cache)",
+        "voteScore": "Int (Denormalized, Default: 0)",
+        "isEdited": "Boolean (Default: false)",
+        "editGraceExpired": "Boolean (Default: false, true if edited after 5 min)",
+        "lastEditedAt": "DateTime (Nullable)",
+        "status": "Enum (published, hidden, deleted)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["threadId", "authorId", "parentReplyId", "createdAt"]
+    },
+    "ReplyEditHistory": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "replyId": "UUID (FK Reply)",
+        "oldContent": "Text (Previous content snapshot)",
+        "editedAt": "DateTime"
+      },
+      "indexes": ["replyId", "editedAt"]
+    },
+    "Vote": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "targetType": "Enum (thread, reply)",
+        "targetId": "UUID (Polymorphic FK)",
+        "direction": "Enum (upvote, downvote)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", ["targetType", "targetId"], ["userId", "targetType", "targetId (unique composite)"]]
+    },
+    "Watch": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "watchType": "Enum (thread, category)",
+        "targetId": "UUID (Polymorphic FK)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", ["watchType", "targetId"], ["userId", "watchType", "targetId (unique composite)"]]
+    },
+    "Report": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "reporterId": "UUID (FK User)",
+        "targetType": "Enum (thread, reply, user)",
+        "targetId": "UUID (Polymorphic FK)",
+        "reason": "Enum (spam, harassment, nsfw, hate_speech, misinformation, self_harm, other)",
+        "description": "Text (Nullable)",
+        "status": "Enum (pending, reviewed, resolved, dismissed)",
+        "resolvedById": "UUID (Nullable, FK User, moderator who handled)",
+        "resolutionNote": "Text (Nullable)",
+        "createdAt": "DateTime",
+        "resolvedAt": "DateTime (Nullable)"
+      },
+      "indexes": ["status", "reporterId", "createdAt"]
+    },
+    "Ban": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "bannedById": "UUID (FK User, moderator)",
+        "type": "Enum (temporary, permanent, shadow)",
+        "reason": "Text",
+        "expiresAt": "DateTime (Nullable, for temporary bans)",
+        "isActive": "Boolean (Default: true)",
+        "createdAt": "DateTime",
+        "revokedAt": "DateTime (Nullable)",
+        "revokedById": "UUID (Nullable, FK User)"
+      },
+      "indexes": ["userId", "isActive"]
+    },
+    "ModerationQueue": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "targetType": "Enum (thread, reply)",
+        "targetId": "UUID (Polymorphic FK)",
+        "authorId": "UUID (FK User)",
+        "status": "Enum (pending, approved, rejected)",
+        "autoFlagged": "Boolean (Default: false, e.g. excessive links, flagged keywords)",
+        "reviewedById": "UUID (Nullable, FK User)",
+        "reviewedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["status", "authorId", "createdAt"]
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "moderatorId": "UUID (FK User)",
+        "action": "Enum (thread_locked, thread_unlocked, thread_pinned, thread_unpinned, thread_hidden, thread_restored, reply_hidden, reply_restored, user_banned, user_unbanned, report_resolved, report_dismissed, queue_approved, queue_rejected, user_role_changed, category_created, category_updated, category_deleted)",
+        "targetType": "Enum (thread, reply, user, category, report)",
+        "targetId": "UUID (Nullable)",
+        "details": "JSON (Action-specific metadata, e.g. { oldStatus, newStatus, reason })",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["moderatorId", "action", "createdAt"]
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User, recipient)",
+        "actorId": "UUID (FK User, who triggered)",
+        "type": "Enum (reply, mention, upvote, accepted_answer, thread_watch_update, category_watch_update, moderator_action, new_follower, badge_earned)",
+        "targetType": "Enum (thread, reply, category, user, badge)",
+        "targetId": "UUID (Nullable)",
+        "content": "String (Preview text)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "isRead", "createdAt"]
+    },
+    "Digest": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (FK User)",
+        "frequency": "Enum (daily, weekly, never)",
+        "categoryIds": "UUID Array (Categories to include, empty = all subscribed)",
+        "lastSentAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["userId (unique)"]
+    },
+    "SiteSetting": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "key": "String (Unique)",
+        "value": "JSON",
+        "updatedById": "UUID (FK User, admin)",
+        "updatedAt": "DateTime"
+      }
+    }
+  }
+}

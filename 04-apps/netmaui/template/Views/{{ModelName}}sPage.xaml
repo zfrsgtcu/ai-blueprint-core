@@ -1,0 +1,96 @@
+<!-- PURPOSE OF THIS FILE: {{ModelName}} liste sayfası — CollectionView ile entity listesi, pull-to-refresh, empty state. -->
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:{{ProjectName}}.ViewModels"
+             x:Class="{{ProjectName}}.Views.{{ModelName}}sPage"
+             x:DataType="vm:{{ModelName}}ListViewModel"
+             Title="{{ModelName}}s">
+
+    <Grid RowDefinitions="Auto,*" Padding="16">
+
+        <!-- Başlık ve Ekle Butonu -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+            <Label Text="{{ModelName}} Yönetimi"
+                   Style="{StaticResource Heading1}"
+                   VerticalOptions="Center" />
+            <Button Grid.Column="1"
+                    Text="+ Yeni {{ModelName}}"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding AddCommand}" />
+        </Grid>
+
+        <!-- Loading -->
+        <VerticalStackLayout Grid.Row="1"
+                             IsVisible="{Binding IsLoading}"
+                             VerticalOptions="Center"
+                             HorizontalOptions="Center">
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                               Color="{StaticResource Primary}" />
+            <Label Text="Yükleniyor..."
+                   Style="{StaticResource Body}"
+                   HorizontalOptions="Center"
+                   Margin="0,8,0,0" />
+        </VerticalStackLayout>
+
+        <!-- Error State -->
+        <VerticalStackLayout Grid.Row="1"
+                             IsVisible="{Binding HasError}"
+                             VerticalOptions="Center"
+                             HorizontalOptions="Center">
+            <Label Text="{Binding ErrorMessage}"
+                   TextColor="{StaticResource Error}"
+                   HorizontalOptions="Center" />
+            <Button Text="Tekrar Dene"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding LoadItemsCommand}"
+                    Margin="0,16,0,0" />
+        </VerticalStackLayout>
+
+        <!-- Empty State -->
+        <VerticalStackLayout Grid.Row="1"
+                             IsVisible="{Binding IsEmpty}"
+                             VerticalOptions="Center"
+                             HorizontalOptions="Center">
+            <Label Text="Henüz {{modelName}} kaydı bulunmuyor."
+                   Style="{StaticResource Body}"
+                   HorizontalOptions="Center" />
+        </VerticalStackLayout>
+
+        <!-- Liste -->
+        <RefreshView Grid.Row="1"
+                     IsRefreshing="{Binding IsRefreshing}"
+                     Command="{Binding LoadItemsCommand}">
+            <CollectionView ItemsSource="{Binding Items}"
+                            SelectionMode="Single"
+                            SelectionChangedCommand="{Binding ItemSelectedCommand}"
+                            SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="{x:Type x:Object}">
+                        <Frame Style="{StaticResource Card}" Margin="0,0,0,8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding Name}"
+                                           FontAttributes="Bold"
+                                           FontSize="16"
+                                           TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="{Binding Description}"
+                                           Style="{StaticResource Body}"
+                                           MaxLines="2"
+                                           LineBreakMode="TailTruncation" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1"
+                                       Text="→"
+                                       FontSize="20"
+                                       VerticalOptions="Center"
+                                       TextColor="{StaticResource Secondary}" />
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,82 @@
+---
+// {{ProjectName}} — Temel Layout
+// Tüm sayfalarda ortak olan HTML yapısını tanımlar.
+// AI: Navigasyon linklerini, footer içeriğini ve meta tag'leri domain'e göre özelleştir.
+
+export interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+}
+
+const {
+  title = '{{Description}}',
+  description = '{{Description}} sitesi',
+  image = '/og-image.png',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+
+    <!-- Open Graph / Sosyal Medya -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Font Preload -->
+    <!-- <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin /> -->
+
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-white antialiased">
+    <!-- Header / Navigasyon -->
+    <header class="border-b">
+      <nav class="container mx-auto flex items-center justify-between px-4 py-4">
+        <a href="/" class="text-xl font-bold">{{ProjectName}}</a>
+        <ul class="flex gap-6">
+          <li><a href="/" class="hover:text-blue-600">Ana Sayfa</a></li>
+          <li><a href="/about" class="hover:text-blue-600">Hakkımızda</a></li>
+          <li><a href="/contact" class="hover:text-blue-600">İletişim</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- Ana İçerik -->
+    <main>
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t bg-gray-50">
+      <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row justify-between gap-8">
+          <div>
+            <h3 class="font-bold">{{ProjectName}}</h3>
+            <p class="text-gray-600 mt-2 text-sm">{{Description}}</p>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-2">Bağlantılar</h4>
+            <ul class="space-y-1 text-sm text-gray-600">
+              <li><a href="/about" class="hover:text-blue-600">Hakkımızda</a></li>
+              <li><a href="/contact" class="hover:text-blue-600">İletişim</a></li>
+              <li><a href="/privacy" class="hover:text-blue-600">Gizlilik Politikası</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="mt-8 border-t pt-4 text-center text-sm text-gray-500">
+          &copy; {new Date().getFullYear()} {{ProjectName}}. Tüm hakları saklıdır.
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,127 @@
+{
+  "_meta": { "description": "Enterprise Micro-Site Schema (Sites, Templates, Pages, Media, Analytics)" },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID",
+        "email": "String (Unique)",
+        "hashedPassword": "String",
+        "role": "Enum (user, admin)",
+        "createdAt": "DateTime"
+      }
+    },
+    "MicroSite": {
+      "fields": {
+        "id": "UUID",
+        "ownerId": "UUID (FK User)",
+        "title": "String",
+        "slug": "String (Unique subdomain identifier)",
+        "siteType": "Enum (bio, event, product, business_card, link_in_bio, coming_soon, resume, podcast, custom)",
+        "templateId": "UUID (FK Template, nullable)",
+        "status": "Enum (draft, published, archived)",
+        "isPasswordProtected": "Boolean",
+        "password": "String (Hashed, nullable)",
+        "noIndex": "Boolean",
+        "customDomain": "String (Nullable)",
+        "sslStatus": "Enum (none, pending, active)",
+        "publishedAt": "DateTime",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "relations": {
+        "pages": "One-to-Many with MicroSitePage"
+      }
+    },
+    "MicroSitePage": {
+      "fields": {
+        "id": "UUID",
+        "siteId": "UUID (FK MicroSite)",
+        "title": "String (Page title, e.g., Home, About)",
+        "slug": "String (Page slug, e.g., about, contact)",
+        "isHome": "Boolean",
+        "orderIndex": "Int",
+        "sections": "JSON Array (Ordered list of section configurations)",
+        "seo": "JSON (Meta title, description, OG image)",
+        "createdAt": "DateTime"
+      }
+    },
+    "Template": {
+      "fields": {
+        "id": "UUID",
+        "name": "String",
+        "siteType": "String",
+        "description": "Text",
+        "thumbnailUrl": "String",
+        "previewUrl": "String",
+        "themeDefaults": "JSON (Default colors, fonts, layout)",
+        "sectionPresets": "JSON Array (Default sections for this template)",
+        "isActive": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "SiteMedia": {
+      "fields": {
+        "id": "UUID",
+        "siteId": "UUID (FK MicroSite)",
+        "fileName": "String",
+        "originalUrl": "String",
+        "thumbnailUrl": "String",
+        "type": "Enum (image, video, document, other)",
+        "fileSize": "Int (Bytes)",
+        "altText": "String",
+        "createdAt": "DateTime"
+      }
+    },
+    "SiteAnalytics": {
+      "fields": {
+        "id": "UUID",
+        "siteId": "UUID (FK MicroSite)",
+        "date": "Date",
+        "views": "Int",
+        "uniqueVisitors": "Int",
+        "referrers": "JSON (Referrer breakdown)",
+        "devices": "JSON (Device type breakdown)"
+      },
+      "indexes": ["siteId", "date"]
+    },
+    "ContactSubmission": {
+      "fields": {
+        "id": "UUID",
+        "siteId": "UUID (FK MicroSite)",
+        "name": "String",
+        "email": "String",
+        "message": "Text",
+        "isSpam": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "CustomDomain": {
+      "fields": {
+        "id": "UUID",
+        "siteId": "UUID (FK MicroSite, Unique)",
+        "domain": "String",
+        "sslStatus": "Enum (pending, active, failed)",
+        "dnsVerified": "Boolean",
+        "createdAt": "DateTime"
+      }
+    },
+    "SiteCollaborator": {
+      "fields": {
+        "id": "UUID",
+        "siteId": "UUID (FK MicroSite)",
+        "userId": "UUID (FK User)",
+        "role": "Enum (editor, viewer)",
+        "createdAt": "DateTime"
+      }
+    },
+    "SiteBackup": {
+      "fields": {
+        "id": "UUID",
+        "siteId": "UUID (FK MicroSite)",
+        "version": "Int",
+        "snapshot": "JSON (Full site state)",
+        "createdAt": "DateTime"
+      }
+    }
+  }
+}

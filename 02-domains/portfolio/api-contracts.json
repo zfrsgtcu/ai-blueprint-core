@@ -1,0 +1,3301 @@
+{
+  "_meta": {
+    "description": "Enterprise API Contracts for Portfolio Builder",
+    "error_format": "{ status: number, code: string, message: string, details?: any, timestamp: string, path: string }",
+    "rate_limiting": "Public: 1000/min (CDN) | Auth: 200/min | Admin: 100/min",
+    "base_url": "https://api.example.com",
+    "version": "v1",
+    "auth_scheme": "Bearer <JWT_TOKEN>",
+    "pagination": {
+      "default_limit": 20,
+      "max_limit": 100,
+      "style": "offset-based"
+    }
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/v1/portfolios/{slug}": {
+        "description": "Render public portfolio page / Herkese acik portfolyo sayfasini getir",
+        "auth": {
+          "required": false
+        },
+        "path_params": {
+          "slug": {
+            "type": "string",
+            "required": true,
+            "description": "Portfolio unique slug",
+            "example": "john-doe"
+          }
+        },
+        "query_params": {
+          "password": {
+            "type": "string",
+            "required": false,
+            "description": "Password if portfolio is password-protected / Sifre korumali portfolyo icin sifre"
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Portfolio data retrieved successfully / Portfolyo verisi basariyla alindi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "example": "550e8400-e29b-41d4-a716-446655440000"
+              },
+              "fullName": {
+                "type": "string",
+                "example": "John Doe"
+              },
+              "title": {
+                "type": "string",
+                "example": "Senior Full-Stack Developer"
+              },
+              "slug": {
+                "type": "string",
+                "example": "john-doe"
+              },
+              "bio": {
+                "type": "string",
+                "format": "markdown",
+                "example": "# About Me\\nI build things for the web."
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri",
+                "example": "https://cdn.example.com/avatars/john.jpg"
+              },
+              "location": {
+                "type": "string",
+                "example": "Istanbul, TR"
+              },
+              "availability": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "open_to_offers",
+                  "not_available"
+                ],
+                "example": "available"
+              },
+              "socialLinks": {
+                "type": "object",
+                "example": {
+                  "github": "https://github.com/johndoe",
+                  "linkedin": "https://linkedin.com/in/johndoe"
+                }
+              },
+              "serviceOfferings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": "string",
+                    "description": "string",
+                    "startingPrice": "number"
+                  }
+                }
+              },
+              "themeConfig": {
+                "type": "object",
+                "example": {
+                  "primaryColor": "#3B82F6",
+                  "fontFamily": "Inter",
+                  "layout": "sidebar"
+                }
+              },
+              "customDomain": {
+                "type": "string",
+                "nullable": true,
+                "example": "johndoe.dev"
+              },
+              "skills": {
+                "type": "array",
+                "items": {
+                  "$ref": "Skill"
+                },
+                "description": "Skills list / Yetenek listesi"
+              },
+              "featuredProjects": {
+                "type": "array",
+                "items": {
+                  "$ref": "ProjectSummary"
+                },
+                "description": "First 3 featured projects / Ilk 3 one cikan proje"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "401": {
+            "description": "Password required / Sifre gerekli",
+            "body": {
+              "status": 401,
+              "code": "PASSWORD_REQUIRED",
+              "message": "This portfolio is password protected"
+            }
+          },
+          "404": {
+            "description": "Portfolio not found / Portfolyo bulunamadi"
+          }
+        }
+      },
+      "GET /api/v1/portfolios/{slug}/projects": {
+        "description": "List portfolio projects / Portfolyo projelerini listele",
+        "auth": {
+          "required": false
+        },
+        "path_params": {
+          "slug": {
+            "type": "string",
+            "required": true,
+            "description": "Portfolio slug",
+            "example": "john-doe"
+          }
+        },
+        "query_params": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "description": "Page number / Sayfa numarasi",
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "description": "Items per page / Sayfa basina oge",
+            "example": 12
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "orderIndex",
+              "createdAt",
+              "updatedAt",
+              "title"
+            ],
+            "default": "orderIndex",
+            "description": "Sort field / Siralama alani",
+            "example": "createdAt"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "asc",
+            "description": "Sort direction / Siralama yonu",
+            "example": "desc"
+          },
+          "projectType": {
+            "type": "string",
+            "required": false,
+            "description": "Filter by project type / Proje turune gore filtrele",
+            "example": "web_app"
+          },
+          "technology": {
+            "type": "string",
+            "required": false,
+            "description": "Filter by technology / Teknolojiye gore filtrele",
+            "example": "React"
+          },
+          "tag": {
+            "type": "string",
+            "required": false,
+            "description": "Filter by tag / Etikete gore filtrele",
+            "example": "frontend"
+          },
+          "featured": {
+            "type": "boolean",
+            "required": false,
+            "description": "Filter featured only / Sadece one cikanlar",
+            "example": true
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Paginated project list / Sayfalanmis proje listesi",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "ProjectSummary"
+                }
+              },
+              "pagination": {
+                "page": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "limit": {
+                  "type": "integer",
+                  "example": 12
+                },
+                "total": {
+                  "type": "integer",
+                  "example": 35
+                },
+                "totalPages": {
+                  "type": "integer",
+                  "example": 3
+                },
+                "hasNext": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "hasPrev": {
+                  "type": "boolean",
+                  "example": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Portfolio not found / Portfolyo bulunamadi"
+          }
+        }
+      },
+      "GET /api/v1/portfolios/{slug}/projects/{projectSlug}": {
+        "description": "Get project detail / Proje detayini getir",
+        "auth": {
+          "required": false
+        },
+        "path_params": {
+          "slug": {
+            "type": "string",
+            "required": true,
+            "description": "Portfolio slug",
+            "example": "john-doe"
+          },
+          "projectSlug": {
+            "type": "string",
+            "required": true,
+            "description": "Project slug",
+            "example": "e-commerce-platform"
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Project detail / Proje detayi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "example": "660e8400-e29b-41d4-a716-446655440001"
+              },
+              "title": {
+                "type": "string",
+                "example": "E-Commerce Platform"
+              },
+              "slug": {
+                "type": "string",
+                "example": "e-commerce-platform"
+              },
+              "description": {
+                "type": "string",
+                "example": "A full-featured e-commerce platform built with Next.js"
+              },
+              "role": {
+                "type": "string",
+                "example": "Lead Developer"
+              },
+              "timeline": {
+                "type": "string",
+                "example": "Jan 2024 - Mar 2024"
+              },
+              "client": {
+                "type": "string",
+                "nullable": true,
+                "example": "Acme Corp"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "example": "https://acme-shop.com"
+              },
+              "sourceUrl": {
+                "type": "string",
+                "format": "uri",
+                "example": "https://github.com/johndoe/acme-shop"
+              },
+              "technologies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "Next.js",
+                  "TypeScript",
+                  "Stripe",
+                  "PostgreSQL"
+                ]
+              },
+              "projectType": {
+                "type": "string",
+                "enum": [
+                  "web_app",
+                  "mobile_app",
+                  "design",
+                  "branding",
+                  "photography",
+                  "writing",
+                  "art",
+                  "video",
+                  "research",
+                  "open_source",
+                  "side_project"
+                ],
+                "example": "web_app"
+              },
+              "content": {
+                "type": "object",
+                "description": "Case study sections: challenge, approach, solution, results",
+                "example": {
+                  "challenge": "...",
+                  "approach": "...",
+                  "solution": "...",
+                  "results": "..."
+                }
+              },
+              "metrics": {
+                "type": "object",
+                "example": {
+                  "conversion_rate": "+30%",
+                  "page_load": "1.2s"
+                }
+              },
+              "featuredImageUrl": {
+                "type": "string",
+                "format": "uri",
+                "example": "https://cdn.example.com/projects/ecommerce/featured.jpg"
+              },
+              "isFeatured": {
+                "type": "boolean",
+                "example": true
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "e-commerce",
+                  "full-stack"
+                ]
+              },
+              "media": {
+                "type": "array",
+                "items": {
+                  "$ref": "ProjectMedia"
+                }
+              },
+              "testimonials": {
+                "type": "array",
+                "items": {
+                  "$ref": "Testimonial"
+                }
+              },
+              "prevProject": {
+                "type": "object",
+                "nullable": true,
+                "description": "Previous project for navigation",
+                "properties": {
+                  "slug": "string",
+                  "title": "string"
+                }
+              },
+              "nextProject": {
+                "type": "object",
+                "nullable": true,
+                "description": "Next project for navigation",
+                "properties": {
+                  "slug": "string",
+                  "title": "string"
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "404": {
+            "description": "Project or portfolio not found / Proje veya portfolyo bulunamadi"
+          }
+        }
+      },
+      "GET /api/v1/portfolios/{slug}/testimonials": {
+        "description": "List client testimonials / Musteri referanslarini listele",
+        "auth": {
+          "required": false
+        },
+        "path_params": {
+          "slug": {
+            "type": "string",
+            "required": true,
+            "description": "Portfolio slug",
+            "example": "john-doe"
+          }
+        },
+        "query_params": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "example": 10
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "createdAt",
+              "rating"
+            ],
+            "default": "createdAt",
+            "example": "rating"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc",
+            "example": "desc"
+          },
+          "minRating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "required": false,
+            "description": "Minimum rating filter / Minimum puan filtresi",
+            "example": 4
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid",
+            "required": false,
+            "description": "Filter by project / Projeye gore filtrele"
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Paginated testimonials / Sayfalanmis referanslar",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "Testimonial"
+                }
+              },
+              "pagination": {
+                "page": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "limit": {
+                  "type": "integer",
+                  "example": 12
+                },
+                "total": {
+                  "type": "integer",
+                  "example": 35
+                },
+                "totalPages": {
+                  "type": "integer",
+                  "example": 3
+                },
+                "hasNext": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "hasPrev": {
+                  "type": "boolean",
+                  "example": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Portfolio not found / Portfolyo bulunamadi"
+          }
+        }
+      },
+      "GET /api/v1/portfolios/{slug}/resume": {
+        "description": "Get resume data (experiences + skills) / CV verisini getir",
+        "auth": {
+          "required": false
+        },
+        "path_params": {
+          "slug": {
+            "type": "string",
+            "required": true,
+            "description": "Portfolio slug",
+            "example": "john-doe"
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Resume data / CV verisi",
+            "body": {
+              "fullName": {
+                "type": "string",
+                "example": "John Doe"
+              },
+              "title": {
+                "type": "string",
+                "example": "Senior Full-Stack Developer"
+              },
+              "bio": {
+                "type": "string",
+                "format": "markdown"
+              },
+              "location": {
+                "type": "string",
+                "example": "Istanbul, TR"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Only if visible setting enabled / Sadece gorunurluk aciksa"
+              },
+              "socialLinks": {
+                "type": "object"
+              },
+              "experiences": {
+                "type": "array",
+                "items": {
+                  "$ref": "Experience"
+                }
+              },
+              "skills": {
+                "type": "array",
+                "items": {
+                  "$ref": "Skill"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Portfolio not found / Portfolyo bulunamadi"
+          }
+        }
+      },
+      "POST /api/v1/portfolios/{slug}/contact": {
+        "description": "Submit contact inquiry / Iletisim formu gonder",
+        "auth": {
+          "required": false
+        },
+        "path_params": {
+          "slug": {
+            "type": "string",
+            "required": true,
+            "description": "Portfolio slug",
+            "example": "john-doe"
+          }
+        },
+        "headers": {
+          "X-CSRF-Token": {
+            "type": "string",
+            "required": false,
+            "description": "CSRF protection token / CSRF koruma tokeni"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "name": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100,
+              "required": true,
+              "description": "Sender name / Gonderici adi",
+              "example": "Jane Smith"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "maxLength": 255,
+              "required": true,
+              "description": "Sender email",
+              "example": "jane@example.com"
+            },
+            "subject": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 200,
+              "required": true,
+              "description": "Inquiry subject / Mesaj konusu",
+              "example": "Project Collaboration Inquiry"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 5000,
+              "required": true,
+              "description": "Message body / Mesaj icerigi",
+              "example": "Hi John, I would like to discuss a potential project..."
+            },
+            "budget": {
+              "type": "string",
+              "maxLength": 100,
+              "required": false,
+              "description": "Budget range / Butce araligi",
+              "example": "$5000 - $10000"
+            },
+            "timeline": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "description": "Project timeline / Proje zamanlamasi",
+              "example": "Within 3 months"
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "description": "Inquiry submitted successfully / Basvuru basariyla gonderildi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "message": {
+                "type": "string",
+                "example": "Your inquiry has been received. I will get back to you within 48 hours."
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi",
+            "body": {
+              "status": 400,
+              "code": "VALIDATION_ERROR",
+              "message": "Invalid input",
+              "details": [
+                {
+                  "field": "email",
+                  "message": "Invalid email format"
+                }
+              ]
+            }
+          },
+          "404": {
+            "description": "Portfolio not found / Portfolyo bulunamadi"
+          },
+          "429": {
+            "description": "Rate limit exceeded / Istek limiti asildi",
+            "body": {
+              "status": 429,
+              "code": "RATE_LIMIT_EXCEEDED",
+              "message": "Too many requests. Please try again later."
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "POST /api/v1/portfolio": {
+        "description": "Create portfolio profile / Portfolyo profili olustur",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "fullName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 150,
+              "required": true,
+              "description": "Full name / Tam ad",
+              "example": "John Doe"
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200,
+              "required": true,
+              "description": "Professional headline / Profesyonel baslik",
+              "example": "Senior Full-Stack Developer"
+            },
+            "slug": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "minLength": 3,
+              "maxLength": 100,
+              "required": true,
+              "description": "Unique URL slug / Benzersiz URL kimligi",
+              "example": "john-doe"
+            },
+            "bio": {
+              "type": "string",
+              "format": "markdown",
+              "maxLength": 10000,
+              "required": false,
+              "description": "Biography / Biyografi",
+              "example": "# About Me\\nI build things."
+            },
+            "avatarUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false,
+              "example": "https://cdn.example.com/avatars/john.jpg"
+            },
+            "location": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "example": "Istanbul, TR"
+            },
+            "availability": {
+              "type": "string",
+              "enum": [
+                "available",
+                "open_to_offers",
+                "not_available"
+              ],
+              "required": false,
+              "default": "not_available"
+            },
+            "socialLinks": {
+              "type": "object",
+              "required": false,
+              "example": {
+                "github": "https://github.com/johndoe",
+                "linkedin": "https://linkedin.com/in/johndoe",
+                "twitter": "https://twitter.com/johndoe"
+              }
+            },
+            "serviceOfferings": {
+              "type": "array",
+              "required": false,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "startingPrice": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "themeConfig": {
+              "type": "object",
+              "required": false,
+              "example": {
+                "primaryColor": "#3B82F6",
+                "fontFamily": "Inter",
+                "layout": "sidebar"
+              }
+            },
+            "customDomain": {
+              "type": "string",
+              "format": "hostname",
+              "nullable": true,
+              "required": false,
+              "example": "johndoe.dev"
+            },
+            "isPublished": {
+              "type": "boolean",
+              "required": false,
+              "default": false,
+              "description": "Publish immediately / Hemen yayinla"
+            },
+            "isPasswordProtected": {
+              "type": "boolean",
+              "required": false,
+              "default": false
+            },
+            "password": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "required": false,
+              "description": "Access password (only if isPasswordProtected is true) / Erisim sifresi"
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "description": "Portfolio created / Portfolyo olusturuldu",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string",
+                "example": "john-doe"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "409": {
+            "description": "Portfolio already exists / Portfolyo zaten mevcut",
+            "body": {
+              "status": 409,
+              "code": "PORTFOLIO_EXISTS",
+              "message": "User already has a portfolio"
+            }
+          }
+        }
+      },
+      "GET /api/v1/portfolio": {
+        "description": "Get my portfolio with all data / Kendi portfolyomu tum verilerle getir",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Full portfolio data / Tum portfolyo verisi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "bio": {
+                "type": "string",
+                "format": "markdown"
+              },
+              "avatarUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "location": {
+                "type": "string"
+              },
+              "availability": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "open_to_offers",
+                  "not_available"
+                ]
+              },
+              "socialLinks": {
+                "type": "object"
+              },
+              "serviceOfferings": {
+                "type": "array"
+              },
+              "themeConfig": {
+                "type": "object"
+              },
+              "customDomain": {
+                "type": "string",
+                "nullable": true
+              },
+              "isPublished": {
+                "type": "boolean"
+              },
+              "isPasswordProtected": {
+                "type": "boolean"
+              },
+              "projects": {
+                "type": "array",
+                "items": {
+                  "$ref": "Project"
+                }
+              },
+              "skills": {
+                "type": "array",
+                "items": {
+                  "$ref": "Skill"
+                }
+              },
+              "experiences": {
+                "type": "array",
+                "items": {
+                  "$ref": "Experience"
+                }
+              },
+              "testimonials": {
+                "type": "array",
+                "items": {
+                  "$ref": "Testimonial"
+                }
+              },
+              "inquiries": {
+                "type": "array",
+                "items": {
+                  "$ref": "ContactInquiry"
+                },
+                "description": "Unread and recent inquiries / Okunmamis ve yakin sorgular"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Portfolio not created yet / Portfolyo henuz olusturulmadi",
+            "body": {
+              "status": 404,
+              "code": "PORTFOLIO_NOT_FOUND",
+              "message": "Create your portfolio first"
+            }
+          }
+        }
+      },
+      "PUT /api/v1/portfolio": {
+        "description": "Update portfolio profile/settings / Portfolyo profil/ayarlarini guncelle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "fullName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 150,
+              "required": false,
+              "example": "John Doe"
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "example": "Senior Full-Stack Developer"
+            },
+            "slug": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "minLength": 3,
+              "maxLength": 100,
+              "required": false,
+              "example": "john-doe"
+            },
+            "bio": {
+              "type": "string",
+              "format": "markdown",
+              "maxLength": 10000,
+              "required": false
+            },
+            "avatarUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false
+            },
+            "location": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false
+            },
+            "availability": {
+              "type": "string",
+              "enum": [
+                "available",
+                "open_to_offers",
+                "not_available"
+              ],
+              "required": false
+            },
+            "socialLinks": {
+              "type": "object",
+              "required": false
+            },
+            "serviceOfferings": {
+              "type": "array",
+              "required": false,
+              "items": {
+                "type": "object"
+              }
+            },
+            "customDomain": {
+              "type": "string",
+              "format": "hostname",
+              "nullable": true,
+              "required": false
+            },
+            "isPublished": {
+              "type": "boolean",
+              "required": false
+            },
+            "isPasswordProtected": {
+              "type": "boolean",
+              "required": false
+            },
+            "password": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "required": false,
+              "description": "Only if updating password / Sadece sifre guncelleniyorsa"
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Portfolio updated / Portfolyo guncellendi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Not found / Bulunamadi"
+          },
+          "409": {
+            "description": "Slug already taken / Slug zaten kullanimda",
+            "body": {
+              "status": 409,
+              "code": "SLUG_CONFLICT",
+              "message": "This slug is already taken"
+            }
+          }
+        }
+      },
+      "PUT /api/v1/portfolio/theme": {
+        "description": "Update theme customization / Tema ozellestirmesini guncelle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "themeConfig": {
+              "type": "object",
+              "required": true,
+              "description": "Theme configuration / Tema yapilandirmasi",
+              "example": {
+                "primaryColor": "#3B82F6",
+                "secondaryColor": "#10B981",
+                "backgroundColor": "#FFFFFF",
+                "textColor": "#111827",
+                "fontFamily": "Inter",
+                "fontSize": "base",
+                "layout": "sidebar",
+                "borderRadius": "md",
+                "showAvatar": true,
+                "showSkills": true,
+                "darkMode": "system"
+              }
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Theme updated / Tema guncellendi",
+            "body": {
+              "themeConfig": {
+                "type": "object"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Not found / Bulunamadi"
+          }
+        }
+      },
+      "POST /api/v1/portfolio/projects": {
+        "description": "Create new project / Yeni proje olustur",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "title": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 200,
+              "required": true,
+              "description": "Project title / Proje basligi",
+              "example": "E-Commerce Platform"
+            },
+            "slug": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "minLength": 3,
+              "maxLength": 200,
+              "required": true,
+              "description": "Unique project slug / Benzersiz proje slugi",
+              "example": "e-commerce-platform"
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 5000,
+              "required": true,
+              "description": "Project description / Proje aciklamasi",
+              "example": "A full-featured e-commerce platform"
+            },
+            "role": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "example": "Lead Developer"
+            },
+            "timeline": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "example": "Jan 2024 - Mar 2024"
+            },
+            "client": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "example": "Acme Corp"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "required": false,
+              "example": "https://acme-shop.com"
+            },
+            "sourceUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false,
+              "example": "https://github.com/johndoe/acme-shop"
+            },
+            "technologies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "required": false,
+              "example": [
+                "Next.js",
+                "TypeScript",
+                "PostgreSQL"
+              ]
+            },
+            "projectType": {
+              "type": "string",
+              "enum": [
+                "web_app",
+                "mobile_app",
+                "design",
+                "branding",
+                "photography",
+                "writing",
+                "art",
+                "video",
+                "research",
+                "open_source",
+                "side_project"
+              ],
+              "required": true,
+              "example": "web_app"
+            },
+            "content": {
+              "type": "object",
+              "required": false,
+              "description": "Case study sections / Vaka calismasi bolumleri",
+              "example": {
+                "challenge": "...",
+                "approach": "...",
+                "solution": "...",
+                "results": "..."
+              }
+            },
+            "metrics": {
+              "type": "object",
+              "required": false,
+              "example": {
+                "conversion_rate": "+30%"
+              }
+            },
+            "featuredImageUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false
+            },
+            "orderIndex": {
+              "type": "integer",
+              "minimum": 0,
+              "required": false,
+              "default": 0
+            },
+            "isFeatured": {
+              "type": "boolean",
+              "required": false,
+              "default": false
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "required": false,
+              "example": [
+                "e-commerce",
+                "full-stack"
+              ]
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "description": "Project created / Proje olusturuldu",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "title": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Not found / Bulunamadi"
+          },
+          "409": {
+            "description": "Project slug already exists / Proje slugi zaten mevcut"
+          }
+        }
+      },
+      "PUT /api/v1/portfolio/projects/{id}": {
+        "description": "Update project / Projeyi guncelle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "path_params": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Project ID",
+            "example": "660e8400-e29b-41d4-a716-446655440001"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "title": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 200,
+              "required": false
+            },
+            "slug": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "minLength": 3,
+              "maxLength": 200,
+              "required": false
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 5000,
+              "required": false
+            },
+            "role": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false
+            },
+            "timeline": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false
+            },
+            "client": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "required": false
+            },
+            "sourceUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false
+            },
+            "technologies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "required": false
+            },
+            "projectType": {
+              "type": "string",
+              "enum": [
+                "web_app",
+                "mobile_app",
+                "design",
+                "branding",
+                "photography",
+                "writing",
+                "art",
+                "video",
+                "research",
+                "open_source",
+                "side_project"
+              ],
+              "required": false
+            },
+            "content": {
+              "type": "object",
+              "required": false
+            },
+            "metrics": {
+              "type": "object",
+              "required": false
+            },
+            "featuredImageUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false
+            },
+            "orderIndex": {
+              "type": "integer",
+              "minimum": 0,
+              "required": false
+            },
+            "isFeatured": {
+              "type": "boolean",
+              "required": false
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "required": false
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Project updated / Proje guncellendi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "title": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - not your project / Bu proje size ait degil",
+            "body": {
+              "status": 403,
+              "code": "FORBIDDEN",
+              "message": "You do not own this project"
+            }
+          },
+          "404": {
+            "description": "Project not found / Proje bulunamadi"
+          },
+          "409": {
+            "description": "Slug conflict / Slug cakismasi"
+          }
+        }
+      },
+      "DELETE /api/v1/portfolio/projects/{id}": {
+        "description": "Delete project / Projeyi sil",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "path_params": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Project ID",
+            "example": "660e8400-e29b-41d4-a716-446655440001"
+          }
+        },
+        "response": {
+          "204": {
+            "description": "Project deleted successfully / Proje basariyla silindi (No Content)"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - not your project / Bu proje size ait degil"
+          },
+          "404": {
+            "description": "Project not found / Proje bulunamadi"
+          }
+        }
+      },
+      "PUT /api/v1/portfolio/projects/reorder": {
+        "description": "Reorder projects / Proje siralamasini guncelle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "order": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "orderIndex": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "minItems": 1,
+              "required": true,
+              "description": "Ordered project IDs with new indices / Yeni sirayla proje IDleri ve indeksleri",
+              "example": [
+                {
+                  "id": "660e8400-e29b-41d4-a716-446655440001",
+                  "orderIndex": 0
+                },
+                {
+                  "id": "660e8400-e29b-41d4-a716-446655440002",
+                  "orderIndex": 1
+                }
+              ]
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Projects reordered / Projeler yeniden siralandi",
+            "body": {
+              "message": {
+                "type": "string",
+                "example": "Project order updated"
+              },
+              "updated": {
+                "type": "integer",
+                "example": 2,
+                "description": "Number of projects reordered"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi (duplicate indices, missing IDs)"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - project not yours / Proje size ait degil"
+          }
+        }
+      },
+      "POST /api/v1/portfolio/projects/{id}/media": {
+        "description": "Upload project media / Proje medyasi yukle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "path_params": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Project ID",
+            "example": "660e8400-e29b-41d4-a716-446655440001"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "multipart/form-data",
+          "schema": {
+            "file": {
+              "type": "file",
+              "required": true,
+              "description": "Media file / Medya dosyasi",
+              "accept": [
+                "image/*",
+                "video/*",
+                "application/pdf"
+              ],
+              "maxSize": "50MB"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "image",
+                "video",
+                "document",
+                "embed"
+              ],
+              "required": true,
+              "description": "Media type / Medya turu",
+              "example": "image"
+            },
+            "caption": {
+              "type": "string",
+              "maxLength": 500,
+              "required": false,
+              "description": "Image/video caption / Gorsel/video aciklamasi",
+              "example": "Homepage design"
+            },
+            "altText": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "description": "Alt text for accessibility / Erisilebilirlik icin alternatif metin",
+              "example": "Screenshot of the e-commerce homepage"
+            },
+            "orderIndex": {
+              "type": "integer",
+              "minimum": 0,
+              "required": false,
+              "default": 0
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "description": "Media uploaded / Medya yuklendi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "thumbnailUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "caption": {
+                "type": "string"
+              },
+              "altText": {
+                "type": "string"
+              },
+              "orderIndex": {
+                "type": "integer"
+              },
+              "fileSize": {
+                "type": "integer",
+                "description": "Size in bytes"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi (invalid file type, too large)"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - not your project"
+          },
+          "404": {
+            "description": "Project not found / Proje bulunamadi"
+          },
+          "413": {
+            "description": "File too large / Dosya cok buyuk",
+            "body": {
+              "status": 413,
+              "code": "FILE_TOO_LARGE",
+              "message": "File exceeds the 50MB limit"
+            }
+          }
+        }
+      },
+      "DELETE /api/v1/portfolio/projects/{id}/media/{mediaId}": {
+        "description": "Delete media / Medyayi sil",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "path_params": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Project ID"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Media ID"
+          }
+        },
+        "response": {
+          "204": {
+            "description": "Media deleted / Medya silindi (No Content)"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - not your project"
+          },
+          "404": {
+            "description": "Media or project not found / Medya veya proje bulunamadi"
+          }
+        }
+      }
+    },
+    "testimonials": {
+      "POST /api/v1/portfolio/testimonials": {
+        "description": "Add testimonial / Referans ekle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "clientName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 150,
+              "required": true,
+              "description": "Client name / Musteri adi",
+              "example": "Jane Smith"
+            },
+            "company": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "description": "Client company / Musteri sirketi",
+              "example": "Acme Corp"
+            },
+            "position": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false,
+              "description": "Client position / Musteri pozisyonu",
+              "example": "CTO"
+            },
+            "photoUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false,
+              "example": "https://cdn.example.com/clients/jane.jpg"
+            },
+            "content": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 2000,
+              "required": true,
+              "description": "Testimonial text / Referans metni",
+              "example": "John delivered an outstanding e-commerce platform..."
+            },
+            "rating": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "required": true,
+              "description": "Rating 1-5 / Puan 1-5",
+              "example": 5
+            },
+            "videoUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false,
+              "description": "Optional video testimonial URL",
+              "example": "https://youtube.com/watch?v=abc123"
+            },
+            "projectId": {
+              "type": "string",
+              "format": "uuid",
+              "required": false,
+              "description": "Link to specific project / Belirli bir projeye bagla",
+              "example": "660e8400-e29b-41d4-a716-446655440001"
+            },
+            "isVerified": {
+              "type": "boolean",
+              "required": false,
+              "default": true,
+              "description": "Mark as verified / Dogrulanmis isaretle"
+            }
+          }
+        },
+        "response": {
+          "201": {
+            "description": "Testimonial added / Referans eklendi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "clientName": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              },
+              "rating": {
+                "type": "integer"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Not found / Bulunamadi"
+          }
+        }
+      },
+      "PUT /api/v1/portfolio/testimonials/{id}": {
+        "description": "Update testimonial / Referansi guncelle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "path_params": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Testimonial ID",
+            "example": "770e8400-e29b-41d4-a716-446655440001"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "clientName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 150,
+              "required": false
+            },
+            "company": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false
+            },
+            "position": {
+              "type": "string",
+              "maxLength": 200,
+              "required": false
+            },
+            "photoUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false
+            },
+            "content": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 2000,
+              "required": false
+            },
+            "rating": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "required": false
+            },
+            "videoUrl": {
+              "type": "string",
+              "format": "uri",
+              "required": false
+            },
+            "projectId": {
+              "type": "string",
+              "format": "uuid",
+              "required": false
+            },
+            "isVerified": {
+              "type": "boolean",
+              "required": false
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Testimonial updated / Referans guncellendi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "clientName": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - not your testimonial"
+          },
+          "404": {
+            "description": "Testimonial not found / Referans bulunamadi"
+          }
+        }
+      },
+      "DELETE /api/v1/portfolio/testimonials/{id}": {
+        "description": "Delete testimonial / Referansi sil",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "path_params": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Testimonial ID"
+          }
+        },
+        "response": {
+          "204": {
+            "description": "Testimonial deleted / Referans silindi (No Content)"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - not your testimonial"
+          },
+          "404": {
+            "description": "Testimonial not found / Referans bulunamadi"
+          }
+        }
+      },
+      "POST /api/v1/portfolio/testimonials/request": {
+        "description": "Request testimonial from client / Musteriden referans talebinde bulun",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "clientEmail": {
+              "type": "string",
+              "format": "email",
+              "maxLength": 255,
+              "required": true,
+              "description": "Client email address / Musteri e-posta adresi",
+              "example": "jane@acmecorp.com"
+            },
+            "clientName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 150,
+              "required": true,
+              "description": "Client name / Musteri adi",
+              "example": "Jane Smith"
+            },
+            "projectId": {
+              "type": "string",
+              "format": "uuid",
+              "required": false,
+              "description": "Related project / Ilgili proje"
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 2000,
+              "required": false,
+              "description": "Personal message to client / Musteriye kisisel mesaj",
+              "example": "Hi Jane, it was great working with you! Would you mind leaving a testimonial?"
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Request sent / Talep gonderildi",
+            "body": {
+              "message": {
+                "type": "string",
+                "example": "Testimonial request has been sent to jane@acmecorp.com"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Not found / Bulunamadi"
+          },
+          "429": {
+            "description": "Too many requests / Cok fazla istek (max 5/day per client)"
+          }
+        }
+      }
+    },
+    "inquiries": {
+      "GET /api/v1/portfolio/inquiries": {
+        "description": "List contact inquiries / Iletisim sorgularini listele",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "query_params": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20,
+            "example": 20
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "createdAt"
+            ],
+            "default": "createdAt",
+            "example": "createdAt"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc",
+            "example": "desc"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unread",
+              "read",
+              "replied",
+              "spam",
+              "all"
+            ],
+            "default": "all",
+            "required": false,
+            "description": "Filter by status / Duruma gore filtrele",
+            "example": "unread"
+          },
+          "search": {
+            "type": "string",
+            "required": false,
+            "description": "Search by name, email, or subject / Ad, e-posta veya konuya gore ara",
+            "example": "Jane"
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Paginated inquiry list / Sayfalanmis sorgu listesi",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "ContactInquiry"
+                }
+              },
+              "pagination": {
+                "page": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "limit": {
+                  "type": "integer",
+                  "example": 12
+                },
+                "total": {
+                  "type": "integer",
+                  "example": 35
+                },
+                "totalPages": {
+                  "type": "integer",
+                  "example": 3
+                },
+                "hasNext": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "hasPrev": {
+                  "type": "boolean",
+                  "example": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Not found / Bulunamadi"
+          }
+        }
+      },
+      "PUT /api/v1/portfolio/inquiries/{id}": {
+        "description": "Mark as read/replied/spam / Okundu/yanitlandi/spam olarak isaretle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "path_params": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Inquiry ID",
+            "example": "880e8400-e29b-41d4-a716-446655440001"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "isRead": {
+              "type": "boolean",
+              "required": false,
+              "description": "Mark as read / Okundu isaretle",
+              "example": true
+            },
+            "isReplied": {
+              "type": "boolean",
+              "required": false,
+              "description": "Mark as replied / Yanitlandi isaretle",
+              "example": false
+            },
+            "isSpam": {
+              "type": "boolean",
+              "required": false,
+              "description": "Mark as spam / Spam olarak isaretle",
+              "example": false
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Inquiry status updated / Sorgu durumu guncellendi",
+            "body": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "isRead": {
+                "type": "boolean"
+              },
+              "isReplied": {
+                "type": "boolean"
+              },
+              "isSpam": {
+                "type": "boolean"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - not your inquiry"
+          },
+          "404": {
+            "description": "Inquiry not found / Sorgu bulunamadi"
+          }
+        }
+      },
+      "DELETE /api/v1/portfolio/inquiries/{id}": {
+        "description": "Delete inquiry / Sorguyu sil",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "path_params": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "description": "Inquiry ID"
+          }
+        },
+        "response": {
+          "204": {
+            "description": "Inquiry deleted / Sorgu silindi (No Content)"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - not your inquiry"
+          },
+          "404": {
+            "description": "Inquiry not found / Sorgu bulunamadi"
+          }
+        }
+      }
+    },
+    "resume": {
+      "PUT /api/v1/portfolio/resume": {
+        "description": "Update resume/CV data (experiences + skills) / CV verisini guncelle",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": true,
+          "content_type": "application/json",
+          "schema": {
+            "experiences": {
+              "type": "array",
+              "required": false,
+              "description": "Work, education, certifications / Is, egitim, sertifikalar",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "required": false,
+                    "description": "Only for updates / Sadece guncelleme icin"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "work",
+                      "education",
+                      "certification"
+                    ],
+                    "required": true,
+                    "example": "work"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 300,
+                    "required": true,
+                    "example": "Senior Developer"
+                  },
+                  "organization": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 300,
+                    "required": true,
+                    "example": "Acme Corp"
+                  },
+                  "location": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "required": false,
+                    "example": "Istanbul, TR"
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "format": "date",
+                    "required": true,
+                    "example": "2022-01-15"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true,
+                    "required": false,
+                    "description": "Null for current position / Mevcut pozisyon icin null"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 5000,
+                    "required": false
+                  },
+                  "orderIndex": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "required": false,
+                    "default": 0
+                  }
+                }
+              }
+            },
+            "skills": {
+              "type": "array",
+              "required": false,
+              "description": "Skills list / Yetenek listesi",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "required": false,
+                    "description": "Only for updates / Sadece guncelleme icin"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "required": true,
+                    "example": "React"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "frontend",
+                      "backend",
+                      "design",
+                      "tools",
+                      "language",
+                      "other"
+                    ],
+                    "required": true,
+                    "example": "frontend"
+                  },
+                  "proficiency": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "required": true,
+                    "example": 90
+                  },
+                  "orderIndex": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "required": false,
+                    "default": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Resume updated / CV guncellendi",
+            "body": {
+              "experiences": {
+                "type": "array",
+                "items": {
+                  "$ref": "Experience"
+                }
+              },
+              "skills": {
+                "type": "array",
+                "items": {
+                  "$ref": "Skill"
+                }
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Not found / Bulunamadi"
+          }
+        }
+      },
+      "POST /api/v1/portfolio/resume/export": {
+        "description": "Export resume as PDF / CVyi PDF olarak disa aktar",
+        "auth": {
+          "required": true,
+          "type": "Bearer"
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN>"
+          }
+        },
+        "request_body": {
+          "required": false,
+          "content_type": "application/json",
+          "schema": {
+            "format": {
+              "type": "string",
+              "enum": [
+                "pdf",
+                "json"
+              ],
+              "default": "pdf",
+              "required": false,
+              "description": "Export format / Disa aktarma formati",
+              "example": "pdf"
+            },
+            "includeProjects": {
+              "type": "boolean",
+              "default": false,
+              "required": false,
+              "description": "Include projects section / Projeleri dahil et",
+              "example": true
+            },
+            "theme": {
+              "type": "string",
+              "enum": [
+                "classic",
+                "modern",
+                "minimal"
+              ],
+              "default": "modern",
+              "required": false,
+              "description": "Resume theme / CV temasi",
+              "example": "modern"
+            }
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Resume exported / CV disa aktarildi",
+            "body": {
+              "downloadUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "Temporary pre-signed download URL / Gecici indirme URLi",
+                "example": "https://cdn.example.com/exports/resume-john-doe-2026.pdf"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "URL expiry / URL gecerlilik suresi",
+                "example": "2026-07-20T13:00:00Z"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error / Dogrulama hatasi"
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "404": {
+            "description": "Not found / Bulunamadi"
+          }
+        }
+      }
+    },
+    "admin": {
+      "GET /api/v1/admin/analytics": {
+        "description": "Platform analytics / Platform analitikleri",
+        "auth": {
+          "required": true,
+          "type": "Bearer",
+          "roles": [
+            "admin"
+          ]
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN> (admin role required)"
+          }
+        },
+        "query_params": {
+          "period": {
+            "type": "string",
+            "enum": [
+              "7d",
+              "30d",
+              "90d",
+              "1y",
+              "all"
+            ],
+            "default": "30d",
+            "description": "Analytics period / Analiz donemi",
+            "example": "30d"
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "required": false,
+            "description": "Custom start date / Ozel baslangic tarihi",
+            "example": "2026-01-01"
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "required": false,
+            "description": "Custom end date / Ozel bitis tarihi",
+            "example": "2026-07-20"
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Platform analytics data / Platform analitik verisi",
+            "body": {
+              "totalPortfolios": {
+                "type": "integer",
+                "description": "Total portfolio count / Toplam portfolyo sayisi",
+                "example": 1523
+              },
+              "publishedPortfolios": {
+                "type": "integer",
+                "example": 1201
+              },
+              "totalProjects": {
+                "type": "integer",
+                "example": 8745
+              },
+              "totalViews": {
+                "type": "integer",
+                "description": "Total portfolio views / Toplam portfolyo goruntuleme",
+                "example": 245000
+              },
+              "totalInquiries": {
+                "type": "integer",
+                "example": 3890
+              },
+              "viewsByDay": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": "string",
+                    "count": "integer"
+                  }
+                }
+              },
+              "topPortfolios": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slug": "string",
+                    "fullName": "string",
+                    "views": "integer"
+                  }
+                },
+                "description": "Top 10 by views / En cok goruntulenen 10"
+              },
+              "projectTypeDistribution": {
+                "type": "object",
+                "description": "Projects by type / Ture gore proje dagilimi",
+                "example": {
+                  "web_app": 4200,
+                  "mobile_app": 1500,
+                  "design": 1800
+                }
+              },
+              "signupsByDay": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": "string",
+                    "count": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - admin role required / Admin yetkisi gerekli",
+            "body": {
+              "status": 403,
+              "code": "FORBIDDEN",
+              "message": "Admin access required"
+            }
+          }
+        }
+      },
+      "GET /api/v1/admin/portfolios": {
+        "description": "All portfolios (admin view) / Tum portfolyolar (admin gorunumu)",
+        "auth": {
+          "required": true,
+          "type": "Bearer",
+          "roles": [
+            "admin"
+          ]
+        },
+        "headers": {
+          "Authorization": {
+            "type": "string",
+            "required": true,
+            "description": "Bearer <JWT_TOKEN> (admin role required)"
+          }
+        },
+        "query_params": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "default": 50,
+            "example": 50
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "createdAt",
+              "updatedAt",
+              "fullName"
+            ],
+            "default": "createdAt",
+            "example": "createdAt"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc",
+            "example": "desc"
+          },
+          "search": {
+            "type": "string",
+            "required": false,
+            "description": "Search by name, slug, or email / Ad, slug veya e-postaya gore ara",
+            "example": "john"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "published",
+              "unpublished",
+              "all"
+            ],
+            "default": "all",
+            "required": false,
+            "example": "published"
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "available",
+              "open_to_offers",
+              "not_available",
+              "all"
+            ],
+            "default": "all",
+            "required": false
+          }
+        },
+        "response": {
+          "200": {
+            "description": "Paginated portfolio list (admin) / Sayfalanmis portfolyo listesi (admin)",
+            "body": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "fullName": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email",
+                      "description": "Owner email / Portfolyo sahibi e-postasi"
+                    },
+                    "isPublished": {
+                      "type": "boolean"
+                    },
+                    "availability": {
+                      "type": "string"
+                    },
+                    "customDomain": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "projectCount": {
+                      "type": "integer"
+                    },
+                    "viewCount": {
+                      "type": "integer",
+                      "description": "Total views (30d)"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "pagination": {
+                "page": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "limit": {
+                  "type": "integer",
+                  "example": 12
+                },
+                "total": {
+                  "type": "integer",
+                  "example": 35
+                },
+                "totalPages": {
+                  "type": "integer",
+                  "example": 3
+                },
+                "hasNext": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "hasPrev": {
+                  "type": "boolean",
+                  "example": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized / Yetkisiz erisim"
+          },
+          "403": {
+            "description": "Forbidden - admin role required / Admin yetkisi gerekli",
+            "body": {
+              "status": 403,
+              "code": "FORBIDDEN",
+              "message": "Admin access required"
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemas": {
+    "Experience": {
+      "description": "Work, education, or certification entry / Is, egitim veya sertifika kaydi",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "portfolioId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "work",
+            "education",
+            "certification"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "organization": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date",
+          "nullable": true
+        },
+        "description": {
+          "type": "string"
+        },
+        "orderIndex": {
+          "type": "integer"
+        }
+      }
+    },
+    "Skill": {
+      "description": "Professional skill / Profesyonel yetenek",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "frontend",
+            "backend",
+            "design",
+            "tools",
+            "language",
+            "other"
+          ]
+        },
+        "proficiency": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "orderIndex": {
+          "type": "integer"
+        }
+      }
+    },
+    "Project": {
+      "description": "Full project object / Tam proje nesnesi",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "timeline": {
+          "type": "string"
+        },
+        "client": {
+          "type": "string",
+          "nullable": true
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "sourceUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "technologies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "projectType": {
+          "type": "string",
+          "enum": [
+            "web_app",
+            "mobile_app",
+            "design",
+            "branding",
+            "photography",
+            "writing",
+            "art",
+            "video",
+            "research",
+            "open_source",
+            "side_project"
+          ]
+        },
+        "content": {
+          "type": "object"
+        },
+        "metrics": {
+          "type": "object"
+        },
+        "featuredImageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "orderIndex": {
+          "type": "integer"
+        },
+        "isFeatured": {
+          "type": "boolean"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ProjectSummary": {
+      "description": "Lightweight project for list views / Liste gorunumu icin hafif proje",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Truncated description"
+        },
+        "projectType": {
+          "type": "string"
+        },
+        "technologies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "featuredImageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "isFeatured": {
+          "type": "boolean"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orderIndex": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ProjectMedia": {
+      "description": "Project media file / Proje medya dosyasi",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "image",
+            "video",
+            "document",
+            "embed"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "caption": {
+          "type": "string"
+        },
+        "altText": {
+          "type": "string"
+        },
+        "orderIndex": {
+          "type": "integer"
+        },
+        "fileSize": {
+          "type": "integer",
+          "description": "Size in bytes"
+        }
+      }
+    },
+    "Testimonial": {
+      "description": "Client testimonial / Musteri referansi",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid",
+          "nullable": true
+        },
+        "clientName": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
+        "position": {
+          "type": "string"
+        },
+        "photoUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "content": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "videoUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "isVerified": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ContactInquiry": {
+      "description": "Contact form inquiry / Iletisim formu sorgusu",
+      "fields": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "budget": {
+          "type": "string"
+        },
+        "timeline": {
+          "type": "string"
+        },
+        "isRead": {
+          "type": "boolean"
+        },
+        "isReplied": {
+          "type": "boolean"
+        },
+        "isSpam": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

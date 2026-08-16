@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "AI Playground API Sözleşmeleri. Public model keşfi, auth kullanıcı oturumları ve MCP bağlantı yönetimi, SSE streaming chat.",
+    "error_format": "{ status: number, code: string, message: string, details?: any }",
+    "rate_limiting": "Public: 300/dk | Auth: 100/dk | Chat/Stream: 30/dk/kullanıcı",
+    "global_rules": {
+      "pagination": "Tüm liste endpoint'leri ?page=&limit= (default 20, max 100) destekler.",
+      "streaming": "SSE endpoint'ler Content-Type: text/event-stream header'ı ile çalışır. Bağlantı koparsa exponential backoff ile reconnect.",
+      "model_selection": "Tüm chat ve workflow endpoint'leri ?model= parametresi ile AI model seçimini destekler."
+    }
+  },
+  "endpoints": {
+    "public": {
+      "GET /api/health": "Sistem sağlık durumu ve bağlı servislerin (LLM API, MCP sunucuları) durumunu döndürür.",
+      "GET /api/models": "Kullanılabilir AI modellerin listesi. Her model için: id, name, provider, maxTokens, pricing bilgisi. Query: ?provider=openai|anthropic|google.",
+      "GET /api/models/{id}": "Belirli bir AI modelin detay bilgisi: yetenekler (vision, tool_calling, streaming), bağlam penceresi, desteklenen diller."
+    },
+    "auth": {
+      "POST /api/sessions": "Yeni chat oturumu oluşturur. Body: { title?, modelId?, systemPrompt? }. Oturum ID ve başlangıç bağlamı döndürür.",
+      "GET /api/sessions": "Kullanıcının tüm chat oturumlarını listeler. Sıralama: -updatedAt. Query: ?search.",
+      "GET /api/sessions/{id}": "Oturum detayı ve tüm mesaj geçmişi (sayfalı).",
+      "PATCH /api/sessions/{id}": "Oturum bilgilerini günceller. Body: { title?, systemPrompt?, isArchived? }.",
+      "DELETE /api/sessions/{id}": "Oturumu ve tüm mesajlarını kalıcı olarak siler.",
+      "POST /api/sessions/{id}/messages": "Oturuma yeni kullanıcı mesajı gönderir ve AI yanıtını alır (sync). Body: { content, attachments?: [{ type, url, name }], model? }.",
+      "POST /api/sessions/{id}/chat": "Oturuma mesaj gönderir ve SSE stream olarak AI yanıtını alır. Body: { content, attachments?: [], model?, temperature?, maxTokens? }. Response: text/event-stream. Event tipleri: token, tool_call, tool_result, error, done.",
+      "POST /api/upload": "Chat'e dosya yükler (görsel, PDF, kod dosyası). Multipart: { file, sessionId? }. Döndürür: { id, url, type, name, size }.",
+      "POST /api/workflows": "Yeni workflow şablonu oluşturur. Body: { title, description, steps: [{ type, config }] }.",
+      "GET /api/workflows": "Kullanıcının workflow şablonlarını listeler.",
+      "GET /api/workflows/{id}": "Workflow detayı ve adımları.",
+      "PUT /api/workflows/{id}": "Workflow günceller.",
+      "DELETE /api/workflows/{id}": "Workflow siler.",
+      "POST /api/workflows/{id}/execute": "Workflow'u çalıştırır. Body: { inputs: {}, model?, stream?: boolean }. SSE stream desteği.",
+      "GET /api/workflows/{id}/runs": "Workflow çalıştırma geçmişi. Query: ?status=success|failed|running.",
+      "GET /api/workflows/runs/{runId}": "Workflow çalıştırma detayı ve adım sonuçları.",
+      "POST /api/mcp/connections": "MCP sunucu bağlantısı ekler. Body: { name, transport: 'stdio'|'sse', config: { command?, args?, url?, headers? } }.",
+      "GET /api/mcp/connections": "Kullanıcının MCP bağlantılarını listeler. Her bağlantı için: id, name, transport, status (connected|disconnected|error).",
+      "GET /api/mcp/connections/{id}": "MCP bağlantı detayı ve sunucunun sunduğu tool/resource listesi.",
+      "PUT /api/mcp/connections/{id}": "MCP bağlantı yapılandırmasını günceller.",
+      "DELETE /api/mcp/connections/{id}": "MCP bağlantısını siler.",
+      "POST /api/mcp/connections/{id}/reconnect": "MCP bağlantısını yeniden başlatır.",
+      "GET /api/mcp/connections/{id}/tools": "MCP sunucusunun sunduğu tool listesini döndürür (canlı sorgu)."
+    }
+  }
+}

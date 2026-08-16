@@ -1,0 +1,6 @@
+<!-- PURPOSE OF THIS FILE: SEO — arama motoru tarama talimatları -->
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: {{API_BASE_URL}}/sitemap.xml

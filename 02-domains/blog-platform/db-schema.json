@@ -1,0 +1,205 @@
+{
+  "_meta": {
+    "description": "Blog Platformu veritabanı şeması. Post, kategori hiyerarşisi, etiket, yorum moderasyonu, SEO metadata, medya, bülten aboneliği ve denetim modellerini içerir. Okuma ağırlıklı iş yükü için denormalize sayaçlar (postCount, commentCount, viewCount) optimize edilmiştir."
+  },
+  "models": {
+    "User": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "username": "String (Unique, Index)",
+        "displayName": "String (Nullable, UI'da gösterilen ad, boşsa username kullanılır)",
+        "email": "String (Unique, Index)",
+        "emailVerified": "Boolean (Default: false)",
+        "hashedPassword": "String",
+        "role": "Enum (admin, author, subscriber) (Default: subscriber)",
+        "bio": "Text (Nullable, max 500 karakter)",
+        "avatarUrl": "String (Nullable)",
+        "website": "String (Nullable, yazar web sitesi)",
+        "socialLinks": "JSONB (Nullable, { twitter?, linkedin?, github? })",
+        "failedLoginAttempts": "Int (Default: 0, brute force koruması)",
+        "lockedUntil": "DateTime (Nullable, hesap kilit açılma zamanı)",
+        "lastLoginAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["username", "email", "role", "lockedUntil"],
+      "note": "role hiyerarşisi: admin > author > subscriber > unregistered. author günde max 20 post. 5 başarısız giriş → 15 dakika hesap kilidi."
+    },
+    "Post": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "authorId": "UUID (Foreign Key → User.id, Index)",
+        "title": "String (max 300 karakter)",
+        "slug": "String (Unique, Index, URL dostu)",
+        "content": "JSONB (Blok-tabanlı editör verisi: [{ type, data }])",
+        "contentPlain": "Text (Arama için düz metin ekstraksiyonu, otomatik oluşturulur)",
+        "excerpt": "String (Nullable, max 500 karakter, boşsa otomatik üretilir)",
+        "featuredImage": "String (Nullable, CDN URL)",
+        "featuredImageAlt": "String (Nullable, erişilebilirlik için alt metin)",
+        "status": "Enum (draft, published, scheduled, archived) (Default: draft)",
+        "isFeatured": "Boolean (Default: false)",
+        "viewCount": "Int (Default: 0, denormalize)",
+        "commentCount": "Int (Default: 0, denormalize, sadece approved yorumlar)",
+        "readingTime": "Int (Nullable, dakika, ortalama okuma süresi)",
+        "allowComments": "Boolean (Default: true)",
+        "publishedAt": "DateTime (Nullable, published veya scheduled olduğunda doldurulur)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "authorId", "isFeatured", "(status, publishedAt DESC)", "(status, viewCount DESC)"],
+      "note": "status=scheduled ve publishedAt <= NOW() olan post'lar cron job ile published yapılır. post silindiğinde many-to-many tabloları cascade silinir. viewCount asenkron güncellenir (Redis → DB, her 5 dakikada flush)."
+    },
+    "SeoMetadata": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "postId": "UUID (Foreign Key → Post.id, ON DELETE CASCADE, UNIQUE, Index)",
+        "metaTitle": "String (Nullable, max 70 karakter, boşsa post.title)",
+        "metaDescription": "String (Nullable, max 160 karakter, boşsa post.excerpt)",
+        "canonicalUrl": "String (Nullable, farklı domain'de yayınlanan içerikler için)",
+        "ogTitle": "String (Nullable, Open Graph başlığı)",
+        "ogDescription": "String (Nullable, Open Graph açıklaması)",
+        "ogImageUrl": "String (Nullable, 1200x630 önerilir)",
+        "ogType": "String (Default: 'article')",
+        "twitterCard": "Enum (summary, summary_large_image) (Default: summary_large_image)",
+        "noIndex": "Boolean (Default: false)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["postId"],
+      "note": "OG/Twitter tag'leri SSR sırasında <head> içine render edilir. noIndex=true → noindex, nofollow. JSON-LD Article şeması otomatik oluşturulur."
+    },
+    "PostCategory": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "postId": "UUID (Foreign Key → Post.id, ON DELETE CASCADE)",
+        "categoryId": "UUID (Foreign Key → Category.id, ON DELETE CASCADE)",
+        "isPrimary": "Boolean (Default: false, breadcrumbs ve canonical URL için)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(postId, categoryId) UNIQUE", "postId", "categoryId", "isPrimary"],
+      "note": "İlk atanan kategori isPrimary=true. Bir post'un sadece bir primary kategorisi olabilir."
+    },
+    "PostTag": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "postId": "UUID (Foreign Key → Post.id, ON DELETE CASCADE)",
+        "tagId": "UUID (Foreign Key → Tag.id, ON DELETE CASCADE)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(postId, tagId) UNIQUE", "postId", "tagId"],
+      "note": "Post başına maksimum 10 etiket. Tag.postCount bu tablodan denormalize edilir."
+    },
+    "Category": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (max 100 karakter)",
+        "slug": "String (Unique, Index, lowercase+kebab-case, Türkçe→ASCII dönüşümü)",
+        "description": "Text (Nullable, max 500 karakter)",
+        "parentId": "UUID (Nullable, Foreign Key → Category.id, self-relation)",
+        "depth": "Int (Default: 0, denormalize, 0-4 arası)",
+        "postCount": "Int (Default: 0, denormalize)",
+        "sortOrder": "Int (Default: 0, sıralama)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["slug", "parentId", "depth", "sortOrder"],
+      "note": "Maksimum derinlik: 5 seviye (depth 0-4). Döngüsel referans engeli: parentId atamadan önce derinlik validasyonu. Silindiğinde alt kategoriler parentId=deleted.parentId. Post'lar silinmez, PostCategory kayıtları cascade silinir."
+    },
+    "Tag": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "name": "String (max 50 karakter)",
+        "slug": "String (Unique, Index, normalize edilmiş, özel karakterler temizlenmiş)",
+        "postCount": "Int (Default: 0, denormalize)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["slug", "postCount", "name"],
+      "note": "Agresif normalizasyon: trim, lowercase, özel karakter temizleme. 'AI', 'aI', 'ai ' → 'ai'. postCount=0 olanlar haftalık cron job ile temizlenir. Maksimum 50 karakter, aşım → 400."
+    },
+    "Comment": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "postId": "UUID (Foreign Key → Post.id, ON DELETE CASCADE, Index)",
+        "parentCommentId": "UUID (Nullable, Foreign Key → Comment.id, iç içe yorumlar (max 3 seviye))",
+        "authorId": "UUID (Nullable, Foreign Key → User.id, kayıtlı kullanıcı)",
+        "authorName": "String (Anonim için zorunlu, kayıtlı kullanıcı için displayName'den kopyalanır)",
+        "email": "String (Anonim için zorunlu, moderasyon/yanıt bildirimi, UI'da gösterilmez)",
+        "website": "String (Nullable, anonim kullanıcı web sitesi, nofollow link)",
+        "ipAddress": "String (Spam/rate limit için)",
+        "content": "Text (max 5000 karakter)",
+        "contentHtml": "Text (Nullable, Markdown→HTML, DOMPurify sanitize)",
+        "status": "Enum (pending, approved, spam, rejected) (Default: pending)",
+        "userAgent": "String (Nullable)",
+        "moderatedBy": "UUID (Nullable, Foreign Key → User.id, moderasyonu yapan)",
+        "moderatedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime",
+        "updatedAt": "DateTime"
+      },
+      "indexes": ["postId", "parentCommentId", "status", "authorId", "ipAddress", "(postId, status)", "createdAt DESC"],
+      "note": "parentCommentId ile iç içe yorum (max 3 seviye). status=approved → Post.commentCount artar. spam olanlar 30 gün sonra cron job ile silinir. Aynı IP → 30 saniyede 1 yorum. %90 benzer içerik → duplicate → rejected."
+    },
+    "Media": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "fileName": "String (Orijinal dosya adı)",
+        "storageKey": "String (S3 object key)",
+        "mimeType": "String",
+        "sizeBytes": "Int",
+        "width": "Int (Nullable, görsel boyutu)",
+        "height": "Int (Nullable, görsel boyutu)",
+        "variants": "JSONB ({ large?, medium?, thumbnail? } → CDN URL'ler)",
+        "altText": "String (Nullable, erişilebilirlik)",
+        "isUsed": "Boolean (Default: true, bir post'ta kullanılıyor mu)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "isUsed", "createdAt DESC"],
+      "note": "Desteklenen: JPG, PNG, GIF, WEBP, SVG (sanitize). Maksimum 5 MB. Otomatik resize: large (1200px), medium (600px), thumbnail (150px). isUsed=false ve 90 günlük → cron job ile silinir. EXIF veri temizleme yapılır."
+    },
+    "NewsletterSubscription": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "email": "String (Unique, Index)",
+        "userId": "UUID (Nullable, Foreign Key → User.id)",
+        "status": "Enum (pending_confirmation, active, unsubscribed) (Default: pending_confirmation)",
+        "preferences": "JSONB ({ categories?: UUID[], frequency: 'all'|'weekly'|'monthly', includeFeatured: boolean })",
+        "confirmationToken": "String (Nullable, double opt-in JWT)",
+        "confirmedAt": "DateTime (Nullable)",
+        "unsubscribedAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["email", "userId", "status"],
+      "note": "Double opt-in: 24 saat içinde onaylanmazsa kayıt silinir. unsubscribe link JWT token içerir, tek tıkla çıkış. Toplu gönderim: batch 50, saatte max 500."
+    },
+    "Notification": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Foreign Key → User.id, Index)",
+        "type": "Enum (comment_reply, comment_approved, post_published, post_featured, newsletter)",
+        "title": "String",
+        "message": "Text",
+        "entityType": "String (Nullable, 'post', 'comment')",
+        "entityId": "UUID (Nullable)",
+        "isRead": "Boolean (Default: false)",
+        "readAt": "DateTime (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["(userId, isRead, createdAt DESC)", "(userId, type)"],
+      "note": "In-app bildirimler. comment_reply: bir kullanıcının yorumuna yanıt geldiğinde. E-posta bildirimleri newsletter sistemi üzerinden gönderilir."
+    },
+    "AuditLog": {
+      "fields": {
+        "id": "UUID (Primary Key)",
+        "userId": "UUID (Nullable, Foreign Key → User.id, Index)",
+        "action": "String (örn: 'post.create', 'post.update', 'post.delete', 'post.publish', 'comment.moderate', 'category.create', 'tag.delete', 'user.role_change', 'settings.update')",
+        "entityType": "String",
+        "entityId": "UUID",
+        "details": "JSONB (Nullable, { changes?: {}, reason?: string })",
+        "ipAddress": "String (Nullable)",
+        "createdAt": "DateTime"
+      },
+      "indexes": ["userId", "action", "(entityType, entityId)", "createdAt DESC"],
+      "note": "90 gün saklanır. Post içeriği loglanmaz, sadece metadata (title, status değişikliği)."
+    }
+  }
+}

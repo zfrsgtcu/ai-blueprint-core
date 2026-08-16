@@ -1,0 +1,147 @@
+{
+  "_meta": {
+    "description": "Monitoring ve gözlemlenebilirlik (observability) stack tanımları. AI ajanları Prometheus, Grafana, Loki, ELK Stack konfigürasyonlarını bu manifest'teki kurallara göre üretir.",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_options": {
+    "lightweight": {
+      "label": "Hafif Monitoring (Küçük/Orta Ölçekli Projeler)",
+      "components": ["prometheus", "grafana", "loki"],
+      "description": "Tek sunuculu deployment'lar için idealdir. docker-compose ile tek komutta kurulur."
+    },
+    "enterprise": {
+      "label": "Enterprise Monitoring (Büyük Ölçekli Projeler)",
+      "components": ["prometheus", "grafana", "loki", "promtail", "alertmanager"],
+      "description": "Çok servisli, yüksek trafikli sistemler için. Alertmanager ile kritik olaylarda bildirim gönderir."
+    },
+    "elk": {
+      "label": "ELK Stack (Log Ağırlıklı)",
+      "components": ["elasticsearch", "logstash", "kibana", "filebeat"],
+      "description": "Log analizi ve full-text search öncelikli monitoring."
+    }
+  },
+
+  "components": {
+    "prometheus": {
+      "image": "prom/prometheus:v2.52.0",
+      "port": 9090,
+      "config_file": "prometheus.yml",
+      "config_path": "./monitoring/prometheus/",
+      "scrape_interval": "15s",
+      "evaluation_interval": "15s",
+      "retention": "15d",
+      "targets": {
+        "frontend": { "port": "frontend_port", "path": "/metrics" },
+        "backend": { "port": "backend_port", "path": "/metrics" },
+        "node_exporter": { "port": 9100, "path": "/metrics" },
+        "cadvisor": { "port": 8080, "path": "/metrics" }
+      }
+    },
+    "grafana": {
+      "image": "grafana/grafana:11.0.0",
+      "port": 3000,
+      "admin_user": "admin",
+      "datasources": ["prometheus", "loki"],
+      "provisioning_path": "./monitoring/grafana/",
+      "default_dashboards": [
+        "Node Exporter Full (ID: 1860)",
+        "Docker Monitoring (ID: 193)",
+        "ASP.NET Core (ID: 19924)",
+        "Next.js / Nuxt.js (ID: custom)"
+      ]
+    },
+    "loki": {
+      "image": "grafana/loki:3.0.0",
+      "port": 3100,
+      "config_file": "loki-config.yaml",
+      "retention": "30d"
+    },
+    "promtail": {
+      "image": "grafana/promtail:3.0.0",
+      "config_file": "promtail-config.yaml",
+      "log_paths": ["/var/log/containers/*.log", "/var/log/app/*.log"]
+    },
+    "alertmanager": {
+      "image": "prom/alertmanager:v0.27.0",
+      "port": 9093,
+      "config_file": "alertmanager.yml",
+      "notifications": ["email", "slack", "discord", "teams"]
+    },
+    "node_exporter": {
+      "image": "quay.io/prometheus/node-exporter:v1.8.0",
+      "port": 9100,
+      "description": "Host sistem metrikleri (CPU, RAM, Disk, Network)"
+    },
+    "cadvisor": {
+      "image": "gcr.io/cadvisor/cadvisor:v0.49.1",
+      "port": 8080,
+      "description": "Container bazlı metrik toplama"
+    }
+  },
+
+  "elastic_stack": {
+    "elasticsearch": {
+      "image": "docker.elastic.co/elasticsearch/elasticsearch:8.13.0",
+      "port": 9200,
+      "heap_size": "512m"
+    },
+    "logstash": {
+      "image": "docker.elastic.co/logstash/logstash:8.13.0",
+      "port": 5044
+    },
+    "kibana": {
+      "image": "docker.elastic.co/kibana/kibana:8.13.0",
+      "port": 5601
+    },
+    "filebeat": {
+      "image": "docker.elastic.co/beats/filebeat:8.13.0",
+      "log_paths": ["/var/lib/docker/containers/**/*.log"]
+    }
+  },
+
+  "alert_rules": {
+    "critical": {
+      "service_down": {
+        "expr": "up == 0",
+        "for": "1m",
+        "severity": "critical",
+        "summary": "{{ $labels.instance }} servisi DOWN"
+      },
+      "high_error_rate": {
+        "expr": "rate(http_requests_total{status=~\"5..\"}[5m]) > 0.05",
+        "for": "5m",
+        "severity": "critical",
+        "summary": "5xx hata oranı %5'i aştı"
+      },
+      "high_response_time": {
+        "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1",
+        "for": "5m",
+        "severity": "warning",
+        "summary": "p95 yanıt süresi 1 saniyeyi aştı"
+      }
+    },
+    "warning": {
+      "high_cpu": {
+        "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100) > 80",
+        "for": "10m",
+        "severity": "warning",
+        "summary": "CPU kullanımı %80'i aştı"
+      },
+      "high_memory": {
+        "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85",
+        "for": "10m",
+        "severity": "warning",
+        "summary": "RAM kullanımı %85'i aştı"
+      },
+      "disk_almost_full": {
+        "expr": "(node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15",
+        "for": "5m",
+        "severity": "warning",
+        "summary": "Disk alanı %15'in altına düştü"
+      }
+    }
+  }
+}

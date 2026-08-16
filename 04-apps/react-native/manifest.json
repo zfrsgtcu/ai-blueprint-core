@@ -1,0 +1,153 @@
+{
+  "_meta": {
+    "description": "React Native (Expo SDK 51+) stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. React Native: JavaScript/TypeScript ile iOS ve Android cross-platform mobil uygulamalar.",
+    "stack": "react-native",
+    "display_name": "React Native (Expo)",
+    "type": "cross_platform_mobile",
+    "language": "TypeScript (React Native)",
+    "version": "expo-sdk-51",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "React Native + Expo SDK 51+",
+    "description": "JavaScript/TypeScript ile iOS ve Android için cross-platform native mobil uygulama. Expo managed workflow (tercih edilen) veya bare workflow. React Navigation, AsyncStorage, Expo SQLite ile tam teşekküllü mobil çözüm. Web ve mobil aynı React ekosisteminde.",
+    "use_cases": [
+      "E-Ticaret mobil uygulaması",
+      "Sosyal medya uygulaması",
+      "Booking / Rezervasyon uygulaması",
+      "Fitness / Sağlık uygulaması",
+      "Lojistik takip",
+      "MVP / Prototip mobil"
+    ],
+    "paired_backend": "node-express",
+    "not_suitable_for": [
+      "Ağır native API bağımlılığı (bare workflow gerekir)",
+      "3D/AR/VR uygulamalar (Unity/Unreal daha uygun)",
+      "Yüksek performans gerektiren oyunlar"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceMobile" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case, Expo slug)", "example": "ecommerce-mobile" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Mobil e-ticaret uygulaması" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "api_integration": [
+      { "key": "{{API_BASE_URL}}", "description": "Backend API base URL", "example": "https://api.example.com" }
+    ],
+    "deployment": [
+      { "key": "{{BUNDLE_ID}}", "description": "iOS bundle identifier", "example": "com.company.ecommerce" },
+      { "key": "{{PACKAGE_NAME}}", "description": "Android package name", "example": "com.company.ecommerce" },
+      { "key": "{{EXPO_SLUG}}", "description": "Expo proje slug", "example": "ecommerce-mobile" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "React Native (Expo) projesinin zorunlu dizin yapısı",
+    "directories": {
+      "app/": "Expo Router — file-based routing (tabs, stack, modal)",
+      "components/": "Reusable UI component'leri",
+      "hooks/": "Custom React hook'lar",
+      "services/": "API client, storage, auth servisleri",
+      "stores/": "State management (Zustand store'lar)",
+      "types/": "TypeScript tip tanımları",
+      "assets/": "Resimler, fontlar, ikonlar"
+    },
+    "files": {
+      "app/_layout.tsx": "Root layout — providers, navigation container",
+      "app/index.tsx": "Ana sayfa (giriş noktası)",
+      "app.json": "Expo konfigürasyonu (name, slug, icon, splash)",
+      "package.json": "Bağımlılıklar ve script'ler",
+      "tsconfig.json": "TypeScript konfigürasyonu",
+      "babel.config.js": "Babel konfigürasyonu"
+    }
+  },
+
+  "entry_point": "app/_layout.tsx",
+  "config_file": "app.json",
+
+  "dependencies": {
+    "core": [
+      { "package": "expo", "version": "~51.0.0" },
+      { "package": "react", "version": "18.2.*" },
+      { "package": "react-native", "version": "0.74.*" },
+      { "package": "expo-router", "version": "~3.5.0" }
+    ],
+    "navigation": [
+      { "package": "@react-navigation/native", "version": "^6.1.0" },
+      { "package": "react-native-screens", "version": "~3.31.0" },
+      { "package": "react-native-safe-area-context", "version": "4.10.*" }
+    ],
+    "state": [
+      { "package": "zustand", "version": "^4.5.0", "use_case": "Lightweight state management" }
+    ],
+    "storage": [
+      { "package": "@react-native-async-storage/async-storage", "version": "1.23.*" },
+      { "package": "expo-secure-store", "version": "~13.0.0", "use_case": "Token depolama" }
+    ],
+    "ui": [
+      { "package": "react-native-reanimated", "version": "~3.10.0", "use_case": "Animasyon" },
+      { "package": "expo-vector-icons", "version": "~14.0.0", "use_case": "İkon seti (@expo/vector-icons)" }
+    ],
+    "dev": [
+      { "package": "typescript", "version": "~5.5.0" },
+      { "package": "@types/react", "version": "~18.2.0" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "expo_router": {
+      "description": "Expo Router — file-based routing, React Navigation'in üzerinde",
+      "rule": "app/ altında _layout.tsx ve page.tsx dosyaları. Tabs, Stack, Modal routing desteklenir"
+    },
+    "zustand_stores": {
+      "description": "Zustand ile hafif state management",
+      "rule": "Store'lar feature-based organize edilmeli, stores/ altında"
+    },
+    "api_client": {
+      "description": "fetch tabanlı API client, token yönetimi ile",
+      "rule": "services/api.ts singleton, interceptor ile auth token ekleme"
+    },
+    "offline_support": {
+      "description": "AsyncStorage ile cache, bağlantı kontrolü",
+      "rule": "NetInfo ile bağlantı durumu, AsyncStorage ile cache"
+    }
+  },
+
+  "deployment": {
+    "expo_go": "Expo Go ile development/test",
+    "eas_build": "EAS Build ile production .apk/.ipa",
+    "google_play": "Google Play Store (.aab)",
+    "apple_store": "Apple App Store (.ipa)",
+    "build_command": "eas build --platform all --profile production",
+    "health_check": "N/A — mobil uygulama"
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Expo Router dizin yapısını (app/) kopyala",
+      "app.json, tsconfig.json, babel.config.js yapısını koru",
+      "services/api.ts API client yapısını koru",
+      "Core dependencies'i package.json'a ekle"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Örnek sayfaları aynen bırakma — domain logic'e göre uyarla",
+      "API base URL'i varsayılan değerde bırakma"
+    ],
+    "customize_for_domain": [
+      "app/ (tabs)/ → Tab navigasyon yapısını belirle",
+      "app/{{model_names}}/ → entity CRUD sayfaları",
+      "components/ → reusable UI component'ler (Card, ListItem, FormField)",
+      "services/api.ts → API endpoint'lerini ekle",
+      "stores/ → domain entity store'ları (Zustand)",
+      "hooks/ → custom hook'lar (useProducts, useAuth)",
+      "types/ → domain entity tipleri"
+    ]
+  }
+}

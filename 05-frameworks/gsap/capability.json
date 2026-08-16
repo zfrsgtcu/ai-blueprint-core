@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "description": "GSAP Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. GreenSock Animation Platform, yüksek performanslı web animasyon kütüphanesi.",
+    "resource_type": "ui-lib",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "gsap",
+  "category": "ui-lib",
+  "display_name": "GSAP (GreenSock Animation Platform)",
+  "description": "Endüstri standardı yüksek performanslı JavaScript animasyon kütüphanesi. ScrollTrigger, Flip, Observer, MotionPath plugin'leri ile zengin etkileşimli animasyonlar. Canvas/WebGL değil DOM animasyonu için optimize edilmiştir.",
+
+  "installation_context": {
+    "react": {
+      "npm": ["gsap"],
+      "npm_dev": [],
+      "react_hook": "useGSAP() — gsap.context() ile cleanup otomatik",
+      "entry_point": "useLayoutEffect / useGSAP hook içinde"
+    },
+    "vue": {
+      "npm": ["gsap"],
+      "npm_dev": [],
+      "entry_point": "onMounted() içinde, onUnmounted() ile kill",
+      "vue_use": "@vueuse/core — useRafFn ile frame-sync"
+    },
+    "html": {
+      "cdn": "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js\"></script>",
+      "cdn_scrolltrigger": "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js\"></script>"
+    }
+  },
+
+  "config_template": "integration_template/gsap-animation.template",
+  "usage_pattern": "GSAP timeline ile animasyon sekansları oluşturulur. React'te gsap.context() veya useGSAP() hook ile yaşam döngüsü yönetilir. `prefers-reduced-motion` kontrolü her animasyonda zorunludur.",
+
+  "verification_steps": [
+    "GSAP kurulumu tamamlandı mı? (gsap + ScrollTrigger)",
+    "React'te useGSAP() veya gsap.context() kullanılıyor mu?",
+    "Tüm animasyonlarda prefers-reduced-motion kontrolü var mı?",
+    "Cleanup (kill/reset) onUnmounted'da yapılıyor mu?",
+    "ScrollTrigger varsa refresh() çağrılıyor mu?",
+    "Performans: will-change veya GPU-accelerated transform kullanılıyor mu? (x, y, opacity, scale)"
+  ]
+}

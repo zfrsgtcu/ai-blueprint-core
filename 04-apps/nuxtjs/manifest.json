@@ -1,0 +1,141 @@
+{
+  "_meta": {
+    "description": "Nuxt.js 3.x stack manifesti — AI'nın bu stack hakkında bilmesi gereken teknik kısıtlar, dizin yapısı, gerekli değişkenler ve deployment kuralları. Nuxt.js: Vue 3 tabanlı, SSR/SSG destekli, Pinia state yönetimli interaktif web uygulamaları.",
+    "stack": "nuxtjs",
+    "display_name": "Nuxt.js",
+    "type": "ssr_ssg_frontend",
+    "language": "TypeScript (Vue 3)",
+    "version": "^3.12.0",
+    "lock_policy": "strict",
+    "last_updated": "2026-07-20",
+    "blueprint_version": "1.0.0"
+  },
+
+  "stack_info": {
+    "framework": "Nuxt.js 3",
+    "description": "Vue 3 Composition API tabanlı, SSR/SSG hibrit rendering, auto-imports, file-based routing, server routes ve Pinia state yönetimi ile tam teşekküllü web uygulamaları. Nuxt 3, Nitro server engine ile serverless deployment'a hazırdır.",
+    "use_cases": [
+      "E-Ticaret frontend",
+      "SaaS dashboard",
+      "LMS (E-Öğrenme) platformu",
+      "Booking / Randevu sistemi",
+      "Sınıflandırılmış ilan platformu",
+      "Admin panel",
+      "Multi-tenant CRM"
+    ],
+    "paired_backend": "netwebapi",
+    "not_suitable_for": [
+      "Tamamen statik kurumsal siteler (Astro.js daha uygun)",
+      "Sadece landing page'ler (Astro.js daha uygun)"
+    ]
+  },
+
+  "required_variables": {
+    "project": [
+      { "key": "{{ProjectName}}", "description": "Proje adı (PascalCase)", "example": "ECommerceApp" },
+      { "key": "{{project-name}}", "description": "Proje adı (kebab-case)", "example": "ecommerce-app" },
+      { "key": "{{Description}}", "description": "Proje açıklaması (Türkçe)", "example": "Kurumsal e-ticaret platformu" },
+      { "key": "{{DomainName}}", "description": "Domain adı (PascalCase)", "example": "Ecommerce" }
+    ],
+    "api_integration": [
+      { "key": "{{API_BASE_URL}}", "description": "Backend API base URL", "example": "https://api.example.com" }
+    ],
+    "deployment": [
+      { "key": "{DOMAIN}", "description": "Production domain", "example": "example.com" }
+    ]
+  },
+
+  "directory_structure": {
+    "description": "Nuxt.js 3 projesinin zorunlu dizin yapısı",
+    "directories": {
+      "pages/": "Sayfa component'leri (.vue) — file-based routing",
+      "components/": "UI component'leri (PascalCase.vue)",
+      "composables/": "Paylaşılan composable'lar (use*.ts) — auto-import",
+      "stores/": "Pinia store dosyaları (*.store.ts)",
+      "server/api/": "Nitro server API routes (*.ts)",
+      "public/": "Statik asset'ler (resimler, fontlar, favicon)",
+      "layouts/": "Layout component'leri (opsiyonel)",
+      "middleware/": "Route middleware'leri (opsiyonel)"
+    },
+    "files": {
+      "nuxt.config.ts": "Nuxt konfigürasyonu — modules, runtimeConfig, css, app",
+      "app.vue": "Ana uygulama component'i (root)",
+      "tailwind.config.js": "TailwindCSS konfigürasyonu",
+      "tsconfig.json": "TypeScript konfigürasyonu",
+      "package.json": "Bağımlılıklar ve script'ler",
+      "pages/index.vue": "Ana sayfa (giriş noktası)"
+    }
+  },
+
+  "entry_point": "app.vue",
+  "config_file": "nuxt.config.ts",
+
+  "dependencies": {
+    "core": [
+      { "package": "nuxt", "version": "^3.12.0" },
+      { "package": "vue", "version": "^3.5.0" },
+      { "package": "@pinia/nuxt", "version": "^2.1.7" }
+    ],
+    "styling": [
+      { "package": "@nuxtjs/tailwindcss", "version": "^6.12.0" }
+    ],
+    "optional_ui": [
+      { "package": "gsap", "version": "^3.12.5", "use_case": "Animasyon" },
+      { "package": "swiper", "version": "^11.1.0", "use_case": "Slider/karusel" },
+      { "package": "@iconify/vue", "version": "^4.1.0", "use_case": "İkon seti" }
+    ],
+    "optional_seo": [
+      { "package": "@nuxt/image", "version": "^1.7.0", "use_case": "Resim optimizasyonu" },
+      { "package": "@nuxtjs/google-fonts", "version": "^3.2.0", "use_case": "Google Fonts" }
+    ]
+  },
+
+  "architecture_patterns": {
+    "composition_api": {
+      "description": "Vue 3 Composition API ile component geliştirme",
+      "rule": "Options API kullanılmamalı, tüm component'ler `<script setup>` ile yazılmalı"
+    },
+    "auto_imports": {
+      "description": "Nuxt 3, components/ ve composables/ altındaki dosyaları otomatik import eder",
+      "rule": "Manuel import yazma — auto-import'a güven"
+    },
+    "server_routes": {
+      "description": "Nitro server engine ile /server/api/ altında API endpoint'leri",
+      "rule": "Backend proxy veya lightweight BFF (Backend for Frontend) için kullanılabilir"
+    },
+    "pinia_stores": {
+      "description": "Pinia ile global state yönetimi",
+      "rule": "Store'lar feature-based organize edilmeli, component içinde tanımlanmamalı"
+    }
+  },
+
+  "deployment": {
+    "primary": "Vercel",
+    "build_command": "nuxt build",
+    "output_directory": ".output/",
+    "nitro_presets": {
+      "vercel": "Vercel serverless functions",
+      "node-server": "Node.js sunucusu (Azure Container Apps)",
+      "static": "Tamamen statik (SPA/SSG)"
+    }
+  },
+
+  "ai_generation_hints": {
+    "do_copy": [
+      "Dizin yapısını olduğu gibi kopyala",
+      "nuxt.config.ts, tailwind.config.js, tsconfig.json'ı kopyala (projeye göre özelleştir)",
+      "Core dependencies'i package.json'a ekle"
+    ],
+    "do_not_copy": [
+      "{{Placeholder}}'ları değiştirmeden kopyalama",
+      "Template'teki örnek sayfaları aynen kopyalama — domain logic'e göre uyarla",
+      "app.vue'da NuxtWelcome component'ini bırakma"
+    ],
+    "customize_for_domain": [
+      "pages/index.vue → domain'in ana sayfasına uygun içerikle doldur",
+      "composables/ → API çağrıları için useFetch wrapper'lar oluştur",
+      "stores/ → domain entity'lerine göre Pinia store'lar oluştur",
+      "server/api/ → BFF proxy endpoint'leri veya lightweight API route'ları ekle"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+<!-- PURPOSE OF THIS FILE: Navigasyon menüsü — üst bar link'leri. Sayfa bazında active state. -->
+<nav class="flex items-center gap-6">
+    <NavLink href="/" Match="NavLinkMatch.All" class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
+        Ana Sayfa
+    </NavLink>
+    <NavLink href="/{{model_names}}" Match="NavLinkMatch.Prefix" class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
+        {{ModelName}}s
+    </NavLink>
+    @* Domain entity'leri için NavLink'ler buraya eklenir *@
+</nav>

@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "description": "Tailwind CSS Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. Utility-first CSS framework.",
+    "resource_type": "ui-lib",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "tailwindcss",
+  "category": "ui-lib",
+  "display_name": "Tailwind CSS",
+  "description": "Utility-first CSS framework. Tasarım sistemini HTML class'ları ile ifade eder. Custom CSS yazmadan responsive, dark mode, state variants (hover, focus, active). Design token'lar `tailwind.config.js` ile merkezi olarak yönetilir.",
+
+  "installation_context": {
+    "react": {
+      "npm": ["tailwindcss @tailwindcss/vite"],
+      "npm_dev": [],
+      "setup_commands": ["npx tailwindcss init -p"],
+      "entry_point": "src/index.css (@import 'tailwindcss')",
+      "postcss_plugin": "@tailwindcss/vite ile Vite eklentisi",
+      "cli_version": "v4 (2026)"
+    },
+    "vue": {
+      "npm": ["tailwindcss @tailwindcss/vite"],
+      "npm_dev": [],
+      "entry_point": "src/assets/main.css (@import 'tailwindcss')",
+      "postcss_plugin": "@tailwindcss/vite ile Vite eklentisi"
+    },
+    "html": {
+      "cdn": "<script src=\"https://cdn.tailwindcss.com\"></script>",
+      "cdn_note": "CDN sadece prototip/dev içindir. Production'da build aşaması zorunludur.",
+      "production": "Standalone CLI: npx @tailwindcss/cli -i input.css -o output.css --minify"
+    }
+  },
+
+  "config_template": "integration_template/tailwind-config.template",
+  "usage_pattern": "HTML element'lerine doğrudan class verilir. Responsive: `sm:`, `md:`, `lg:`, `xl:` prefix'leri. Dark mode: `dark:` prefix. Custom tasarım token'ları config'de `theme.extend` ile genişletilir.",
+
+  "verification_steps": [
+    "tailwind.config.js (.ts) var mı? Design token'lar tanımlanmış mı?",
+    "Vite/Webpack'te @tailwindcss/vite eklentisi kurulu mu?",
+    "index.css'te @import 'tailwindcss' var mı?",
+    "Responsive breakpoint'ler proje gereksinimlerine uygun mu?",
+    "Dark mode desteği (class veya media stratejisi) belirlendi mi?",
+    "Production build'de unused CSS purge çalışıyor mu?",
+    "Typography, spacing, colors — tasarım token'ları marka rehberiyle tutarlı mı?"
+  ],
+
+  "docker_compose_requirement": {
+    "note": "Tailwind CSS build-time tool'dur, docker-compose servisi GEREKTİRMEZ. Derleme Dockerfile'ın build aşamasında gerçekleşir."
+  }
+}

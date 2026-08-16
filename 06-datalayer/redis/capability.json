@@ -1,0 +1,52 @@
+{
+  "_meta": {
+    "description": "Redis Capability Manifest — AI ajanının bu kaynağı projeye nasıl entegre edeceğini tanımlar. In-memory cache, session store, pub/sub, rate limiter.",
+    "resource_type": "data-layer",
+    "last_updated": "2026-07-20"
+  },
+
+  "name": "redis",
+  "category": "data-layer",
+  "display_name": "Redis",
+  "description": "In-memory veri yapısı deposu. Cache (String, Hash), pub/sub mesajlaşma, oturum yönetimi, rate limiting, job queue. Sub-millisecond latency, atomic işlemler (INCR, SETNX, LPUSH).",
+
+  "installation_context": {
+    "netwebapi": {
+      "nuget": ["Microsoft.Extensions.Caching.StackExchangeRedis", "StackExchange.Redis"],
+      "connection_string_format": "{{REDIS_URL}}",
+      "entry_point": "Program.cs (builder.Services.AddStackExchangeRedisCache(...))"
+    },
+    "node-express": {
+      "npm": ["ioredis"],
+      "npm_dev": ["@types/ioredis"],
+      "connection_string_format": "redis://default:{{REDIS_PASSWORD}}@{{REDIS_HOST}}:{{REDIS_PORT}}",
+      "client_library": "ioredis (cluster, sentinel, pipeline, Lua scripting)",
+      "entry_point": "src/config/redis.js"
+    },
+    "nodejs": {
+      "npm": ["ioredis"],
+      "connection_string_format": "redis://default:{{REDIS_PASSWORD}}@{{REDIS_HOST}}:{{REDIS_PORT}}",
+      "entry_point": "src/config/redis.js"
+    }
+  },
+
+  "config_template": "integration_template/redis-client.template",
+  "usage_pattern": "Redis bağlantısı singleton olarak oluşturulur ve DI container'a kaydedilir. Cache işlemleri için servis katmanında `ICacheService` / `cacheService` soyutlaması kullanılır.",
+
+  "verification_steps": [
+    "Redis bağlantısı singleton mı?",
+    "Cache miss durumunda graceful degradation var mı? (Redis down → uygulama çalışmaya devam eder)",
+    "Cache invalidation stratejisi tanımlanmış mı?",
+    "TTL değerleri yapılandırılabilir mi?",
+    "03-infrastructures'da docker-compose redis servisi tanımlanmış mı?",
+    "Production'da password koruması var mı?"
+  ],
+
+  "docker_compose_requirement": {
+    "service_name": "redis",
+    "image": "redis:7-alpine",
+    "command": "redis-server --requirepass {{REDIS_PASSWORD}} --maxmemory 256mb --maxmemory-policy allkeys-lru",
+    "volumes": ["redis_data:/data"],
+    "ports": ["{{REDIS_PORT}}:6379"]
+  }
+}
